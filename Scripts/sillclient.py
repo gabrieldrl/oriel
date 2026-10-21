@@ -89,7 +89,7 @@ The remote door (TLS 1.3, both keys pinned; PORT is the remote door's):
                      an earlier pairing in --identity (or given with --pin)
   --identity=DIR     this client's P-256 key and certificate, made on first use with /usr/bin/openssl
                      (DIR/key.pem, DIR/cert.pem), and the paired Mac (DIR/mac.json); required with --tls
-  --pair-url=URL     pair first with a sill://pair link (the QR path: the Mac is pinned to its k before
+  --pair-url=URL     pair first with a sillgdl://pair link (the QR path: the Mac is pinned to its k before
                      a byte is sent), save the Mac, then run the session
   --pair-code=CODE   pair first with the typed code (no pin: the proofs bind both keys), then the session
   --pin=FP|none      pin this base64url fingerprint instead of the saved one; none accepts any key
@@ -264,7 +264,7 @@ def spki(der):
 SPKI_PREFIX = bytes.fromhex("3059301306072a8648ce3d020106082a8648ce3d030107034200")
 def parse_link(url):
     u = urllib.parse.urlsplit(url)
-    if u.scheme.lower() != "sill" or u.netloc.lower() != "pair": raise ValueError("--pair-url: not a sill://pair link")
+    if u.scheme.lower() != "sillgdl" or u.netloc.lower() != "pair": raise ValueError("--pair-url: not a sillgdl://pair link")
     q = urllib.parse.parse_qs(u.query, keep_blank_values=True)
     one = lambda k: (q.get(k) or [None])[0] if len(q.get(k, [])) == 1 else None
     if one("v") != "1": raise ValueError("--pair-url: v is not 1")

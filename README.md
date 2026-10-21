@@ -7,7 +7,7 @@
 > [Saffsanity/sill](https://github.com/Saffsanity/sill).
 >
 > This fork builds under its own identifiers (bundle IDs `com.gabrieldrl.sill` and
-> `com.gabrieldrl.sill.mac`, Bonjour service `_sillgdl._tcp`), so it never discovers or replaces
+> `com.gabrieldrl.sill.mac`, Bonjour service `_sillgdl._tcp`, pairing links `sillgdl://`), so it never discovers or replaces
 > the official apps. Changes from upstream are in this repository's history from commit `80cb797`
 > onward. [docs/OVERVIEW.md](docs/OVERVIEW.md) is a short guide to the code and to how this fork
 > differs. No builds of this fork are distributed: build it from source (below).

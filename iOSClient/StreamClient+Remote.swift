@@ -6,7 +6,7 @@ import StreamProtocol
 
 // Remote access on the device (docs/remote-access-plan.md §7): pairing, saved Macs, remote dials,
 // the session gate (a remote session is connected at its first window list), kinds 18, 20 and 22,
-// the reconnect order after a loss, and sill://pair links. Main thread unless a function says
+// the reconnect order after a loss, and sillgdl://pair links. Main thread unless a function says
 // otherwise; the stored state lives in StreamClient.swift.
 
 /// Pairing as the Add a Mac card and the overlay show it.
@@ -786,10 +786,10 @@ extension StreamClient {
         return ParsedAddress(host: pick.host, port: pick.port, kind: pick.isIPv6 ? .ipv6 : (pick.isName ? .name : .ipv4)).text
     }
 
-    /// A sill://pair link from outside the app: shown for confirmation, never acted on by itself (a
+    /// A sillgdl://pair link from outside the app: shown for confirmation, never acted on by itself (a
     /// poster or a message could otherwise add a look-alike "Mac" that collects keystrokes).
     func handleOpenURL(_ url: URL) {
-        guard url.scheme?.lowercased() == "sill" else { return }
+        guard url.scheme?.lowercased() == "sillgdl" else { return }
         switch PairLink.parse(url.absoluteString) {
         case .success(let link):
             pendingLink = link

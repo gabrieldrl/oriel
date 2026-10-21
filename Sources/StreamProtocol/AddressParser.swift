@@ -50,7 +50,7 @@ public enum AddressParser {
         case name
         /// A port outside 1–65535, or not decimal digits.
         case port
-        /// A `sill://` link: the caller hands the whole text to `PairLink.parse`.
+        /// A `sillgdl://` link: the caller hands the whole text to `PairLink.parse`.
         case pairingLink
     }
 
@@ -58,7 +58,7 @@ public enum AddressParser {
     public static func parse(_ raw: String) -> Result<ParsedAddress, Failure> {
         let s = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if s.isEmpty { return .failure(.empty) }
-        if s.lowercased().hasPrefix("sill:") { return .failure(.pairingLink) }
+        if s.lowercased().hasPrefix("sillgdl:") { return .failure(.pairingLink) }
         if s.unicodeScalars.contains(where: { $0.properties.isWhitespace || $0.value < 0x20 || $0.value == 0x7F }) {
             return .failure(.malformed)
         }

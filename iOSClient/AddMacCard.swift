@@ -388,7 +388,7 @@ extension UIViewController {
     }
 }
 
-/// A sill://pair link from outside the app, waiting for the person (§7.7): shown in the card's
+/// A sillgdl://pair link from outside the app, waiting for the person (§7.7): shown in the card's
 /// place on the connect screen, or over the stream. Never acted on by itself: a poster or a message
 /// could otherwise add a look-alike "Mac" that collects keystrokes.
 struct LinkConfirmation: View {

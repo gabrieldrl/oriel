@@ -112,8 +112,8 @@ addr("host:", .failure(.port))
 addr(":7455", .failure(.malformed))
 addr("http://1.2.3.4", .failure(.port))
 // pairing links are handed to PairLink
-addr("sill://pair?v=1", .failure(.pairingLink))
-addr("SILL://PAIR?v=1", .failure(.pairingLink))
+addr("sillgdl://pair?v=1", .failure(.pairingLink))
+addr("SILLGDL://PAIR?v=1", .failure(.pairingLink))
 check("ParsedAddress.text: [v6]:port", ParsedAddress(host: "fd7a::1", port: 7455, kind: .ipv6).text == "[fd7a::1]:7455")
 check("ParsedAddress.text: v4 without port", ParsedAddress(host: "100.1.2.3", port: nil, kind: .ipv4).text == "100.1.2.3")
 check("ParsedAddress.text round-trips through the parser",
@@ -292,7 +292,7 @@ func linkWith(_ transform: (inout [(String, String)]) -> Void) -> String {
     var items: [(String, String)] = [("v", "1"), ("m", MacID.make(fingerprint: macFP)), ("k", Base64URL.encode(macFP)),
                                      ("s", Base64URL.encode(secret)), ("n", "Mac mini"), ("p", "7455"), ("a", "100.101.102.103")]
     transform(&items)
-    return "sill://pair?" + items.map { "\($0.0)=\($0.1.addingPercentEncoding(withAllowedCharacters: .alphanumerics.union(CharacterSet(charactersIn: "-._~:")))!)" }.joined(separator: "&")
+    return "sillgdl://pair?" + items.map { "\($0.0)=\($0.1.addingPercentEncoding(withAllowedCharacters: .alphanumerics.union(CharacterSet(charactersIn: "-._~:")))!)" }.joined(separator: "&")
 }
 func refused(_ name: String, _ text: String, _ want: PairLink.Failure) {
     let r = PairLink.parse(text)
@@ -315,7 +315,7 @@ refused("p=65536", linkWith { $0[5].1 = "65536" }, .field("p"))
 refused("an address the parser refuses (1.2.3)", linkWith { $0.append(("a", "1.2.3")) }, .address("1.2.3"))
 refused("a zone", linkWith { $0.append(("a", "fe80::1%en0")) }, .address("fe80::1%en0"))
 refused("http scheme", "http://pair?v=1", .notALink)
-refused("another host", linkWith { _ in }.replacingOccurrences(of: "sill://pair", with: "sill://evil"), .notALink)
+refused("another host", linkWith { _ in }.replacingOccurrences(of: "sillgdl://pair", with: "sillgdl://evil"), .notALink)
 if case .success(let l) = PairLink.parse(linkWith { $0.append(("x", "ignored")); $0.append(("zz", "")) }) {
     check("PairLink: unknown parameters ignored", l.addresses.count == 1)
 } else { check("PairLink: unknown parameters ignored", false) }

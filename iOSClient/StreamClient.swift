@@ -179,7 +179,7 @@ final class StreamClient: ObservableObject {
             #endif
         }
     }
-    /// A sill://pair link from outside the app (Camera, Messages, simctl openurl): never acted on
+    /// A sillgdl://pair link from outside the app (Camera, Messages, simctl openurl): never acted on
     /// until the person confirms it.
     @Published var pendingLink: PairLink?
 

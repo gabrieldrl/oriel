@@ -5,7 +5,7 @@ import StreamProtocol
 
 /// The embedded code scanner (docs/remote-access-plan.md §7.7, §7.10): VisionKit's
 /// DataScannerViewController in the card's viewfinder, never a presentation. It reads QR codes; a
-/// sill://pair link goes to `onLink`, anything else shows "That’s not a Sill code." under the
+/// sillgdl://pair link goes to `onLink`, anything else shows "That’s not a Sill code." under the
 /// viewfinder for 2 s. The person chose to point the camera, so there is no confirmation step.
 /// A link arrives each time the scanner finds the code (again, when a scanner is shown anew with
 /// the code in view) and each time the person taps it; StreamClient.scanned decides what starts.
@@ -24,7 +24,7 @@ struct CodeScanner: View {
     }
 
     let mode: Mode
-    /// A sill://pair link, and whether the person tapped the code rather than the scanner finding it.
+    /// A sillgdl://pair link, and whether the person tapped the code rather than the scanner finding it.
     let onLink: (PairLink, _ tapped: Bool) -> Void
     /// A scan failed and the same code is held: the caption says a tap on it tries again.
     var retryNeedsTap = false

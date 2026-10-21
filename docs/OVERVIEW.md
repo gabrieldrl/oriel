@@ -323,6 +323,7 @@ discovery, and its Sill.app never offers upstream's releases as updates.
 | Mac bundle ID (and its `defaults` domain) | `me.saffer.sill.mac` | `com.gabrieldrl.sill.mac` |
 | Apple team | `9B2KKVM937` (Noah) | `JF8R4AVC2H` (Gabriel Lam, Personal Team) |
 | Bonjour service type | `_sill._tcp` | `_sillgdl._tcp` |
+| Pairing link scheme | `sill://pair` | `sillgdl://pair` |
 | Update feed / release repo | Saffsanity/sill | gabrieldrl/sill |
 | Keychain tags, pasteboard and menu identifiers | `me.saffer.sill.*` | `com.gabrieldrl.sill.*` |
 

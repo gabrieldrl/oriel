@@ -50,7 +50,7 @@ struct ContentView: View {
             Self.orientFromLaunchArgument()      // -SillOrientation landscape|portrait
             #endif
         }
-        // sill://pair from the Camera, Messages or `xcrun simctl openurl`: a confirmation first.
+        // sillgdl://pair from the Camera, Messages or `xcrun simctl openurl`: a confirmation first.
         .onOpenURL { client.handleOpenURL($0) }
     }
 
@@ -347,11 +347,11 @@ struct ContentView: View {
 ///   unsaved Mac whose door asks for pairing); `-SillForgetHomeTLS 1` (dial an older Sill.app
 ///   plainly again); `-SillCableTest 1` (this device's path counts as the USB cable for the ask);
 ///   and for the gates, which drive no UI: `-SillTapRow <name prefix>` (taps that row once, as soon
-///   as it is listed), `-SillHomeCode <digits>` and `-SillHomeLink <sill://pair…>` (typed into, or
+///   as it is listed), `-SillHomeCode <digits>` and `-SillHomeLink <sillgdl://pair…>` (typed into, or
 ///   scanned by, the home card once the Mac shows its code), `-SillOverlayCode <digits>` (Pair This
 ///   iPad… with that code, once, over a session at home over TLS).
 /// * Real pairing, in the normal app and under `-SillLive 1` (not the mock): `-SillPairURL
-///   '<sill://pair…>'` pairs with that link at launch, without the confirmation, at the link's own
+///   '<sillgdl://pair…>'` pairs with that link at launch, without the confirmation, at the link's own
 ///   addresses only, as Add a Mac… does (a link with none, a home-only one, pairs nothing): a
 ///   confirmed link tries the home rows first, which the gates reach with `-SillTapRow` and
 ///   `-SillHomeLink` above; `-SillPairCode

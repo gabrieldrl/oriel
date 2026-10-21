@@ -131,7 +131,7 @@ struct StreamScreen: View {
     /// hold lets go meanwhile (`keyboardTakers`).
     @State private var menusOpen = false
     /// Pair This iPad… (the panel's Away from home group): the pairing overlay covers the stream.
-    /// Up here, like the panel, so a rotation keeps it. An outside sill://pair link shows the same
+    /// Up here, like the panel, so a rotation keeps it. An outside sillgdl://pair link shows the same
     /// overlay with its confirmation.
     @State private var pairingOverlay = false
     /// The DEBUG harness's stand-in for the camera (the simulator has none); nil on a device.

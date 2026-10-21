@@ -500,7 +500,7 @@ enum MockCatalog {
         case remotedial    // "Connecting to Mac mini remotely…"
         case remotefail    // a remote dial's failure, -SillRemoteFailure vpnoff|timeout|timeoutip|refused|dns|wrongmac|revoked|notsill|gaveup|quit|removed|remoteoff
         case camera        // Add a Mac with the camera refused
-        case externalpair  // an outside sill://pair link waiting for its confirmation
+        case externalpair  // an outside sillgdl://pair link waiting for its confirmation
         // Pairing at home (docs/home-pairing-plan.md §7.3–7.9). Each row's word is DiscoveryPolicy.rowWord's.
         case homerows        // a saved Wi-Fi row, Not paired, an unpaired Wired (the cable), a Wired row through a USB Ethernet adapter (Not paired), an open door's (Not paired), Update Sill, long names
         case homeasking      // a tap on a Not paired row: "Pairing with Mac mini…", the row lit

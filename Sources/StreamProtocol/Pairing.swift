@@ -5,7 +5,7 @@ import CryptoKit
 import CommonCrypto
 
 // Pairing (docs/remote-access-plan.md §3.5–3.6): the typed code, the proofs both sides exchange,
-// the Bonjour recognition tag and the sill://pair link. Shared by the Mac, the device and the
+// the Bonjour recognition tag and the sillgdl://pair link. Shared by the Mac, the device and the
 // checks; the vectors in the plan were computed in Python and these functions must match them.
 
 /// The 12-digit typed code: 11 uniformly random digits, then one Damm check digit, so a typo is
@@ -218,7 +218,7 @@ public enum HomeDoorTXT {
 }
 
 /// The QR code's content, also a link another app can hand over (always behind a confirmation on
-/// the device): `sill://pair?v=1&m=<macID>&k=<fp>&s=<secret>&n=<Mac name>&p=<port>&a=<address>…`.
+/// the device): `sillgdl://pair?v=1&m=<macID>&k=<fp>&s=<secret>&n=<Mac name>&p=<port>&a=<address>…`.
 /// About 230 bytes: a version 11 QR code at level M.
 public struct PairLink: Hashable, Sendable {
     public static let maxAddresses = 5
@@ -249,7 +249,7 @@ public struct PairLink: Hashable, Sendable {
 
     /// Why a link was refused.
     public enum Failure: Error, Equatable, Sendable {
-        /// Not a sill://pair URL at all.
+        /// Not a sillgdl://pair URL at all.
         case notALink
         /// `v` missing or not 1.
         case version
@@ -268,7 +268,7 @@ public struct PairLink: Hashable, Sendable {
         var items: [(String, String)] = [("v", "1"), ("m", macID), ("k", Base64URL.encode(fingerprint)),
                                          ("s", Base64URL.encode(secret)), ("n", name), ("p", String(port))]
         items += addresses.prefix(Self.maxAddresses).map { ("a", $0.text) }
-        return "sill://pair?" + items.map { "\($0.0)=\(Self.escape($0.1))" }.joined(separator: "&")
+        return "sillgdl://pair?" + items.map { "\($0.0)=\(Self.escape($0.1))" }.joined(separator: "&")
     }
 
     static func escape(_ s: String) -> String {
@@ -281,7 +281,7 @@ public struct PairLink: Hashable, Sendable {
     /// first 5 addresses, and cleans `n` with SafeText.
     public static func parse(_ text: String) -> Result<PairLink, Failure> {
         guard let c = URLComponents(string: text.trimmingCharacters(in: .whitespacesAndNewlines)),
-              c.scheme?.lowercased() == "sill", c.host?.lowercased() == "pair", c.path.isEmpty || c.path == "/",
+              c.scheme?.lowercased() == "sillgdl", c.host?.lowercased() == "pair", c.path.isEmpty || c.path == "/",
               let items = c.queryItems else { return .failure(.notALink) }
         func single(_ key: String) -> Result<String, Failure> {
             let values = items.filter { $0.name == key }
