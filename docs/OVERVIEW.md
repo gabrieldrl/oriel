@@ -338,6 +338,12 @@ What that means in practice:
 - **The update check needs a public repo.** Sill.app reads
   `api.github.com/repos/gabrieldrl/sill/releases/latest` without signing in, which a private repo
   answers with 404. The check stays quiet until the repo is public and has a release.
+- **The Mac app installs to `~/Applications`, beside the official one.** The official Sill.app is in
+  `/Applications` on this Mac, so the dev loop is
+  `SILL_INSTALL_DIR=~/Applications Scripts/make-app.sh --install --open`. It quits only this
+  fork's copy (by bundle ID) and leaves the official app running. Plain `--install` refuses to
+  replace the official app. Both apps write `~/Library/Logs/Sill/Sill.log`, so while both run,
+  look for the line "running from /Users/…/Applications/Sill.app" and the lines after it.
 - **Build outside `~/Documents` for device builds.** A signed iOS build whose build folder is inside
   this checkout (e.g. `-derivedDataPath .build/...`) fails with "resource fork, Finder information,
   or similar detritus not allowed". Xcode's default folder (`~/Library/Developer/Xcode/DerivedData`)

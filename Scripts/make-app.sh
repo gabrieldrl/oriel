@@ -324,12 +324,21 @@ if [ "$install" = 1 ]; then
             exit 1
         fi
     fi
-    # Quit a running Sill.app first. SIGTERM goes through HostShutdown, which puts a staged window
-    # back. The pattern matches Mac bundles only: the iOS Simulator's Sill.app is flat, and
-    # `pkill -x Sill` would kill it too.
-    if pgrep -f 'Sill\.app/Contents/MacOS/Sill' >/dev/null; then
-        pkill -TERM -f 'Sill\.app/Contents/MacOS/Sill' || true
-        for _ in $(seq 1 50); do pgrep -f 'Sill\.app/Contents/MacOS/Sill' >/dev/null || break; sleep 0.1; done
+    # Quit a running copy of this app first. SIGTERM goes through HostShutdown, which puts a staged
+    # window back. The pattern matches Mac bundles only: the iOS Simulator's Sill.app is flat, and
+    # `pkill -x Sill` would kill it too. Only this bundle ID: the official Sill.app (another bundle
+    # ID) may be running beside this fork's and is left alone.
+    this_app_pids() {
+        # LaunchServices' bundle ID, not the bundle's Info.plist: a translocated copy's bundle is
+        # gone once the .build copy it came from is rebuilt.
+        for pid in $(pgrep -f 'Sill\.app/Contents/MacOS/Sill' || true); do
+            if lsappinfo info -only bundleid "$pid" 2>/dev/null | grep -qF "\"$bundle_id\""; then echo "$pid"; fi
+        done
+    }
+    pids="$(this_app_pids)"
+    if [ -n "$pids" ]; then
+        kill -TERM $pids 2>/dev/null || true
+        for _ in $(seq 1 50); do [ -n "$(this_app_pids)" ] || break; sleep 0.1; done
     fi
     rm -rf "$dest"
     ditto "$app" "$dest"
