@@ -5,10 +5,10 @@ body:
   - type: markdown
     attributes:
       value: >-
-        A security problem? Please don't report it here:
-        [SECURITY.md](https://github.com/Saffsanity/sill/security/policy) says how to report it
-        privately. Setting Sill up? The [support page](https://getsill.app/support) has quick
-        fixes for the common problems.
+        This is an unofficial fork: report a problem with the official Sill
+        [upstream](https://github.com/Saffsanity/sill/issues). A security problem? Please don't
+        report it here: [SECURITY.md](https://github.com/gabrieldrl/sill/security/policy) says how
+        to report it privately.
   - type: textarea
     id: what
     attributes:
@@ -75,6 +75,5 @@ body:
       description: >-
         Optional. Show Log… in the Sill menu, or ~/Library/Logs/Sill/Sill.log. Paste only the lines
         around the problem. The log names your windows, your devices and their network addresses,
-        and this issue is public: take out what you don't want to share, or email the lines to
-        support@getsill.app instead.
+        and this issue is public: take out what you don't want to share.
       render: text

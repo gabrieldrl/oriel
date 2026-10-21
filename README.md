@@ -1,4 +1,16 @@
-# Sill
+# Sill (personal fork)
+
+> **This is an unofficial, personal fork** of [Sill](https://github.com/Saffsanity/sill) by
+> Noah Saffer, used under the [Apache License 2.0](LICENSE). It is not affiliated with or endorsed
+> by the Sill project. "Sill" and its icon belong to their owner. For the official apps, the
+> download, support and tips, go to [getsill.app](https://getsill.app) and
+> [Saffsanity/sill](https://github.com/Saffsanity/sill).
+>
+> This fork builds under its own identifiers (bundle IDs `com.gabrieldrl.sill` and
+> `com.gabrieldrl.sill.mac`, Bonjour service `_sillgdl._tcp`), so it never discovers or replaces
+> the official apps. Changes from upstream are in this repository's history from commit `80cb797`
+> onward. [docs/OVERVIEW.md](docs/OVERVIEW.md) is a short guide to the code and to how this fork
+> differs. No builds of this fork are distributed: build it from source (below).
 
 Any window from your Mac, on your iPhone and iPad.
 
@@ -11,22 +23,12 @@ with Direct Wireless Connection when they share no network, or through your
 own VPN, such as Tailscale, with Remote Access. There is no account and no
 server in between.
 
-**[getsill.app](https://getsill.app)** ·
-[Download for Mac](https://getsill.app/download) ·
-[Support](https://getsill.app/support) ·
-[Privacy](https://getsill.app/privacy) ·
-[Terms](https://getsill.app/terms)
+[![CI](https://github.com/gabrieldrl/sill/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/gabrieldrl/sill/actions/workflows/ci.yml)
 
-[![CI](https://github.com/Saffsanity/sill/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Saffsanity/sill/actions/workflows/ci.yml)
-
-[![Download on the App Store](https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83)](https://apps.apple.com/app/id6816359860)
-
-Sill for Mac is a free, notarized download from
-[getsill.app](https://getsill.app/download); with [Homebrew](https://brew.sh),
-`brew install --cask saffsanity/sill/sill` installs the same download from
-Sill's own [tap](https://github.com/Saffsanity/homebrew-sill). Sill for iPhone
-and iPad is free on the [App Store](https://apps.apple.com/app/id6816359860),
-and you can also build it from source (below).
+This fork is source only: build both apps yourself (below). The official Sill
+for Mac and Sill for iPhone and iPad are free from
+[getsill.app](https://getsill.app) and the App Store; they are upstream's, and
+they don't connect to this fork's builds.
 
 ## Screenshots
 
@@ -140,9 +142,8 @@ it.
 ## Tips
 
 Sill is free, with no ads, no tracking and no subscription. If it is useful to
-you, a tip through [GitHub Sponsors](https://github.com/sponsors/Saffsanity)
-helps pay for the developer account. A tip unlocks nothing: every feature is
-free.
+you, tip its author through [GitHub Sponsors](https://github.com/sponsors/Saffsanity)
+(upstream's; this fork takes no tips).
 
 ## Building from source
 
@@ -179,7 +180,7 @@ The iPhone and iPad app:
 
 1. Open `iOSClient/Sill.xcodeproj`.
 2. In the Sill target's Signing & Capabilities, pick your team, and change the
-   bundle identifier `me.saffer.sill` to one of your own.
+   bundle identifier `com.gabrieldrl.sill` to one of your own.
 3. Run it on an iPhone or iPad on the same network as your Mac, and tap your
    Mac. The first time, a Sill for Mac built from this repository asks you to
    pair: scan the code it shows, or connect the device with a USB cable.
@@ -190,17 +191,18 @@ them, Remote Access, troubleshooting and releases.
 
 ## Contributing
 
-Issues are welcome: bug reports, questions and ideas. For a pull request, keep
-to the conventions and decisions in [CLAUDE.md](CLAUDE.md): Swift and Apple
-frameworks only, no third-party dependencies, nothing that needs a server, and
-latency before picture quality. Open an issue before starting anything large.
-Before a pull request, `Tests/checks/run-all.sh` runs the same pure checks as
-CI, in about five minutes and with no device.
-Contributions are accepted under the project's license. Please report a
-security problem privately, as [SECURITY.md](SECURITY.md) says, not in a
-public issue.
+This is a personal fork. Issues about this fork's own changes are welcome
+here. Anything about Sill itself belongs
+[upstream](https://github.com/Saffsanity/sill/issues). The fork keeps
+upstream's conventions ([docs/OVERVIEW.md](docs/OVERVIEW.md), "Rules worth
+keeping"): Swift and Apple frameworks only, no third-party dependencies,
+nothing that needs a server, and latency before picture quality.
+`Tests/checks/run-all.sh` runs the same pure checks as CI, in about five
+minutes and with no device. Please report a security problem privately, as
+[SECURITY.md](SECURITY.md) says, not in a public issue.
 
 ## License
 
 Sill is licensed under the [Apache License 2.0](LICENSE).
-Copyright 2026 Noah Saffer.
+Copyright 2026 Noah Saffer. Modifications in this fork copyright 2026
+Gabriel Lam, under the same license.

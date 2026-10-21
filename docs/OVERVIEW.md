@@ -341,8 +341,9 @@ What that means in practice:
   this checkout (e.g. `-derivedDataPath .build/...`) fails with "resource fork, Finder information,
   or similar detritus not allowed". Xcode's default folder (`~/Library/Developer/Xcode/DerivedData`)
   is fine.
-- **Branches:** `main` was pushed as upstream's `main` at 4d990e9. The fork setup (these identifiers
-  and this file) is the first commit on `dev`; develop on `dev` (or feature branches off it). To take upstream's work: `git fetch upstream`, then merge
+- **Branches:** `main` is upstream's `main` at 4d990e9 plus this fork's commits (from 80cb797, the
+  fork setup). Develop on `dev`, or on feature branches off it, and merge into `main` when a change
+  is done. To take upstream's work: `git fetch upstream`, then merge
   `upstream/main` or an `upstream/<branch>`. Pushing to `upstream` is disabled in this checkout.
 - Left as upstream's: the website in `site/`, the iOS app's links to getsill.app, the app name
   "Sill" and its icon, `.github/FUNDING.yml` and the issue templates.
