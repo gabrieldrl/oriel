@@ -2,14 +2,14 @@ import Foundation
 import Network
 import StreamProtocol
 
-/// Advertises _sill._tcp over Bonjour and pushes messages to every connected client.
+/// Advertises _sillgdl._tcp over Bonjour and pushes messages to every connected client.
 /// Slow clients drop delta frames rather than building a queue (that queue is latency).
 ///
 /// Test only, read once from the environment, never set outside a test and not in the README:
 /// `SILL_TEST_SERVICE_TYPE=_silltest._tcp` registers a host that otherwise does not advertise (the
 /// `--synthetic` hosts) as "Sill test ‹pid›" under that type, with the listener's own peer-to-peer
 /// flag, so a dns-sd browse can check whether the registration includes AWDL while no device (they
-/// browse `_sill._tcp` only) ever finds it. `SILL_TEST_SWAP_FAIL=port` makes a Direct Wireless
+/// browse `_sillgdl._tcp` only) ever finds it. `SILL_TEST_SWAP_FAIL=port` makes a Direct Wireless
 /// replacement's same-port bind fail as EADDRINUSE without binding, and `=all` its any-port bind
 /// too, so the fallback and the listener-failure rule can be exercised without a real conflict.
 /// `SILL_TEST_PEER_TO_PEER_INTERFACE=en0` counts a client whose address is scoped to that interface
@@ -363,7 +363,7 @@ final class StreamServer {
     var homeTLS: Bool { homeDoor != nil }
 
     private var listener: NWListener                 // replaced whole, never reconfigured
-    /// The Mac's name and `_sill._tcp`, a test registration (SILL_TEST_SERVICE_TYPE), or nil (the
+    /// The Mac's name and `_sillgdl._tcp`, a test registration (SILL_TEST_SERVICE_TYPE), or nil (the
     /// synthetic hosts, which devices must never find).
     private let serviceNameAndType: (name: String, type: String)?
     /// The TXT record for each registration (a host with an identity: a fresh recognition tag each
@@ -402,7 +402,7 @@ final class StreamServer {
     /// for its test registration (SILL_TEST_SERVICE_TYPE, above). `home`: how the home door speaks.
     /// `testHooks`: false for Sill.app's own executable, which honours no TEST ONLY hook that bears
     /// on who gets in (docs/home-pairing-plan.md §4.3).
-    init(serviceType: String = "_sill._tcp", advertise: Bool = true, home: HomeDoorMode = .plain, testHooks: Bool = true) throws {
+    init(serviceType: String = "_sillgdl._tcp", advertise: Bool = true, home: HomeDoorMode = .plain, testHooks: Bool = true) throws {
         let queue = DispatchQueue(label: "sill.net", qos: .userInteractive)
         self.queue = queue
         let test = DoorPolicy.isTestHost(advertises: advertise, bundled: !testHooks)
@@ -439,9 +439,9 @@ final class StreamServer {
     private static let testServiceType: String? = {
         guard let type = ProcessInfo.processInfo.environment["SILL_TEST_SERVICE_TYPE"], !type.isEmpty else { return nil }
         let name = type.hasPrefix("_") && type.hasSuffix("._tcp") ? type.dropFirst().dropLast(5) : ""
-        let valid = (1...15).contains(name.count) && type != "_sill._tcp"
+        let valid = (1...15).contains(name.count) && type != "_sillgdl._tcp"
             && name.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-") }
-        if !valid { print("SILL_TEST_SERVICE_TYPE=\(type) ignored: a test type is _name._tcp, and never _sill._tcp.") }
+        if !valid { print("SILL_TEST_SERVICE_TYPE=\(type) ignored: a test type is _name._tcp, and never _sillgdl._tcp.") }
         return valid ? type : nil
     }()
 

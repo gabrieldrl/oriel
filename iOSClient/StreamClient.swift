@@ -460,14 +460,14 @@ final class StreamClient: ObservableObject {
     // Discovery (main thread). Two browsers: the network one always runs and never uses
     // peer-to-peer; the nearby one runs only when DiscoveryPolicy says, never while connected.
     // Both read the TXT record, whose `r` tag names a saved Mac whatever its Bonjour name.
-    /// `_sill._tcp`. DEBUG `-SillServiceType _silltest._tcp`: the browsers look for that type
+    /// `_sillgdl._tcp`. DEBUG `-SillServiceType _silltest._tcp`: the browsers look for that type
     /// instead, so a test host registered with SILL_TEST_SERVICE_TYPE shows as a real row with its
     /// TXT record, and no real Mac is listed (the Debug build's Info.plist declares it).
     static var serviceType: String {
         #if DEBUG
         if let type = UserDefaults.standard.string(forKey: "SillServiceType"), !type.isEmpty { return type }
         #endif
-        return "_sill._tcp"
+        return "_sillgdl._tcp"
     }
     private var networkBrowser: NWBrowser?
     private var nearbyBrowser: NWBrowser?

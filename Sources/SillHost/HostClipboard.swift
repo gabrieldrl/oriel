@@ -66,7 +66,7 @@ final class HostClipboard {
     }
 
     /// `synthetic`: a host that never touches this Mac's clipboard (as it never reads the real
-    /// pointer): a pasteboard of its own, `me.saffer.sill.test.<pid>`, or the one TEST ONLY
+    /// pointer): a pasteboard of its own, `com.gabrieldrl.sill.test.<pid>`, or the one TEST ONLY
     /// `SILL_TEST_PASTEBOARD` names, so a test can write and read it. macOS asks about no pasteboard
     /// but the general one, so a synthetic host's reads are always allowed, unless TEST ONLY
     /// `SILL_TEST_CLIPBOARD_ACCESS` says otherwise: `allowed`, `notAsked`, `asks` or `denied`, or the
@@ -78,7 +78,7 @@ final class HostClipboard {
         var lines: [String] = []
         if synthetic {
             let named = env["SILL_TEST_PASTEBOARD"].flatMap { $0.isEmpty ? nil : $0 }
-            let name = named ?? "me.saffer.sill.test.\(getpid())"
+            let name = named ?? "com.gabrieldrl.sill.test.\(getpid())"
             var access: @Sendable () -> ClipboardPolicy.MacAccess = { .allowed }
             switch env["SILL_TEST_CLIPBOARD_ACCESS"] {
             case nil, "":

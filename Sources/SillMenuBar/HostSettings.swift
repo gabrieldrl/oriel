@@ -3,7 +3,7 @@ import Observation
 import SillHostCore
 
 /// The app's settings: the host's knobs (`config`) and a few facts the UI remembers, all in
-/// UserDefaults (the bundle's domain, me.saffer.sill.mac; the bare SillMenuBar binary's is
+/// UserDefaults (the bundle's domain, com.gabrieldrl.sill.mac; the bare SillMenuBar binary's is
 /// "SillMenuBar"). Main actor, like everything that shows or changes them.
 ///
 /// One path to the host: the menu, the Settings panes, the debug hooks and connected devices (through

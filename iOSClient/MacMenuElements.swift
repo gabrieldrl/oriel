@@ -85,10 +85,10 @@ enum MacMenuElements {
 
     /// The identifier of the bar's menu for the Mac menu `id` ("2"): unique within a build, since
     /// MacMenuState keeps each id of the top level once.
-    static func barIdentifier(_ id: String) -> UIMenu.Identifier { UIMenu.Identifier("me.saffer.sill.macmenu.\(id)") }
+    static func barIdentifier(_ id: String) -> UIMenu.Identifier { UIMenu.Identifier("com.gabrieldrl.sill.macmenu.\(id)") }
 
     /// The `.one` layout's menu, which holds the Mac's menus (MacMenuBar).
-    static let barWrapper = UIMenu.Identifier("me.saffer.sill.macmenu")
+    static let barWrapper = UIMenu.Identifier("com.gabrieldrl.sill.macmenu")
 
     /// Words in a menu: disabled, so they can never be chosen. A note that ends in a parenthesis,
     /// as the Mac's "Allow Accessibility for Sill on the Mac (System Settings › Privacy & Security ›

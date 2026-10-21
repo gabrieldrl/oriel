@@ -719,7 +719,7 @@ enum DebugHooks {
 extension DebugHooks {
     /// Sill 0.4, found by a check, against a running 0.3.
     static let previewOffer = UpdatePolicy.Offer(version: SillVersion("0.4.0")!, tag: "v0.4.0",
-                                                 url: URL(string: "https://github.com/Saffsanity/sill/releases/tag/v0.4.0")!)
+                                                 url: URL(string: "https://github.com/gabrieldrl/sill/releases/tag/v0.4.0")!)
 
     struct UpdatePaneSample {
         var name: String

@@ -62,7 +62,7 @@ public enum ClipboardPolicy {
     public static let remoteClipboardType = "com.apple.is-remote-clipboard"
     /// On every item the host writes from a device's text, its value the host's launch ID
     /// (`WindowList.launchID`): this launch's own write is never sent back out.
-    public static let ownType = "me.saffer.sill.clipboard"
+    public static let ownType = "com.gabrieldrl.sill.clipboard"
 
     public enum HostSkip: String, Equatable, Sendable {
         /// A password manager's or another app's marker (`markerTypes`).

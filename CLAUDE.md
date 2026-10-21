@@ -4,6 +4,11 @@ Open-source, free app that streams individual Mac app windows to iPhone and iPad
 (designed for iPhone Duo first), with a free Mac companion. Tip jar, no
 subscription, no servers. Read `docs/BRIEF.md` before doing product-level work.
 
+**This checkout is gabrieldrl's private fork** (origin gabrieldrl/sill, upstream Saffsanity/sill).
+Start with `docs/OVERVIEW.md`: the short version of this file, and the fork's own identifiers
+(bundle IDs `com.gabrieldrl.sill[.mac]`, team JF8R4AVC2H, Bonjour `_sillgdl._tcp`), which replace
+the `me.saffer.sill` / `_sill._tcp` values quoted below.
+
 Formerly winstream; the folder still carries the old name.
 
 ## Current step

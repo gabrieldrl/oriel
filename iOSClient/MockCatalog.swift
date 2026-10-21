@@ -545,7 +545,7 @@ enum MockCatalog {
         /// A row as `recomputeMacs` makes it: Direct only for a Direct row. No wired interface: the
         /// mock never dials.
         func mac(_ name: String, _ method: DiscoveryPolicy.Method?) -> FoundMac {
-            FoundMac(name: name, endpoint: .service(name: name, type: "_sill._tcp", domain: "local.", interface: nil),
+            FoundMac(name: name, endpoint: .service(name: name, type: "_sillgdl._tcp", domain: "local.", interface: nil),
                      route: method == .direct ? .direct : .network, method: method)
         }
         func remote(_ name: String, _ id: String) -> FoundMac { FoundMac(name: name, endpoint: nil, route: .remote, macID: id) }
@@ -559,7 +559,7 @@ enum MockCatalog {
                   saved: Bool = false, revoked: Bool = false, homeTLS: Bool = false, cable: Bool = false) -> FoundMac {
             let word = DiscoveryPolicy.rowWord(door: door, saved: saved, revoked: revoked, homeTLS: homeTLS,
                                                debug: StreamClient.debugBuild, method: method, cable: cable)
-            return FoundMac(name: name, endpoint: .service(name: name, type: "_sill._tcp", domain: "local.", interface: nil),
+            return FoundMac(name: name, endpoint: .service(name: name, type: "_sillgdl._tcp", domain: "local.", interface: nil),
                             route: method == .direct ? .direct : .network, macID: saved ? "HOMEPAIRING\(name.count)" : nil,
                             method: method, door: door, homeWord: word)
         }

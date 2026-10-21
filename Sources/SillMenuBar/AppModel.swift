@@ -212,7 +212,7 @@ final class AppModel {
         guard let task = SecTaskCreateFromSelf(nil),
               let value = SecTaskCopyValueForEntitlement(task, "keychain-access-groups" as CFString, nil) else { return nil }
         if let groups = value as? [String], !groups.isEmpty {
-            return groups.first { $0.hasSuffix(".me.saffer.sill.mac") } ?? groups.first
+            return groups.first { $0.hasSuffix(".com.gabrieldrl.sill.mac") } ?? groups.first
         }
         if let group = value as? String, !group.isEmpty { return group }
         return nil

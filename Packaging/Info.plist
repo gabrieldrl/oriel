@@ -13,7 +13,7 @@
 	<key>CFBundleIconName</key>
 	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
-	<string>me.saffer.sill.mac</string>
+	<string>com.gabrieldrl.sill.mac</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -32,7 +32,7 @@
 	<true/>
 	<key>NSBonjourServices</key>
 	<array>
-		<string>_sill._tcp</string>
+		<string>_sillgdl._tcp</string>
 	</array>
 	<key>NSHumanReadableCopyright</key>
 	<string>Sill is free and open source.</string>

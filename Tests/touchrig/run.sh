@@ -67,7 +67,7 @@ cat > "$work/TouchRig.app/Info.plist" <<'PLIST'
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
 <key>CFBundleExecutable</key><string>TouchRig</string>
-<key>CFBundleIdentifier</key><string>me.saffer.sill.touchrig</string>
+<key>CFBundleIdentifier</key><string>com.gabrieldrl.sill.touchrig</string>
 <key>CFBundleName</key><string>TouchRig</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>1.0</string>
@@ -105,8 +105,8 @@ xcrun simctl bootstatus "$udid" -b >/dev/null
 xcrun simctl install "$udid" "$work/TouchRig.app"
 log="$out/$name.log"
 SIMCTL_CHILD_RIG_SWITCH="$switch" perl -e 'alarm shift; exec @ARGV' 600 \
-    xcrun simctl launch --console-pty --terminate-running-process "$udid" me.saffer.sill.touchrig > "$log" 2>&1 || true
-xcrun simctl uninstall "$udid" me.saffer.sill.touchrig || true
+    xcrun simctl launch --console-pty --terminate-running-process "$udid" com.gabrieldrl.sill.touchrig > "$log" 2>&1 || true
+xcrun simctl uninstall "$udid" com.gabrieldrl.sill.touchrig || true
 if [ "$made" = 1 ]; then xcrun simctl shutdown "$udid" || true; xcrun simctl delete "$udid" || true; fi
 grep -q '^RIG done' "$log" || { echo "touchrig: the run did not finish; see $log" >&2; exit 1; }
 echo "touchrig: $(grep -c '^===' "$log") scenarios, the log is $log"

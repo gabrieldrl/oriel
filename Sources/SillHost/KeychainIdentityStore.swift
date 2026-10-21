@@ -12,7 +12,7 @@ import Security
 ///   Sill then adopts it (the security review, 2026-09-27). So this store is used only where the
 ///   strong keychain is out of reach — a development build, or a release with no embedded
 ///   provisioning profile — and never by an entitled Sill.app.
-/// - **Data-protection (`accessGroup` set, e.g. `9B2KKVM937.me.saffer.sill.mac`):** the
+/// - **Data-protection (`accessGroup` set, e.g. `JF8R4AVC2H.com.gabrieldrl.sill.mac`):** the
 ///   data-protection keychain under that access group. Only a process signed by the same team and
 ///   entitled to that group can create or read the items, so no other process can pre-create or read
 ///   them: the pre-creation hole is closed, and the key becomes unreadable to other apps as a bonus.
@@ -21,10 +21,10 @@ import Security
 ///   IdentityStorePlan picks it only when the running binary actually holds the entitlement.
 ///
 /// The items, in either keychain:
-/// - The key: a permanent P-256 private key, application tag `me.saffer.sill.remote.host-key`,
+/// - The key: a permanent P-256 private key, application tag `com.gabrieldrl.sill.remote.host-key`,
 ///   label "Sill Remote Access", looked up by its tag. Only the private key is stored; the public
 ///   one is derived from it.
-/// - The recognition key: a generic password, service `me.saffer.sill.remote`, account
+/// - The recognition key: a generic password, service `com.gabrieldrl.sill.remote`, account
 ///   `recognition-key`, 32 bytes.
 /// - The trust list: a generic password, same service, account `paired-devices`, JSON.
 /// - Require pairing: a generic password, same service, account `require-pairing`: "1", or "0."
@@ -58,9 +58,9 @@ import Security
 /// (the same posture as the iOS device key, WhenUnlockedThisDeviceOnly). The legacy store keeps the
 /// login keychain's own default, as it always did.
 package final class KeychainIdentityStore: IdentityStore {
-    static let keyTag = Data("me.saffer.sill.remote.host-key".utf8)
+    static let keyTag = Data("com.gabrieldrl.sill.remote.host-key".utf8)
     static let label = "Sill Remote Access"
-    static let service = "me.saffer.sill.remote"
+    static let service = "com.gabrieldrl.sill.remote"
     static let recognitionAccount = "recognition-key"
     static let pairedAccount = "paired-devices"
     static let requirePairingAccount = "require-pairing"

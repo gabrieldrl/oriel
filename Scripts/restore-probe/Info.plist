@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleIdentifier</key>
-	<string>me.saffer.sill.restoreprobe</string>
+	<string>com.gabrieldrl.sill.restoreprobe</string>
 	<key>CFBundleName</key>
 	<string>Sill Restore Probe</string>
 	<key>CFBundleExecutable</key>

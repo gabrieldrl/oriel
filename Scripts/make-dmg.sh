@@ -38,7 +38,7 @@
 #   on Retina screens. Cached in .build/dmg until the SVG, this script or dmg-layout changes.
 # - The volume's icon: the app's AppIcon.icns (make-app.sh's, masked like the app icon) as
 #   .VolumeIcon.icns, with the custom-icon flag on the volume's root.
-# - The image is signed last (codesign, identifier me.saffer.sill.dmg), then checked: hdiutil
+# - The image is signed last (codesign, identifier com.gabrieldrl.sill.dmg), then checked: hdiutil
 #   verify, codesign --verify, and mounted read-only: exactly Sill.app, Applications (a link to
 #   /Applications), .background, .VolumeIcon.icns and .DS_Store at its root, the layout, and a
 #   Sill.app that passes codesign --verify --deep --strict and is byte for byte the APP given
@@ -238,7 +238,7 @@ main() {
     # Signed: Developer ID with a secure timestamp, as notarization requires; ad hoc without one.
     local timestamp=--timestamp
     if [ "$identity" = - ]; then timestamp=--timestamp=none; fi
-    codesign --force --sign "$identity" "$timestamp" --identifier me.saffer.sill.dmg "$work/Sill.dmg" \
+    codesign --force --sign "$identity" "$timestamp" --identifier com.gabrieldrl.sill.dmg "$work/Sill.dmg" \
         || fail "codesign can't sign the image with '$identity'"
 
     say "Checking the image"

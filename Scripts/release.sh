@@ -3,7 +3,7 @@
 # ticket stapled, in a disk image and in a zip, each checked the way Gatekeeper will check it on
 # someone else's Mac.
 #
-#   SILL_SIGN_IDENTITY='Developer ID Application: … (9B2KKVM937)' SILL_NOTARY_PROFILE=sill-notary \
+#   SILL_SIGN_IDENTITY='Developer ID Application: … (JF8R4AVC2H)' SILL_NOTARY_PROFILE=sill-notary \
 #     Scripts/release.sh             build, zip, notarize, staple, zip again, verify; then the disk
 #                                    image of the stapled app, signed, notarized, stapled, verified
 #   Scripts/release.sh --dry-run     the same checks, build, first zip and a disk image signed with
@@ -26,7 +26,7 @@
 # `xcrun notarytool store-credentials` (a dry run only warns when it is missing).
 # docs/release-checklist.md says how to get both, and what to do with the zip.
 #
-# --publish makes the release in SILL_RELEASE_REPO, by default Saffsanity/sill: the one repository
+# --publish makes the release in SILL_RELEASE_REPO, by default gabrieldrl/sill: the one repository
 # whose releases every Sill.app's update check reads (Sources/SillMenuBar/UpdatePolicy.swift,
 # `feed`). A release anywhere else can be downloaded, but no Sill.app offers it, and the script
 # warns before it builds and again as it publishes.
@@ -57,7 +57,7 @@
 # - --publish checks origin's tag before it builds: `gh release create` makes a tag the release's
 #   repository lacks from its default branch's tip, so the release (and its source archives) would
 #   name another commit than the one built, and pushing the real tag later would be refused. In
-#   Saffsanity/sill it also passes --verify-tag, so gh itself refuses a tag that isn't there. In
+#   gabrieldrl/sill it also passes --verify-tag, so gh itself refuses a tag that isn't there. In
 #   the release workflow the commit checked out is origin's tag, so there the local tag is checked
 #   (SILL_RELEASE_TAG) and origin is not asked: its checkout keeps no credentials.
 set -euo pipefail
@@ -77,11 +77,11 @@ usage: Scripts/release.sh [--dry-run | --publish | --check-tag]
       notarytool and prints the rest.
   --publish
       after the checks, creates the GitHub Release v<version> in $SILL_RELEASE_REPO
-      (default Saffsanity/sill) with Sill.dmg, Sill.zip and their .sha256 files, the names the
+      (default gabrieldrl/sill) with Sill.dmg, Sill.zip and their .sha256 files, the names the
       site links.
       Before building, it checks that gh reaches that repository and the release isn't there yet,
       and refuses unless origin has the tag v<version> and it names HEAD (git push origin
-      v<version>). Every Sill.app's update check reads only Saffsanity/sill's releases: one
+      v<version>). Every Sill.app's update check reads only gabrieldrl/sill's releases: one
       published anywhere else can be downloaded, but no Sill.app offers it.
   --check-tag
       only checks that $SILL_RELEASE_TAG is v<version> of Packaging/Info.plist (and, when the tag
@@ -238,7 +238,7 @@ remote_tag_problem() {
 
 # The one repository whose releases every Sill.app's update check reads
 # (Sources/SillMenuBar/UpdatePolicy.swift, `feed`).
-feed_repo=Saffsanity/sill
+feed_repo=gabrieldrl/sill
 
 # Whether $1, a repository as gh takes it ([HOST/]OWNER/REPO, or its URL), is `feed_repo`.
 is_feed_repo() {

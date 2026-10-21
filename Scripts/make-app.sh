@@ -5,7 +5,7 @@
 #   SILL_UNIVERSAL=1 Scripts/make-app.sh   …for Apple silicon and Intel Macs (arm64 and x86_64; #62)
 #   Scripts/make-app.sh --install          …then replace /Applications/Sill.app (a running copy quits first)
 #   Scripts/make-app.sh --install --open   …and launch it: Noah's one command after any change
-#   SILL_SIGN_IDENTITY='Developer ID Application: … (9B2KKVM937)' Scripts/make-app.sh --release
+#   SILL_SIGN_IDENTITY='Developer ID Application: … (JF8R4AVC2H)' Scripts/make-app.sh --release
 #                                          (M6; refused unless HEAD carries the tag v‹version› and
 #                                          the signature is Developer ID; Scripts/release.sh --dry-run
 #                                          sets SILL_RELEASE_DRY_RUN=1, which only warns about the tag)
@@ -36,7 +36,7 @@ done
 # so only after the upload. The default identity is Apple Development, so without
 # SILL_SIGN_IDENTITY stop now, before building; the signature itself is checked after signing.
 if [ "$release" = 1 ] && [ -z "${SILL_SIGN_IDENTITY:-}" ]; then
-    echo "error: --release needs SILL_SIGN_IDENTITY='Developer ID Application: … (9B2KKVM937)'" >&2
+    echo "error: --release needs SILL_SIGN_IDENTITY='Developer ID Application: … (JF8R4AVC2H)'" >&2
     exit 2
 fi
 # A release is built only from the commit its tag names: the tag is "v" + Packaging/Info.plist's
@@ -157,9 +157,9 @@ if [ "$release" = 1 ]; then
     # and said in the log so the softer keychain is never a silent surprise.
     #
     # SillRelease.entitlements holds exactly three profile-restricted entitlements —
-    # com.apple.application-identifier 9B2KKVM937.me.saffer.sill.mac,
-    # com.apple.developer.team-identifier 9B2KKVM937 and keychain-access-groups
-    # [9B2KKVM937.me.saffer.sill.mac] — and NO XML comments: codesign feeds it to AMFI's entitlement
+    # com.apple.application-identifier JF8R4AVC2H.com.gabrieldrl.sill.mac,
+    # com.apple.developer.team-identifier JF8R4AVC2H and keychain-access-groups
+    # [JF8R4AVC2H.com.gabrieldrl.sill.mac] — and NO XML comments: codesign feeds it to AMFI's entitlement
     # parser (AMFIUnserializeXML), which rejects a comment with "syntax error", so a commented file
     # fails the sign. The application identifier goes under the macOS key: a Mac profile grants
     # com.apple.application-identifier, never iOS's application-identifier, and an app signed with
@@ -176,7 +176,7 @@ if [ "$release" = 1 ]; then
         # here instead, so a build it would kill is never written: every entitlement the app is
         # signed with is one the profile grants (the same value, or for each element of a list such
         # as the keychain groups the same name or a pattern that covers it: a Developer ID profile
-        # grants "9B2KKVM937.*"), the certificate that signs it is one the profile lists, and the
+        # grants "JF8R4AVC2H.*"), the certificate that signs it is one the profile lists, and the
         # profile has not expired. Each refusal takes the stage with it.
         prof_dir="$(mktemp -d)"; trap 'rm -rf "$prof_dir"' EXIT
         refuse_profile() {

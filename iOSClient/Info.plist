@@ -17,7 +17,7 @@
 	     (docs/home-pairing-plan.md §7.9). A key added here goes there too. -->
 	<key>NSBonjourServices</key>
 	<array>
-		<string>_sill._tcp</string>
+		<string>_sillgdl._tcp</string>
 	</array>
 	<!-- Add a Mac: the embedded scanner reads the pairing code the Mac shows. -->
 	<key>NSCameraUsageDescription</key>
@@ -28,7 +28,7 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>me.saffer.sill.pair</string>
+			<string>com.gabrieldrl.sill.pair</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>sill</string>

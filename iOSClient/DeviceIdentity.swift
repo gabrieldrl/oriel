@@ -3,7 +3,7 @@ import Security
 import StreamProtocol
 
 /// This device's remote identity (docs/remote-access-plan.md §7.2): a P-256 key in the Keychain,
-/// tag `me.saffer.sill.device-key`, readable only while the device is unlocked, never synced and
+/// tag `com.gabrieldrl.sill.device-key`, readable only while the device is unlocked, never synced and
 /// never in a backup (`WhenUnlockedThisDeviceOnly`), so a lost or restored device cannot use it.
 /// Made at the first pairing; its certificate is rebuilt at each launch (the pin is the key).
 ///
@@ -13,9 +13,9 @@ import StreamProtocol
 ///
 /// Main thread, or the network queue once made: the identity is immutable and cached.
 enum DeviceIdentity {
-    static let tag = Data("me.saffer.sill.device-key".utf8)
+    static let tag = Data("com.gabrieldrl.sill.device-key".utf8)
     #if DEBUG
-    static let secureEnclaveTag = Data("me.saffer.sill.device-key.se".utf8)
+    static let secureEnclaveTag = Data("com.gabrieldrl.sill.device-key.se".utf8)
     static var usesSecureEnclave: Bool { UserDefaults.standard.bool(forKey: "SillDeviceKeySE") }
     #endif
 

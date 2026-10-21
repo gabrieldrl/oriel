@@ -11,7 +11,7 @@
 # that a re-fit undid (no move: the whole frame back).
 # usage: Scripts/restore-probe/run.sh
 # Builds under .build/restore-probe/: the window's app (owner.swift in a bundle of its own,
-# me.saffer.sill.restoreprobe, never activated) and the driver (driver.swift with the worktree's
+# com.gabrieldrl.sill.restoreprobe, never activated) and the driver (driver.swift with the worktree's
 # WindowSizer.swift, WindowRestore.swift and StreamProtocol's sources as one module). It touches no
 # other window, posts no input, makes no virtual display and links no VideoToolbox; the front app is
 # read before and after and must not change. Needs Accessibility and Screen Recording for the app that

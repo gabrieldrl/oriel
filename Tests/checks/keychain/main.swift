@@ -13,15 +13,15 @@ func check(_ desc: String, _ got: IdentityStoreChoice, _ want: IdentityStoreChoi
     print("FAIL: \(desc): got \(got), want \(want)")
 }
 
-let group = "9B2KKVM937.me.saffer.sill.mac"
+let group = "JF8R4AVC2H.com.gabrieldrl.sill.mac"
 
 // A real Sill.app (bundled, not synthetic).
 check("entitled real app → data-protection under its group",
       IdentityStorePlan.choose(bundled: true, synthetic: false, entitledAccessGroup: group, testRemoteDir: nil),
       .dataProtection(accessGroup: group))
 check("entitled app carries the exact access group",
-      IdentityStorePlan.choose(bundled: true, synthetic: false, entitledAccessGroup: "HG877AGTQ7.me.saffer.sill.mac", testRemoteDir: nil),
-      .dataProtection(accessGroup: "HG877AGTQ7.me.saffer.sill.mac"))
+      IdentityStorePlan.choose(bundled: true, synthetic: false, entitledAccessGroup: "HG877AGTQ7.com.gabrieldrl.sill.mac", testRemoteDir: nil),
+      .dataProtection(accessGroup: "HG877AGTQ7.com.gabrieldrl.sill.mac"))
 check("unentitled real app → legacy login keychain",
       IdentityStorePlan.choose(bundled: true, synthetic: false, entitledAccessGroup: nil, testRemoteDir: nil),
       .legacy)

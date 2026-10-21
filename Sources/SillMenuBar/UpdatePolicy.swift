@@ -12,7 +12,7 @@ import StreamProtocol
 /// or installed by Sill, and the only feed is GitHub's (no server of Sill's, no token, no identifier).
 enum UpdatePolicy {
     /// GitHub's latest published release of Sill (drafts and prereleases are never listed there).
-    static let feed = URL(string: "https://api.github.com/repos/Saffsanity/sill/releases/latest")!
+    static let feed = URL(string: "https://api.github.com/repos/gabrieldrl/sill/releases/latest")!
     /// Where a redirect may lead (a renamed repository answers 301 to its new address there).
     static func redirectAllowed(_ url: URL) -> Bool { url.scheme == "https" && url.host == "api.github.com" }
 
