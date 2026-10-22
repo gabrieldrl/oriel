@@ -17,7 +17,32 @@ enum QuickControlStyle {
     static let iconInset: CGFloat = 16
 }
 
+/// A closed pill's face: its icon in the slot, then its text (FlipToggle's, the Apps pill's).
+struct QuickPillFace: View {
+    let icon: String
+    let text: String
+
+    var body: some View {
+        HStack(spacing: QuickControlStyle.iconSlot - QuickControlStyle.iconInset - QuickControlStyle.iconSize
+                        + QuickControlStyle.labelPadding) {
+            Image(systemName: icon)
+                .font(QuickControlStyle.iconFont)
+                .frame(width: QuickControlStyle.iconSize)
+            Text(text)
+        }
+    }
+}
+
 extension View {
+    /// A pill's room around its face: the row's height, the icon's inset before it, the text's after.
+    func quickPillFrame() -> some View {
+        foregroundStyle(.white)
+            .font(QuickControlStyle.font)
+            .padding(.leading, QuickControlStyle.iconInset)
+            .padding(.trailing, QuickControlStyle.labelPadding)
+            .frame(minWidth: QuickControlStyle.height, minHeight: QuickControlStyle.height)
+    }
+
     /// A round quick control (the sound's circle, the clipboard, Disconnect): the row's height across,
     /// on `fill`, and a tap anywhere in the circle.
     func quickCircle(_ fill: Color = QuickControlStyle.fill) -> some View {

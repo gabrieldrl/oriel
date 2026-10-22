@@ -33,11 +33,7 @@ struct FlipToggle<Value: Hashable>: View {
 
     var body: some View {
         text
-            .foregroundStyle(.white)
-            .font(QuickControlStyle.font)
-            .padding(.leading, QuickControlStyle.iconInset)
-            .padding(.trailing, QuickControlStyle.labelPadding)
-            .frame(minWidth: QuickControlStyle.height, minHeight: QuickControlStyle.height)
+            .quickPillFrame()
             .background(Capsule().fill(QuickControlStyle.fill))
             .clipShape(Capsule())
             .contentShape(Capsule())
@@ -66,13 +62,7 @@ struct FlipToggle<Value: Hashable>: View {
 
     /// The icon in the picker's slot, then the text, spaced as the picker's closed pill is.
     private func face(_ option: Value) -> some View {
-        HStack(spacing: QuickControlStyle.iconSlot - QuickControlStyle.iconInset - QuickControlStyle.iconSize
-                        + QuickControlStyle.labelPadding) {
-            Image(systemName: icon(option))
-                .font(QuickControlStyle.iconFont)
-                .frame(width: QuickControlStyle.iconSize)
-            Text(label(option))
-        }
+        QuickPillFace(icon: icon(option), text: label(option))
     }
 
     private func next() {

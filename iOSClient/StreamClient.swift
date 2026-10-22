@@ -414,6 +414,8 @@ final class StreamClient: ObservableObject {
         var frameAge: MedianMax?
         /// Ping round trips, over the pongs that came back during the second. nil: none did.
         var rtt: MedianMax?
+        /// Bytes received per second, every message with its header: the info panel's bandwidth.
+        var bytes: Int = 0
     }
 
     /// The typical and the worst of one second's samples, in whole milliseconds.
@@ -883,6 +885,7 @@ final class StreamClient: ObservableObject {
     // timers, which stop while a scroll is tracked: the numbers froze, and the next tick then
     // counted several seconds of frames as one ("222 fps").
     private var frameCounter = 0
+    private var byteCounter = 0   // every message's bytes, header included
     private var frameAgeSamples: [Double] = []   // ms, one per frame
     private var rttSamples: [Double] = []        // ms, one per pong
     private var windowOpenedAt = 0.0             // CACurrentMediaTime
@@ -3625,6 +3628,7 @@ final class StreamClient: ObservableObject {
 
     /// On the network queue.
     private func handle(_ header: StreamHeader, _ data: Data) {
+        byteCounter += StreamMessage.headerLength + data.count
         switch header.kind {
         case .parameterSets:
             if let ps = ParameterSets(encoded: data) {
@@ -3873,6 +3877,7 @@ final class StreamClient: ObservableObject {
         pingTimer?.cancel()
         pingTimer = nil
         frameCounter = 0
+        byteCounter = 0
         frameAgeSamples.removeAll()
         rttSamples.removeAll()
     }
@@ -3885,8 +3890,10 @@ final class StreamClient: ObservableObject {
         windowOpenedAt = now
         // Per second of the window's real length, which is a second unless the app was suspended.
         let fps = elapsed > 0 ? Int((Double(frameCounter) / elapsed).rounded()) : frameCounter
-        let stats = LinkStats(fps: fps, frameAge: MedianMax(frameAgeSamples), rtt: MedianMax(rttSamples))
+        let bytes = elapsed > 0 ? Int((Double(byteCounter) / elapsed).rounded()) : byteCounter
+        let stats = LinkStats(fps: fps, frameAge: MedianMax(frameAgeSamples), rtt: MedianMax(rttSamples), bytes: bytes)
         frameCounter = 0
+        byteCounter = 0
         frameAgeSamples.removeAll(keepingCapacity: true)
         rttSamples.removeAll(keepingCapacity: true)
         if let rtt = stats.rtt { worstRecentRttMs = Double(rtt.max) }

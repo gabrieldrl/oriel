@@ -3,7 +3,8 @@ import StreamProtocol
 
 /// The main stream screen, being designed again from the start. For now: the Mac's picture,
 /// centred and shaped like a MacBook Pro's display, with all of its input (StreamSurface), the quick
-/// controls under it (QuickControls), and the Apps tab at the bottom (AppsTray). The old screen,
+/// controls under it (QuickControls), the Apps pill among them, whose sheet rises over the picture from its bottom
+/// edge (AppsTray). The old screen,
 /// StreamScreen, stays in the code; `-SillClassicScreen 1` shows it instead (ContentView).
 struct DesktopScreen: View {
     @ObservedObject var client: StreamClient
@@ -13,8 +14,13 @@ struct DesktopScreen: View {
     /// The picture's size on screen: what the viewport tells the Mac.
     @State private var panelSize: CGSize = .zero
     @State private var pendingViewport: Task<Void, Never>?
-    /// The Apps card is up (AppsTray). `-SillAppsOpen 1` starts with it up.
+    /// The Apps sheet is up over the picture (AppsTray). `-SillAppsOpen 1` starts with it up.
     @State private var appsOpen = UserDefaults.standard.bool(forKey: "SillAppsOpen")
+    /// The key row's sheet is up (KeyRowSheet). It and the Apps sheet rise from the same edge, so
+    /// one opening puts the other away.
+    @State private var keyRowOpen = UserDefaults.standard.bool(forKey: "SillKeyRowOpen")
+    /// The info panel is up at the picture's top-right corner (InfoPanel). `-SillInfoOpen 1` starts with it up.
+    @State private var infoOpen = UserDefaults.standard.bool(forKey: "SillInfoOpen")
     /// Trackpad input: the whole screen is a relative trackpad that moves a cursor drawn on the
     /// picture, and the iPad's own pointer is the Mac's, instead of a touch landing where it touches.
     /// It follows a pointer device (PointerDeviceMonitor) as one connects or the last goes; the toggle
@@ -22,36 +28,32 @@ struct DesktopScreen: View {
     @AppStorage("Sill.trackpadInput") private var trackpadInput = false
     /// The quick control that is open, if any: a touch anywhere else folds it (QuickPillFocus).
     @StateObject private var pillFocus = QuickPillFocus()
+    /// The picture's ripple (DisplayRipple), run up to 1 on Disconnect before the connect screen
+    /// returns; the controls fade with it.
+    @State private var ripple: CGFloat = 0
+    /// The session's first look: the screen fades in.
+    @State private var shown = false
+    /// Disconnect was tapped: the ripple runs out, then the session ends. Nothing takes a touch meanwhile.
+    @State private var leaving = false
 
     /// The shape until the first frame gives the Mac's own: a 14-inch MacBook Pro's 3024×1964.
     private static let placeholderSize = CGSize(width: 3024, height: 1964)
+    /// Between the info button and the picture's top edge.
+    private static let infoGap: CGFloat = 8
 
     private var videoSize: CGSize {
         client.videoSize.width > 0 && client.videoSize.height > 0 ? client.videoSize : Self.placeholderSize
     }
 
     var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .bottom) {
-                display
-                    .padding(.bottom, AppsTray.tabHeight)
-                // Open, the card takes the screen's taps: one outside it puts it away.
-                if appsOpen {
-                    Color.black.opacity(0.35)
-                        .ignoresSafeArea()
-                        .onTapGesture { withAnimation(.spring(duration: 0.42, bounce: 0.16)) { appsOpen = false } }
-                        .transition(.opacity)
-                }
-                AppsTray(client: client, open: $appsOpen,
-                         previewRadius: panelSize.height * MacDisplayShape.cornerRadiusPerHeight,
-                         fullWidth: geo.size.width, bottomInset: geo.safeAreaInsets.bottom)
-            }
+        GeometryReader { _ in
+            display
+            .opacity(shown ? 1 : 0)
+            .allowsHitTesting(!leaving)
             .environment(\.quickPillFocus, pillFocus)
             .coordinateSpace(.named(QuickPillFocus.space))
             // While a quick control is open, a touch anywhere else folds it and goes no further.
             .overlay { pillFocus.catcher }
-            // The tab sits on the screen's very edge, over the home indicator's strip.
-            .ignoresSafeArea(.container, edges: .bottom)
         }
         .background(Color.black.ignoresSafeArea())
             // A hardware keyboard types on the Mac whenever one is attached: nothing here takes it.
@@ -67,11 +69,14 @@ struct DesktopScreen: View {
                 sendViewport()
             }
             .onChange(of: client.connected) { _, up in if up { sendViewport() } }
+            // The session's first look: a plain fade in.
+            .onAppear { withAnimation(.easeOut(duration: 0.5)) { shown = true } }
             // This device's cursor shows only while the trackpad moves it; the Mac's shows either way.
             .onChange(of: trackpadInput, initial: true) { _, on in client.setPointerLayout(portrait: on) }
+            .onChange(of: appsOpen) { _, up in if up { keyRowOpen = false } }
+            .onChange(of: keyRowOpen) { _, up in if up { appsOpen = false } }
             // Rotation animates, so let the size settle.
             .onChange(of: panelSize) { _, _ in sendViewport(after: 0.25) }
-            .onChange(of: appsOpen) { _, open in if open { pillFocus.closeOpen() } }
     }
 
     /// The picture, with the quick controls right under it at its leading edge; the two centred
@@ -85,17 +90,64 @@ struct DesktopScreen: View {
                           takesFingers: !trackpadInput, takesPointer: trackpadInput)
                 .overlay { if trackpadInput { trackpad } }
                 .background(Palette.panel)
+                .displayRipple(ripple)
                 .clipShape(MacDisplayShape())
                 .overlay(MacDisplayShape().stroke(Color.white.opacity(0.09), lineWidth: 1))
+                // The Apps sheet: the black under the picture rising over it (a touch anywhere else
+                // puts it away, QuickPillFocus).
+                .overlay(alignment: .bottom) {
+                    KeyRowSheet(client: client, open: $keyRowOpen, latched: $latched, picture: panelSize)
+                        .opacity(1 - ripple)
+                }
+                // The info button just above the picture's top-right corner, its panel on the corner.
+                .overlay(alignment: .topTrailing) {
+                    InfoButton(open: infoOpen) { withAnimation(.spring(duration: 0.35, bounce: 0.12)) { infoOpen.toggle() } }
+                        .alignmentGuide(.top) { $0[.bottom] + Self.infoGap }
+                        .opacity(1 - ripple)
+                }
+                .overlay(alignment: .topTrailing) {
+                    if infoOpen {
+                        InfoPanel(client: client, open: $infoOpen)
+                            .padding(12)
+                            .transition(.scale(scale: 0.85, anchor: .topTrailing).combined(with: .opacity))
+                    }
+                }
+                .animation(.spring(duration: 0.35, bounce: 0.12), value: infoOpen)
+                .overlay(alignment: .bottom) {
+                    AppsTray(client: client, open: $appsOpen,
+                             previewRadius: panelSize.height * MacDisplayShape.cornerRadiusPerHeight,
+                             picture: panelSize)
+                        .opacity(1 - ripple)
+                }
                 // The surface takes the picture's own shape, so the video fills it edge to edge and a
                 // touch anywhere on it lands on the Mac.
                 .aspectRatio(videoSize, contentMode: .fit)
-                .onGeometryChange(for: CGSize.self, of: { $0.size }, action: { panelSize = $0 })
-            QuickControls(client: client, trackpadInput: $trackpadInput)
+                .onGeometryChange(for: CGSize.self, of: { $0.size }) { size in
+                    if panelSize != size { panelSize = size }
+                }
+            QuickControls(client: client, trackpadInput: $trackpadInput, onDisconnect: leave,
+                          appsOpen: appsOpen, onApps: { appsOpen.toggle() },
+                          keyboardShown: keyboardShown, onKeyboard: { overlay.toggleKeyboard() },
+                          keyRowOpen: $keyRowOpen)
                 .frame(width: panelSize.width, alignment: .leading)
+                .opacity(1 - ripple)
         }
         .padding(24)
+        // Room above the picture for the info button.
+        .padding(.top, InfoButton.size + Self.infoGap - 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Disconnect: the ripple runs out from the picture's centre, then the session ends and the
+    /// connect screen comes back.
+    private func leave() {
+        guard !leaving else { return }
+        leaving = true
+        pillFocus.closeOpen()
+        appsOpen = false
+        keyRowOpen = false
+        infoOpen = false
+        withAnimation(.easeOut(duration: 0.6)) { ripple = 1 } completion: { client.disconnect() }
     }
 
     /// The picture as a trackpad, as the old upright layout's pad is (TrackpadSurface: move, tap,
@@ -129,11 +181,11 @@ struct DesktopScreen: View {
     }
 }
 
-/// A MacBook Pro's display corners (14- and 16-inch, 2021 on), on all four corners. Apple publishes
-/// no radius, so this one is an estimate, about 10 pt on the 14-inch's default 1512×982 pt, and
-/// scales with the picture's height so it keeps the same proportion at any size.
+/// A MacBook Pro's display corners (14- and 16-inch, 2021 on), on all four corners, a little rounder
+/// than the display's own. Apple publishes no radius, so this one is a choice, 14 pt on the 14-inch's
+/// default 1512×982 pt, and scales with the picture's height so it keeps the same proportion at any size.
 struct MacDisplayShape: Shape {
-    static let cornerRadiusPerHeight: CGFloat = 10.0 / 982.0
+    static let cornerRadiusPerHeight: CGFloat = 14.0 / 982.0
 
     func path(in rect: CGRect) -> Path {
         RoundedRectangle(cornerRadius: rect.height * Self.cornerRadiusPerHeight, style: .continuous).path(in: rect)

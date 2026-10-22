@@ -70,7 +70,9 @@ final class QuickPillFocus: ObservableObject {
         let hole: CGRect
         func path(in rect: CGRect) -> Path {
             var path = Path(rect)
-            if !hole.isEmpty { path.addRoundedRect(in: hole, cornerSize: CGSize(width: hole.height / 2, height: hole.height / 2)) }
+            // A pill's ends, or the Apps sheet's top corners (32).
+            let radius = min(hole.height / 2, 32)
+            if !hole.isEmpty { path.addRoundedRect(in: hole, cornerSize: CGSize(width: radius, height: radius)) }
             return path
         }
     }

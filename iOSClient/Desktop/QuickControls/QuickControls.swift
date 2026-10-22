@@ -4,8 +4,8 @@ import StreamProtocol
 /// The row of quick controls under the Mac's picture on the new main screen (DesktopScreen),
 /// across the picture's width, built from the shared pieces in this folder (FlipToggle,
 /// MorphingPicker, QuickControlStyle, QuickPillFocus): Resolution, Frame Rate, then Quality, which
-/// moves along whatever comes after it when it opens; at the trailing edge Touch or Trackpad, the
-/// Mac’s sound (MacSoundControl), its clipboard (ClipboardControl) and Disconnect. The settings
+/// moves along whatever comes after it when it opens; Apps in the middle (AppsPill); at the trailing edge Touch or Trackpad, the
+/// Mac’s sound (MacSoundControl), typing (TypingControl: the keyboard and the key row), its clipboard (ClipboardControl) and Disconnect. The settings
 /// controls and Disconnect are below; the sound and the clipboard have files of their own.
 ///
 /// The three settings are the Mac's own, as its menu sets them: one stream serves every device, so
@@ -15,6 +15,15 @@ struct QuickControls: View {
     @ObservedObject var client: StreamClient
     /// Touch or trackpad input (DesktopScreen's).
     @Binding var trackpadInput: Bool
+    /// Disconnect's tap: the screen's ripple, then the session's end (DesktopScreen).
+    let onDisconnect: () -> Void
+    /// The Apps pill (AppsPill): lit while the Apps sheet is up, and its tap.
+    let appsOpen: Bool
+    let onApps: () -> Void
+    /// The typing pill (TypingControl): the on-screen keyboard is up, and the key row's sheet.
+    let keyboardShown: Bool
+    let onKeyboard: () -> Void
+    @Binding var keyRowOpen: Bool
 
     var body: some View {
         HStack(spacing: 14) {
@@ -24,28 +33,51 @@ struct QuickControls: View {
                 QualityControl(client: client, bitrate: shown.bitrate)
             }
             Spacer(minLength: 0)
+            AppsPill(open: appsOpen, onTap: onApps)
+            Spacer(minLength: 0)
             InputControl(trackpadInput: $trackpadInput)
             MacSoundControl(client: client)
+            TypingControl(keyboardShown: keyboardShown, onKeyboard: onKeyboard, keyRowOpen: $keyRowOpen)
             ClipboardControl(client: client)
-            DisconnectControl(client: client)
+            DisconnectControl(client: client, onDisconnect: onDisconnect)
         }
         .frame(height: QuickControlStyle.height)
     }
 }
 
-/// Disconnect, at once on a tap: a close mark in red on a red tint.
+/// Disconnect, on a tap: a close mark in red on a red tint. The screen ripples, then disconnects.
 private struct DisconnectControl: View {
     @ObservedObject var client: StreamClient
+    let onDisconnect: () -> Void
 
     var body: some View {
         Image(systemName: "xmark")
             .font(QuickControlStyle.iconFont)
             .foregroundStyle(Color.red)
             .quickCircle(Color.red.opacity(0.18))
-            .onTapGesture { client.disconnect() }
+            .onTapGesture { onDisconnect() }
             .accessibilityElement()
             .accessibilityLabel(client.macName.isEmpty ? "Disconnect" : "Disconnect from \(client.macName)")
             .accessibilityAddTraits(.isButton)
+    }
+}
+
+/// Typing on the Mac, one pill of two columns (ColumnPill): the on-screen keyboard, and the key
+/// row's sheet (KeyRowSheet) with the keys the keyboard lacks. Each is lit while it is up.
+private struct TypingControl: View {
+    let keyboardShown: Bool
+    let onKeyboard: () -> Void
+    @Binding var keyRowOpen: Bool
+
+    var body: some View {
+        ColumnPill(columns: [
+            .init(id: "keyboard", icon: "keyboard", isOn: keyboardShown,
+                  accessibilityLabel: keyboardShown ? "Hide the keyboard" : "Show the keyboard",
+                  action: onKeyboard),
+            .init(id: "keys", icon: KeyRowSheet.icon, isOn: keyRowOpen,
+                  accessibilityLabel: keyRowOpen ? "Hide the key row" : "Show the key row",
+                  action: { keyRowOpen.toggle() }),
+        ])
     }
 }
 

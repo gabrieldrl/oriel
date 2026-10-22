@@ -32,12 +32,17 @@ struct ClipboardReceipt: Equatable {
 //   on the classic one at once; written with `.localOnly` (Universal Clipboard does not carry it back to the Mac)
 //   and a 10-minute expiration, while the switch is on; its change count becomes the handled one, so
 //   the chip never offers the Mac's own text back.
-// - This device's text: Sill never reads the clipboard by itself (iOS would ask "Allow Paste?"). It
-//   reads only `changeCount` and `hasStrings`, which never ask, to offer the chip; the text is read
-//   by the system's Paste control (UIPasteControl, SwiftUI's PasteButton) when the person taps it,
-//   and counts as sent only once the Mac has read it (a ping after it comes back: the receipt).
+// - This device's text, on the new screen: sent by itself (`sendClipboardByItself`). Each new copy
+//   (`changeCount`, looked at when Sill becomes active and each second while it is) that holds text
+//   is read and sent, so it is on the Mac's clipboard to paste there. iOS asks "Allow Paste?" at each
+//   read of another app's copy unless Settings › Sill › Paste from Other Apps says Allow; a copy
+//   refused there counts as handled, so it is never asked about twice. There is no switch.
+// - This device's text, on the classic screen: Sill never reads the clipboard by itself. It reads only
+//   `changeCount` and `hasStrings`, which never ask, to offer the chip; the text is read by the
+//   system's Paste control (UIPasteControl, SwiftUI's PasteButton) when the person taps it.
+// - Either way a text counts as sent only once the Mac has read it (a ping after it comes back: the receipt).
 // - The subscription: an empty kind 32 once the Mac's list says it takes the clipboard and the switch
-//   is on, again on a move's new connection; `stop` when the switch goes off.
+//   is on (always, on the new screen), again on a move's new connection; `stop` when the switch goes off.
 //
 // Everything here is main thread.
 extension StreamClient {
@@ -45,6 +50,8 @@ extension StreamClient {
     /// off. The device's own preference, never sent; read at each decision.
     static let clipboardKey = "Sill.shareClipboard"
     static var clipboardOn: Bool {
+        // The new screen has no switch: the clipboard is always shared.
+        if !StreamScreen.classic { return true }
         // `bool(forKey:)`, not `as? Bool`: a launch argument's "0" is a string, which it reads as
         // @AppStorage does, so the switch and the panel always agree.
         let defaults = UserDefaults.standard
@@ -77,6 +84,13 @@ extension StreamClient {
         }
         center.addObserver(forName: UIAccessibility.voiceOverStatusDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
             self?.updateClipboardChipClock()
+        }
+        // The new screen's look each second while Sill is active: a copy made beside it (Split View,
+        // Slide Over) comes with no notification. Reading the change count costs nothing and never asks.
+        guard !StreamScreen.classic else { return }
+        Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            guard let self, self.clipboardAppActive else { return }
+            self.sendClipboardByItself(why: "a look")
         }
     }
 
@@ -208,6 +222,7 @@ extension StreamClient {
         // clipboard holds, so its photos never depend on it.
         if mockDiscovery { return }
         #endif
+        guard StreamScreen.classic else { return sendClipboardByItself(why: why) }
         let board = UIPasteboard.general
         let count = board.changeCount
         // Not while a Paste waits for its receipt: the chip comes back if it never comes.
@@ -290,6 +305,24 @@ extension StreamClient {
 
     // MARK: Paste on the Mac
 
+    /// The new screen: a copy this device has not handled, with text, goes to the Mac by itself. Its
+    /// text is read here, which iOS may ask about; one refused, or without text, is handled at once.
+    /// One whose receipt never came waits for the next copy (or the next session).
+    func sendClipboardByItself(why: String) {
+        guard connected, ClipboardPolicy.hostTakes(hostClipboard) else { return }
+        let board = UIPasteboard.general
+        let count = board.changeCount
+        guard count != clipboardHandled, clipboardReceipt?.changeCount != count else { return }
+        guard board.hasStrings, let text = board.string, !text.isEmpty else {
+            clipboardHandled = count
+            return
+        }
+        #if DEBUG
+        print("clipboard: \(why): change \(count), new text: sending it to the Mac")
+        #endif
+        sendClipboard([text])
+    }
+
     /// What the system's Paste control read on the person's tap (the chip's, or the Settings group's):
     /// sent to the Mac, with its receipt to wait for, or "too long".
     func sendClipboard(_ strings: [String]) {
@@ -330,6 +363,8 @@ extension StreamClient {
         clipboardReceipt = nil
         clipboardHandled = receipt.changeCount
         hideClipboardChip()
+        // The new screen sends every copy by itself: no note, no haptic, nothing said each time.
+        guard StreamScreen.classic else { return }
         let mac = macName.isEmpty ? "the Mac" : macName
         showClipboardNote(ClipboardPolicy.Copy.sent(mac: mac), spoken: ClipboardPolicy.Copy.sentSpoken(mac: mac), warning: false)
         if UIDevice.current.userInterfaceIdiom == .phone { UINotificationFeedbackGenerator().notificationOccurred(.success) }
@@ -345,6 +380,7 @@ extension StreamClient {
         guard var receipt = clipboardReceipt, !receipt.late else { return }
         receipt.late = true
         clipboardReceipt = receipt
+        guard StreamScreen.classic else { return }
         let mac = macName.isEmpty ? "the Mac" : macName
         showClipboardNote(ClipboardPolicy.Copy.notSent(mac: mac), spoken: ClipboardPolicy.Copy.notSent(mac: mac), warning: true)
         if UIDevice.current.userInterfaceIdiom == .phone { UINotificationFeedbackGenerator().notificationOccurred(.warning) }

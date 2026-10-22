@@ -34,11 +34,15 @@ struct ContentView: View {
                     StreamScreen(client: client)
                 } else {
                     DesktopScreen(client: client)
+                        .transition(.opacity)
                 }
             } else {
                 ConnectScreen(client: client)
+                    .transition(.opacity)
             }
         }
+        // The connect screen and the stream cross-fade; the new screen's ripple runs over it.
+        .animation(StreamScreen.classic ? nil : .easeOut(duration: 0.25), value: client.connected)
         .preferredColorScheme(.dark)
         // Tells MacMenuHub which window shows this session: the iPad's menu bar shows its menus while
         // it is the app's one window.
