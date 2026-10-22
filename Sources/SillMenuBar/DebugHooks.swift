@@ -439,7 +439,6 @@ enum DebugHooks {
         }
 
         var menuText = ""
-        let login = LoginState(available: true, on: false, needsApproval: false, error: nil)
         for sample in samples() {
             let p = StatusText.present(snapshot: sample.snapshot, permissions: sample.permissions,
                                        startupError: sample.startupError, hasCoordinator: true, now: previewNow)
@@ -447,9 +446,7 @@ enum DebugHooks {
                 render(StatusCard(presentation: p).padding(.vertical, 4).background(Color(nsColor: .windowBackgroundColor)),
                        appearance: appearance, to: out.appendingPathComponent("card-\(sample.name)-\(name).png"))
             }
-            var config = model.settings.config
-            config.virtualDisplay = sample.snapshot.virtualDisplayOn     // the checkmark matches the sample
-            let entries = MenuBuilder.entries(presentation: p, config: config, login: login, permissions: sample.permissions)
+            let entries = MenuBuilder.entries(presentation: p)
             menuText += "=== \(sample.name) (glyph: \(p.glyph), tooltip: \(p.tooltip))\n"
             menuText += MenuBuilder.dump(entries, card: p) + "\n"
         }
@@ -461,14 +458,6 @@ enum DebugHooks {
                 render(StatusCard(presentation: p).padding(.vertical, 4).background(Color(nsColor: .windowBackgroundColor)),
                        appearance: appearance, to: out.appendingPathComponent("card-\(sample.name)-\(name).png"))
             }
-        }
-        // A newer release found (0.4 against 0.3): the idle menu with its item; the glyph stays.
-        if let idle = samples().first(where: { $0.name == "idle" }) {
-            let p = StatusText.present(snapshot: idle.snapshot, permissions: idle.permissions, startupError: nil, hasCoordinator: true)
-            let entries = MenuBuilder.entries(presentation: p, config: model.settings.config, login: login, permissions: idle.permissions,
-                                              update: (offer: previewOffer, running: SillVersion("0.3.0")!))
-            menuText += "=== update-available (glyph: \(p.glyph), tooltip: \(p.tooltip))\n"
-            menuText += MenuBuilder.dump(entries, card: p) + "\n"
         }
         try? menuText.write(to: out.appendingPathComponent("menu.txt"), atomically: true, encoding: .utf8)
         renderGlyphSheet(to: out.appendingPathComponent("glyphs.png"))

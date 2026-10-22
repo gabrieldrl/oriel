@@ -1,26 +1,40 @@
 import SwiftUI
 
-/// The block at the top of the status menu: the header and its explanation, what streams, and
-/// one row per device. 300 pt wide, hosted in an NSMenuItem's view (StatusItemController).
+/// The block at the top of the status menu: whether a device is connected, and each connected
+/// device's name. 300 pt wide, hosted in an NSMenuItem's view (StatusItemController).
 struct StatusCard: View {
     let presentation: StatusPresentation
 
+    /// "No Device Connected", "Device Connected", "2 Devices Connected".
+    static func header(_ devices: [String]) -> String {
+        switch devices.count {
+        case 0: "No Device Connected"
+        case 1: "Device Connected"
+        default: "\(devices.count) Devices Connected"
+        }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(presentation.header)
+        let devices = presentation.connectedDevices
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(devices.isEmpty ? Color.secondary.opacity(0.5) : Color.green)
+                    .frame(width: 8, height: 8)
+                    .frame(width: 16)   // the same column as the device symbols below
+                Text(Self.header(devices))
                     .font(.headline)
-                if let subtitle = presentation.subtitle {
-                    Text(subtitle)
-                        .font(.subheadline)
+            }
+            ForEach(Array(devices.enumerated()), id: \.offset) { _, name in
+                HStack(spacing: 8) {
+                    Image(systemName: name.localizedCaseInsensitiveContains("iphone") ? "iphone" : "ipad")
                         .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(width: 16)
+                    Text(name)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
                 }
             }
-            if let source = presentation.source {
-                StatusRow(row: source)
-            }
-            ForEach(presentation.devices) { StatusRow(row: $0) }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 6)
@@ -35,29 +49,5 @@ struct LiveStatusCard: View {
 
     var body: some View {
         StatusCard(presentation: model.presentation)
-    }
-}
-
-private struct StatusRow: View {
-    let row: StatusPresentation.Row
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Image(systemName: row.symbol)
-                .foregroundStyle(.secondary)
-                .frame(width: 16)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(row.title)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                if let detail = row.detail {
-                    Text(detail)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
     }
 }

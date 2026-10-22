@@ -33,6 +33,10 @@ package struct HostStatusSnapshot: Equatable {
         package var endpoint: String
         /// The device's own description, such as "iPad (iPad14,1)".
         package var name: String?
+        /// The name this Mac paired it under (Settings › Devices renames it), nil for an unpaired
+        /// device. iOS 16 and later give an app only "iPad" or "iPhone" as the device's name, so
+        /// this is the one that tells two iPads apart.
+        package var pairedName: String?
         package var fps: Int?
         /// What the device measured over its last second (a current client sends the medians);
         /// -1 when that second had no sample (no frame arrived, no pong came back).
@@ -50,10 +54,10 @@ package struct HostStatusSnapshot: Equatable {
         /// does. The card names it.
         package var link: LinkStatus?
 
-        package init(id: ObjectIdentifier, endpoint: String, name: String? = nil, fps: Int? = nil,
+        package init(id: ObjectIdentifier, endpoint: String, name: String? = nil, pairedName: String? = nil, fps: Int? = nil,
                      frameAgeMs: Int? = nil, rttMs: Int? = nil, route: ClientLink.Route? = nil, remoteRoute: String? = nil,
                      link: LinkStatus? = nil) {
-            self.id = id; self.endpoint = endpoint; self.name = name
+            self.id = id; self.endpoint = endpoint; self.name = name; self.pairedName = pairedName
             self.fps = fps; self.frameAgeMs = frameAgeMs; self.rttMs = rttMs
             self.route = route; self.remoteRoute = remoteRoute; self.link = link
         }

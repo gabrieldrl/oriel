@@ -359,7 +359,7 @@ package final class StreamCoordinator {
                 // its route; a home device its link (Wired, Wi-Fi, Direct) as soon as it is known.
                 self.status.update {
                     $0.devices.append(HostStatusSnapshot.Device(id: id, endpoint: "\(connection.endpoint)", name: route.pairedName,
-                                                                route: link, remoteRoute: route.label))
+                                                                pairedName: route.pairedName, route: link, remoteRoute: route.label))
                 }
                 // A paired key's session, at either door: the pane's "last connected", and over the
                 // cable the iPhone or iPad the key runs on (learned once).

@@ -49,6 +49,8 @@ struct StatusPresentation: Equatable {
     /// Every connected device is away from home, so the away quality is the target: the menu's
     /// Quality subtitle says so (docs/remote-bundle-plan.md §5.7).
     var away = false
+    /// The status menu's card: each connected device's name ("G iPad"), empty with none.
+    var connectedDevices: [String] = []
 }
 
 /// Whether Sill holds its two permissions, as last read.
@@ -121,13 +123,19 @@ enum StatusText {
 
         var name: String?
         if case .advertising(let n) = s.network { name = n }
+        // The name it paired under (renamable in Settings › Devices), else its own ("iPad"), else,
+        // before its first report, an unpaired device has only an address.
+        let devices = s.devices.map { $0.pairedName ?? $0.name.map(shortName) ?? "iPhone or iPad" }
+        // The menu bar item says what the menu's card says.
+        let connection = StatusCard.header(devices)
 
         return StatusPresentation(glyph: glyph, header: header, subtitle: subtitle,
                                   source: sourceRow(s), devices: s.devices.map(deviceRow), attention: attention,
                                   virtualDisplayNote: virtualDisplayNote(s),
-                                  tooltip: "Sill — \(header)", accessibilityLabel: "Sill, \(header)",
+                                  tooltip: "Sill — \(connection)", accessibilityLabel: "Sill, \(connection)",
                                   advertisedName: name, remoteAccessNote: remoteAccessNote(s.remote),
-                                  canPair: s.remote.map { $0.identityProblem == nil } ?? false, away: s.away)
+                                  canPair: s.remote.map { $0.identityProblem == nil } ?? false, away: s.away,
+                                  connectedDevices: devices)
     }
 
     /// "iPad Wants to Pair", for 5 minutes after a device's ask (the host ends it sooner: when the

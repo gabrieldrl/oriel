@@ -46,116 +46,24 @@ struct MenuEntry: Equatable {
     static let separator = MenuEntry(kind: .separator)
 }
 
-/// Launch at login as the menu shows it.
-struct LoginState: Equatable {
-    var available: Bool
-    var on: Bool
-    var needsApproval: Bool
-    var error: String?
-}
-
-/// The status menu, top to bottom. Titles are title case, subtitles sentence case. The controls
-/// mirror the Settings window and only ever set the app's settings.
+/// The status menu, top to bottom: whether a device is connected, then Settings… and Quit.
+/// Everything else lives in the Settings window.
 enum MenuBuilder {
-    /// `update`: a newer release the update check found, and this Sill's version: one item right
-    /// after the card and anything needing attention. The glyph never changes for it: the attention
-    /// glyph means Sill needs the person before it can work, and an update needs nothing.
-    static func entries(presentation p: StatusPresentation, config: HostConfig, login: LoginState,
-                        permissions: PermissionState,
-                        update: (offer: UpdatePolicy.Offer, running: SillVersion)? = nil) -> [MenuEntry] {
-        var menu: [MenuEntry] = [MenuEntry(kind: .card, title: p.header)]
-        for a in p.attention {
-            let action: MenuEntry.Action = switch a.action {
-            case .allowScreenRecording: .allowScreenRecording
-            case .allowAccessibility: .allowAccessibility
-            case .showRemoteAccess: .showSettingsTab(.remoteAccess)
-            case .showDevices: .showSettingsTab(.devices)
-            case .pairingRequest(let name, let showing): .showPairingRequest(name: name, showing: showing)
-            case .none: .none
-            }
-            menu.append(MenuEntry(kind: .item, title: a.title, subtitle: a.subtitle, enabled: action != .none,
-                                  attention: true, action: action))
-        }
-        if let update {
-            menu.append(MenuEntry(kind: .item, title: UpdatePolicy.menuTitle(update.offer),
-                                  subtitle: UpdatePolicy.menuSubtitle(running: update.running), action: .openUpdate(update.offer.url)))
-        }
-        menu.append(.separator)
-
-        menu.append(MenuEntry(kind: .item, title: "Virtual Display", subtitle: p.virtualDisplayNote,
-                              checked: config.virtualDisplay, action: .setVirtualDisplay(!config.virtualDisplay)))
-        menu.append(MenuEntry(kind: .item, title: "Frame Rate", children: [60, 120].map { fps in
-            MenuEntry(kind: .item, title: "Up to \(fps) fps", checked: config.maxFPS == fps, action: .setMaxFPS(fps))
-        }))
-        var quality = QualityPreset.allCases.map { preset in
-            MenuEntry(kind: .item, title: preset.title, checked: config.bitrate == preset.rawValue, action: .setBitrate(preset.rawValue))
-        }
-        if QualityPreset(rawValue: config.bitrate) == nil {
-            quality.append(MenuEntry(kind: .item, title: QualityPreset.title(forBitrate: config.bitrate), checked: true, enabled: false))
-        }
-        // The home quality, as ever; while every connected device is away, the subtitle says which
-        // quality runs instead (the away one is set in Settings › Streaming, never here).
-        let qualityNote = p.away
-            ? "Away from home now: \(QualityPreset.shortTitle(bitrate: config.awayBitrate, captureScale: Double(config.awayCaptureScale)))"
-            : "Per 60 fps; a 120 fps stream gets twice as much"
-        menu.append(MenuEntry(kind: .item, title: "Quality", subtitle: qualityNote, children: quality))
-        menu.append(MenuEntry(kind: .item, title: "Resolution", children: [
-            MenuEntry(kind: .item, title: "Retina", checked: config.captureScale >= 1.5, action: .setCaptureScale(2)),
-            MenuEntry(kind: .item, title: "Standard", subtitle: "A quarter of the pixels; much lighter to encode",
-                      checked: config.captureScale < 1.5, action: .setCaptureScale(1)),
-        ]))
-        menu.append(.separator)
-
-        // How Sill runs on this Mac, not the picture: devices reach it over peer-to-peer Wi-Fi too.
-        // Here as well as in Settings because it is situational (on in a café, off at home).
-        menu.append(MenuEntry(kind: .item, title: "Direct Wireless Connection",
-                              subtitle: "No shared network needed; Wi\u{2011}Fi streams can stutter",
-                              checked: config.directWireless, action: .setDirectWireless(!config.directWireless)))
-        // Opens the pane rather than toggling: turning it on is worth reading what it does, and the
-        // internet switch stays one deliberate step deeper, never in the menu.
-        if let note = p.remoteAccessNote {
-            menu.append(MenuEntry(kind: .item, title: "Remote Access…", subtitle: note, action: .showSettingsTab(.remoteAccess)))
-        }
-        var loginNote: String?
-        if !login.available { loginNote = "Available when Sill runs from its app bundle" }
-        else if let error = login.error { loginNote = error }
-        else if login.needsApproval { loginNote = "Approve Sill in System Settings › Login Items" }
-        menu.append(MenuEntry(kind: .item, title: "Launch at Login", subtitle: loginNote, checked: login.on,
-                              enabled: login.available, action: .toggleLaunchAtLogin))
-        menu.append(MenuEntry(kind: .item, title: "Permissions", children: [
-            permissions.screenRecording
-                ? MenuEntry(kind: .item, title: "Screen Recording: Allowed", enabled: false)
-                : MenuEntry(kind: .item, title: "Screen Recording: Not Allowed…", action: .allowScreenRecording),
-            permissions.accessibility
-                ? MenuEntry(kind: .item, title: "Accessibility: Allowed", enabled: false)
-                : MenuEntry(kind: .item, title: "Accessibility: Not Allowed…", action: .allowAccessibility),
+    static func entries(presentation p: StatusPresentation) -> [MenuEntry] {
+        [
+            MenuEntry(kind: .card, title: StatusCard.header(p.connectedDevices)),
             .separator,
-            MenuEntry(kind: .item, title: "Open Privacy & Security…", action: .openPrivacy),
-        ]))
-        menu.append(.separator)
-
-        if p.remoteAccessNote != nil {
-            menu.append(MenuEntry(kind: .item, title: "Pair iPhone or iPad…", enabled: p.canPair, action: .showPairing))
-        }
-        menu.append(MenuEntry(kind: .item, title: "Show Log…", action: .showLog))
-        menu.append(MenuEntry(kind: .item, title: "Settings…", key: ",", action: .showSettings))
-        menu.append(.separator)
-        menu.append(MenuEntry(kind: .item, title: "Quit Sill", key: "q", action: .quit))
-        return menu
+            MenuEntry(kind: .item, title: "Settings…", key: ",", action: .showSettings),
+            .separator,
+            MenuEntry(kind: .item, title: "Quit Sill", key: "q", action: .quit),
+        ]
     }
 
     /// The live menu for `model` as it would open now (the status item's rebuild, and
-    /// -SillPrintMenuAfter): its presentation, settings, login item, permissions and any update the
-    /// check found.
+    /// -SillPrintMenuAfter).
     @MainActor
     static func entries(for model: AppModel) -> [MenuEntry] {
-        let login = LoginState(available: model.loginItem.available, on: model.loginItem.isOn,
-                               needsApproval: model.loginItem.needsApproval, error: model.loginItem.error)
-        let permissions = PermissionState(screenRecording: model.permissions.screenRecording,
-                                          accessibility: model.permissions.accessibility)
-        let update = model.updates.offer.flatMap { offer in model.updates.runningVersion.map { (offer: offer, running: $0) } }
-        return entries(presentation: model.presentation, config: model.settings.config, login: login, permissions: permissions,
-                       update: update)
+        entries(presentation: model.presentation)
     }
 
     /// The menu as text, for the previews: "✓" checked, "⚠" attention, "(off)" disabled.
@@ -166,12 +74,8 @@ enum MenuBuilder {
             case .separator:
                 out += indent + "────────\n"
             case .card:
-                guard let p = card else { out += indent + "[card]\n"; continue }
-                out += indent + "[card] \(p.header)\n"
-                if let s = p.subtitle { out += indent + "       \(s)\n" }
-                for row in [p.source].compactMap({ $0 }) + p.devices {
-                    out += indent + "       · \(row.title)\(row.detail.map { " — \($0)" } ?? "")\n"
-                }
+                out += indent + "[card] \(e.title)\n"
+                for name in card?.connectedDevices ?? [] { out += indent + "       · \(name)\n" }
             case .item:
                 let mark = e.attention ? "⚠ " : (e.checked ? "✓ " : "  ")
                 var line = indent + mark + e.title
