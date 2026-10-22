@@ -159,6 +159,16 @@ final class StreamClient: ObservableObject {
     // Remote access (StreamClient+Remote.swift). Published on main; the DEBUG harness seeds them.
     /// The Macs this device paired with (SavedMacs), persisted in `SavedMacs.defaultsKey`.
     @Published var savedMacs: [SavedMac] = []
+    /// Whether each saved Mac that is not nearby answers from afar now (MacProbe), by Mac ID; nil
+    /// for a Mac nearby (its row says) or not checked yet. Main thread.
+    @Published var reach: [String: MacReach] = [:]
+    /// The checks running, by Mac ID. Main thread.
+    var probes: [String: MacProbe] = [:]
+    /// Which of each saved Mac's addresses answered its latest check, by Mac ID, then
+    /// `RemoteDialPolicy.Candidate.key`: the home screen's Connect menu and the info panel.
+    @Published var routeReach: [String: [String: Bool]] = [:]
+    /// The info panel's check of this session's Mac. Main thread.
+    var routeProbe: MacProbe?
     /// This connection's latest kind 18: who the Mac is and how to reach it from afar. Verified
     /// against the pin when the Mac is a saved one; otherwise decoded unverified, shown in the
     /// panel's Away from home group and never saved.
@@ -3065,6 +3075,14 @@ final class StreamClient: ObservableObject {
     }
 
     /// The user chose to leave. No reconnect.
+    /// The Desktop on screen as the session ends (Disconnect, or the connection lost), before the
+    /// picture goes: its Mac's last look for the home screen (MacDesktops). Only the whole Desktop:
+    /// a session that ends on a window keeps the Mac's picture from before. Main thread.
+    func keepDesktopPicture() {
+        guard active == .desktop, let macID = session?.macID, let frame = displayView.displayedFrame() else { return }
+        MacDesktops.shared.keep(frame, for: macID)
+    }
+
     func disconnect() {
         reconnect = nil
         cancelRemoteDial()
@@ -3130,6 +3148,7 @@ final class StreamClient: ObservableObject {
     /// never delivered its window list: the connect screen never left, and its Remote rows must not
     /// vanish for another 3 s. Main thread.
     func tearDown(status: String, restartSearch: Bool = true) {
+        keepDesktopPicture()
         abandonMove()
         resetPath()
         lastMoveAttempt = nil

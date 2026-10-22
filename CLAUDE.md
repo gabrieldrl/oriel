@@ -48,6 +48,14 @@ themselves, with no switch (StreamClient+Clipboard's `sendClipboardByItself`; iO
 Paste?" unless Settings › Sill › Paste from Other Apps is Allow). `-SillClassicScreen 1` shows the
 old StreamScreen.
 
+**A paired Mac, reachable wherever it is (in progress on `dev`; `docs/reachable-plan.md`).** Remote
+Access on by default, internet access removed (switch, router query, address name, `--internet`);
+the device keeps every VPN address the Mac gives (`SavedMacs.remembering`) and checks saved Macs
+not nearby while the home screen shows (`MacProbe`: a pinned TLS handshake stopped at the verify
+block), so each card reads "Online · Wi‑Fi", "Online · Tailscale" or "Offline". Gabriel,
+2026-10-22: this fork won't be compatible with later Sill releases, so the compatibility floor below
+doesn't bind changes like these. Its device tests are in the plan.
+
 **To do, remind Gabriel: layouts per device.** The new screen is laid out for an iPad held sideways
 only. Still to design (UX work, Gabriel's call): an iPad upright, a phone upright and sideways, and
 the iPhone Duo's poses (the classic StreamScreen and PortraitStreamScreen have each today).

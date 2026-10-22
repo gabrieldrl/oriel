@@ -59,24 +59,18 @@ input2.primaryInterface = "en7"
 check("Wi-Fi and Ethernet: only the primary one's IPv4 (Ethernet primary)", hosts(AddressList.build(input2)).last == "192.168.1.30/lan/Ethernet")
 input2.primaryInterface = "utun4"
 check("a VPN exit node as primary: the LAN is still listed", hosts(AddressList.build(input2)).contains { $0.hasSuffix("/lan/Wi-Fi") || $0.hasSuffix("/lan/Ethernet") })
-check("the router is asked on the primary non-tunnel interface", AddressList.routerInterface(input2) == "en0" || AddressList.routerInterface(input2) == "en7")
 // IPv6 rules
 let v6svc = [S(id: "wifi", name: "Wi-Fi", interface: "en0", ipv4: ["192.168.1.20"],
                ipv6: [V6(address: "2001:db8::aa", flags: 0x80 | 0x400), V6(address: "2001:db8::bb", flags: 0x10), V6(address: "2001:db8::20", flags: 0x400),
                       V6(address: "fd4e::20", flags: 0x400)])]
-var input3 = AddressList.Input(services: v6svc, primaryInterface: "en0")
-check("global IPv6 not listed while the internet switch is off", !hosts(AddressList.build(input3)).contains { $0.contains("2001:db8") })
-input3.internet = true
-let l3 = hosts(AddressList.build(input3))
-check("with the switch: one stable global IPv6 (not temporary, not deprecated, not the LAN ULA) (\(l3))",
-      l3 == ["192.168.1.20/lan/Wi-Fi", "2001:db8::20/internet/IPv6"])
-input3.addressName = ParsedAddress(host: "home.example.net", port: 17455, kind: .name)
-input3.routerIPv4 = "203.0.113.9"
-let l4 = hosts(AddressList.build(input3))
-check("with the switch: address name (its port), router IPv4, IPv6, in that order (\(l4))",
-      l4 == ["192.168.1.20/lan/Wi-Fi", "home.example.net:17455/internet/Address name", "203.0.113.9/internet/Router", "2001:db8::20/internet/IPv6"])
-input3.internet = false
-check("the switch off hides the address name and router too", hosts(AddressList.build(input3)) == ["192.168.1.20/lan/Wi-Fi"])
+let input3 = AddressList.Input(services: v6svc, primaryInterface: "en0")
+check("a LAN's IPv6 is never listed (no internet access), nor anything of kind internet",
+      hosts(AddressList.build(input3)) == ["192.168.1.20/lan/Wi-Fi"] && !AddressList.build(input3).contains { $0.kind == MacAddress.internet })
+// A VPN's IPv6: only the stable ones (neither temporary nor deprecated).
+let v6vpn = [S(id: "ts", name: "Tailscale", interface: "utun4", ipv4: [],
+               ipv6: [V6(address: "fd7a:115c:a1e0::aa", flags: 0x80), V6(address: "fd7a:115c:a1e0::bb", flags: 0x10), V6(address: "fd7a:115c:a1e0::cc", flags: 0)])]
+let l6 = hosts(AddressList.build(AddressList.Input(services: v6vpn, primaryInterface: "en0")))
+check("a VPN's IPv6: not temporary, not deprecated (\(l6))", l6 == ["fd7a:115c:a1e0::cc/vpn/Tailscale"])
 // 100.64/10 only on a tunnel; awdl/llw never; loopback and link-local never
 let cg = [S(id: "wifi", name: "Wi-Fi", interface: "en0", ipv4: ["100.72.1.5"], ipv6: []),
           S(id: "awdl", name: "AWDL", interface: "awdl0", ipv4: ["10.0.0.1"], ipv6: [V6(address: "fe80::1", flags: 0)]),

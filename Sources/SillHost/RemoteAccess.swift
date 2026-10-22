@@ -6,7 +6,7 @@ import StreamProtocol
 /// Pairing and remote access on one host (docs/remote-access-plan.md §4.10; pairing at home,
 /// docs/home-pairing-plan.md §4.6): the Mac's identity and trust list, Require pairing, the pairing
 /// window, the asks at the home door (the cable, the limits), the addresses (Reachability,
-/// RouterAddress, AddressList), the remote door (RemoteServer) and kind 18. The coordinator owns
+/// AddressList), the remote door (RemoteServer) and kind 18. The coordinator owns
 /// one: Sill.app always, SillHost only with --remote or --pairing. Main actor; both doors run on
 /// the network queue and read only `trust`, a lock-protected snapshot replaced whole on every
 /// change, so nothing there waits on this actor. (The name stays: it owns pairing for both doors.)
@@ -75,10 +75,7 @@ package final class RemoteAccess {
     let trust = TrustBox()
     private var remoteAccess = false
     private var remotePort = HostConfig.defaultRemotePort
-    private var internetAccess = false
     private var requirePairing = true
-    private var addressName: ParsedAddress?
-    private var addressNameText = ""
 
     private weak var server: StreamServer?
     private weak var status: HostStatus?
@@ -93,9 +90,6 @@ package final class RemoteAccess {
     private var announcedHomeDoor = false
     private var reachability: Reachability?
     private var reach: Reachability.Snapshot?
-    private var router: RouterAddress?
-    private var routerInterface: String?
-    private var routerState = RemoteStatus.Router.off
     private var listenerState = RemoteStatus.Listener.off
     private var pairingState = RemoteStatus.Pairing.closed
     private var lastBroadcast: MacInfo?
@@ -212,22 +206,15 @@ package final class RemoteAccess {
     // MARK: Settings (the Mac's own)
 
     /// The knobs from HostConfig: Remote Access, its port, internet access and Require pairing.
-    /// Starts or stops the door, the watcher and the router query, and publishes. Turning Remote
-    /// Access off closes an open window the remote door runs for and says goodbye to every remote
-    /// session; turning the internet switch off, to those from the internet; turning Require
-    /// pairing on, to every home session without a paired key. The first call (at start) prints
-    /// the TLS home door's line.
-    ///
-    /// The internet switch counts only while Remote Access is on: the pane hides it and the menu
-    /// says "Off" then, yet a pairing window (the Mac's own, or one a device at home asks for)
-    /// runs the door, which admitted internet sources, asked the router and put internet
-    /// addresses into the link. The saved setting stays as it is, for when Remote Access is back.
+    /// Starts or stops the door and the watcher, and publishes. Turning Remote Access off closes an
+    /// open window the remote door runs for and says goodbye to every remote session; turning
+    /// Require pairing on, to every home session without a paired key. The first call (at start)
+    /// prints the TLS home door's line.
     package func apply(_ config: HostConfig) {
         guard identity != nil else { announceHomeDoor(); publish(); return }
-        let wasOn = remoteAccess, wasInternet = internetAccess, wasRequired = requirePairing
+        let wasOn = remoteAccess, wasRequired = requirePairing
         remoteAccess = config.remoteAccess
         remotePort = config.remotePort
-        internetAccess = config.remoteAccess && config.internetAccess
         requirePairing = config.requirePairing
         if wasOn, !remoteAccess {
             if let w = window.current, w.forRemote { window.close(.cancelled); windowClosed(.cancelled, reopen: false) }
@@ -235,12 +222,9 @@ package final class RemoteAccess {
         }
         publishTrust()
         if wasOn, !remoteAccess {
-            // Every remote session, those from the internet included: one goodbye each.
+            // Every remote session: one goodbye each.
             door?.closeSessions(Goodbye.remoteOff, matching: { _ in true },
                                 line: { name, endpoint in "Remote access off: disconnecting \(name) at \(endpoint)." })
-        } else if wasInternet, !internetAccess {
-            door?.closeSessions(Goodbye.internetOff, matching: { $0.origin == .internet },
-                                line: { name, endpoint in "Internet access off: disconnecting \(name) at \(endpoint)." })
         }
         if homeTLS, requirePairing != wasRequired {
             server?.updateService()      // `p` in the TXT record, in place
@@ -303,15 +287,6 @@ package final class RemoteAccess {
             print("Require pairing: couldn’t save it \(keyPlace) (\(error)).")
             return "\(error)"
         }
-    }
-
-    /// The address name setting ("home.example.net" or "home.example.net:17455"), checked by the
-    /// address parser; anything it refuses counts as none.
-    package func setAddressName(_ text: String) {
-        addressNameText = text
-        if case .success(let a) = AddressParser.parse(text) { addressName = a } else { addressName = nil }
-        publish()
-        broadcastIfChanged()
     }
 
     // MARK: Pairing
@@ -871,25 +846,6 @@ package final class RemoteAccess {
             r.stop()
             reachability = nil
         }
-        let skipRouter = testHost && ProcessInfo.processInfo.environment["SILL_TEST_NO_ROUTER"] == "1"
-        let routerWanted = wanted && internetAccess && !skipRouter
-        let interface = reach.map { AddressList.routerInterface(Reachability.input($0)) } ?? nil
-        if routerWanted, router == nil || interface != routerInterface {
-            router?.stop()
-            routerInterface = interface
-            router = RouterAddress(interface: interface) { [weak self] r in
-                self?.routerState = r
-                self?.publish()
-                self?.broadcastIfChanged()
-            }
-            routerState = router == nil ? .noAnswer : .asking
-        } else if !routerWanted, let r = router {
-            r.stop()
-            router = nil
-            routerState = .off
-        } else if !routerWanted {
-            routerState = .off
-        }
     }
 
     private func reachabilityChanged(_ snapshot: Reachability.Snapshot) {
@@ -916,9 +872,6 @@ package final class RemoteAccess {
     private func addresses() -> [MacAddress] {
         guard remoteAccess || remoteWindowOpen else { return [] }
         var input = reach.map(Reachability.input) ?? AddressList.Input()
-        input.internet = internetAccess
-        input.addressName = addressName
-        if case .address(let a) = routerState { input.routerIPv4 = a }
         input.testLoopback = testHost
         return AddressList.build(input)
     }
@@ -926,7 +879,7 @@ package final class RemoteAccess {
     private func publishTrust() {
         var map: [Data: String] = [:]
         for d in paired { if let fp = d.fingerprintData { map[fp] = d.displayName } }
-        let open = window.isOpen, remoteOpen = remoteWindowOpen, on = remoteAccess, internet = internetAccess
+        let open = window.isOpen, remoteOpen = remoteWindowOpen, on = remoteAccess
         let required = requirePairing
         let names = reach?.serviceNames ?? [:]
         trust.update {
@@ -934,7 +887,6 @@ package final class RemoteAccess {
             $0.pairingOpen = open
             $0.remotePairingOpen = remoteOpen
             $0.remoteAccess = on
-            $0.internetAccess = internet
             $0.requirePairing = required
             $0.serviceNames = names
         }
@@ -952,11 +904,10 @@ package final class RemoteAccess {
         let input = reach.map(Reachability.input)
         let homeDoor: RemoteStatus.HomeDoor
         if let why = homeUnavailable { homeDoor = .unavailable(why) } else if homeTLS { homeDoor = requirePairing ? .pairingRequired : .open } else { homeDoor = .plain }
-        let remote = RemoteStatus(remoteAccess: remoteAccess, internetAccess: internetAccess, listener: listenerState,
+        let remote = RemoteStatus(remoteAccess: remoteAccess, listener: listenerState,
                                   addresses: addresses(),
                                   vpnDown: reach.map { AddressList.vpnDown(setupVPNs: $0.setupVPNs, services: $0.services) } ?? [],
-                                  lanAddress: input.flatMap(AddressList.lanAddress), router: routerState,
-                                  addressName: addressNameText, pairing: pairingState, paired: summaries,
+                                  lanAddress: input.flatMap(AddressList.lanAddress), pairing: pairingState, paired: summaries,
                                   identityProblem: identityProblem, homeDoor: homeDoor, pairingRequest: pairingRequest,
                                   olderDeviceAt: olderDeviceAt)
         status.update { $0.remote = remote }
@@ -970,13 +921,12 @@ package final class RemoteAccess {
 
     /// Who this Mac is and how to reach it, as of now (issuedAt 0: the comparison ignores it). No
     /// addresses before the first look at this Mac's networks (0.5–2.5 s after Remote Access or a
-    /// pairing window starts the watcher): a list from nothing but the address name would replace
-    /// a device's full one. A device keeps what it has when the list is empty; the first look
-    /// broadcasts the real one.
+    /// pairing window starts the watcher). A device keeps what it has when the list is empty; the
+    /// first look broadcasts the real one. Never internet access: `internet` is always false.
     private func currentInfo() -> MacInfo? {
         guard let identity else { return nil }
         return MacInfo(macID: identity.macID, name: macName, issuedAt: 0, remoteAccess: remoteAccess,
-                       remotePort: doorPort ?? remotePort, internet: internetAccess, addresses: reach == nil ? [] : addresses())
+                       remotePort: doorPort ?? remotePort, internet: false, addresses: reach == nil ? [] : addresses())
     }
 
     /// Kind 18, signed, issued now: in every catalog right after kind 16.

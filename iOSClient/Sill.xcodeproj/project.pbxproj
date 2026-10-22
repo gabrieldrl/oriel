@@ -32,6 +32,8 @@
 		A1000001000000000000AE0B /* DisplayRipple.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE0B /* DisplayRipple.swift */; };
 		A1000001000000000000AE0E /* KeyRowSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE0E /* KeyRowSheet.swift */; };
 		A1000001000000000000AE0F /* InfoPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE0F /* InfoPanel.swift */; };
+		A1000001000000000000AE11 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE11 /* HomeScreen.swift */; };
+		A1000001000000000000AE10 /* MacDesktops.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE10 /* MacDesktops.swift */; };
 		A1000001000000000000AE0D /* RisingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE0D /* RisingSheet.swift */; };
 		A1000001000000000000AE0C /* ColumnPill.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE0C /* ColumnPill.swift */; };
 		A1000001000000000000AE04 /* QuickControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE04 /* QuickControls.swift */; };
@@ -57,6 +59,7 @@
 		A1000001000000000000A017 /* RemoteDialPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000F017 /* RemoteDialPolicy.swift */; };
 		A1000001000000000000A01E /* GoodbyePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000F01E /* GoodbyePolicy.swift */; };
 		A1000001000000000000A018 /* RemoteConnector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000F018 /* RemoteConnector.swift */; };
+		A1000001000000000000AE12 /* MacProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE12 /* MacProbe.swift */; };
 		A1000001000000000000A019 /* StreamClient+Remote.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000F019 /* StreamClient+Remote.swift */; };
 		A1000001000000000000A601 /* StreamClient+Home.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000F601 /* StreamClient+Home.swift */; };
 		A1000001000000000000A01A /* CodeScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000F01A /* CodeScanner.swift */; };
@@ -101,6 +104,8 @@
 		A1000001000000000000FE0B /* DisplayRipple.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRipple.swift; sourceTree = "<group>"; };
 		A1000001000000000000FE0E /* KeyRowSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyRowSheet.swift; sourceTree = "<group>"; };
 		A1000001000000000000FE0F /* InfoPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoPanel.swift; sourceTree = "<group>"; };
+		A1000001000000000000FE11 /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
+		A1000001000000000000FE10 /* MacDesktops.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacDesktops.swift; sourceTree = "<group>"; };
 		A1000001000000000000FE0D /* RisingSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RisingSheet.swift; sourceTree = "<group>"; };
 		A1000001000000000000FE0C /* ColumnPill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColumnPill.swift; sourceTree = "<group>"; };
 		A1000001000000000000FE04 /* QuickControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickControls.swift; sourceTree = "<group>"; };
@@ -126,6 +131,7 @@
 		A1000001000000000000F017 /* RemoteDialPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteDialPolicy.swift; sourceTree = "<group>"; };
 		A1000001000000000000F01E /* GoodbyePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoodbyePolicy.swift; sourceTree = "<group>"; };
 		A1000001000000000000F018 /* RemoteConnector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteConnector.swift; sourceTree = "<group>"; };
+		A1000001000000000000FE12 /* MacProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacProbe.swift; sourceTree = "<group>"; };
 		A1000001000000000000F019 /* StreamClient+Remote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StreamClient+Remote.swift"; sourceTree = "<group>"; };
 		A1000001000000000000F601 /* StreamClient+Home.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StreamClient+Home.swift"; sourceTree = "<group>"; };
 		A1000001000000000000F01A /* CodeScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeScanner.swift; sourceTree = "<group>"; };
@@ -195,6 +201,7 @@
 				A1000001000000000000F019 /* StreamClient+Remote.swift */,
 				A1000001000000000000F601 /* StreamClient+Home.swift */,
 				A1000001000000000000F018 /* RemoteConnector.swift */,
+				A1000001000000000000FE12 /* MacProbe.swift */,
 				A1000001000000000000F017 /* RemoteDialPolicy.swift */,
 				A1000001000000000000F01E /* GoodbyePolicy.swift */,
 				A1000001000000000000F016 /* SavedMacs.swift */,
@@ -236,6 +243,8 @@
 				A1000001000000000000FE0B /* DisplayRipple.swift */,
 				A1000001000000000000FE0E /* KeyRowSheet.swift */,
 				A1000001000000000000FE0F /* InfoPanel.swift */,
+				A1000001000000000000FE11 /* HomeScreen.swift */,
+				A1000001000000000000FE10 /* MacDesktops.swift */,
 				A1000001000000000000FE0D /* RisingSheet.swift */,
 				A1000001000000000000C0D2 /* QuickControls */,
 			);
@@ -359,6 +368,8 @@
 				A1000001000000000000AE0B /* DisplayRipple.swift in Sources */,
 				A1000001000000000000AE0E /* KeyRowSheet.swift in Sources */,
 				A1000001000000000000AE0F /* InfoPanel.swift in Sources */,
+				A1000001000000000000AE11 /* HomeScreen.swift in Sources */,
+				A1000001000000000000AE10 /* MacDesktops.swift in Sources */,
 				A1000001000000000000AE0D /* RisingSheet.swift in Sources */,
 				A1000001000000000000AE0C /* ColumnPill.swift in Sources */,
 				A1000001000000000000AE04 /* QuickControls.swift in Sources */,
@@ -394,6 +405,7 @@
 				A1000001000000000000A019 /* StreamClient+Remote.swift in Sources */,
 				A1000001000000000000A601 /* StreamClient+Home.swift in Sources */,
 				A1000001000000000000A018 /* RemoteConnector.swift in Sources */,
+				A1000001000000000000AE12 /* MacProbe.swift in Sources */,
 				A1000001000000000000A017 /* RemoteDialPolicy.swift in Sources */,
 				A1000001000000000000A01E /* GoodbyePolicy.swift in Sources */,
 				A1000001000000000000A016 /* SavedMacs.swift in Sources */,

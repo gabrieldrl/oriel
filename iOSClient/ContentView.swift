@@ -36,8 +36,11 @@ struct ContentView: View {
                     DesktopScreen(client: client)
                         .transition(.opacity)
                 }
-            } else {
+            } else if StreamScreen.classic {
                 ConnectScreen(client: client)
+                    .transition(.opacity)
+            } else {
+                HomeScreen(client: client)
                     .transition(.opacity)
             }
         }

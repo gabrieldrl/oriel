@@ -38,8 +38,11 @@ final class HostSettings {
         static let maxFPS = "maxFPS", captureScale = "captureScale", bitrate = "bitrate"
         static let awayBitrate = "awayBitrate", awayCaptureScale = "awayCaptureScale"
         static let prioritizeSpeed = "prioritizeSpeed", virtualDisplay = "virtualDisplay", directWireless = "directWireless"
-        static let remoteAccess = "remoteAccess", remotePort = "remotePort", internetAccess = "internetAccess"
-        static let remoteAddressName = "remoteAddressName", remoteDevicesSeen = "remoteDevicesSeen"
+        static let remoteAccess = "remoteAccess", remotePort = "remotePort"
+        static let remoteDevicesSeen = "remoteDevicesSeen"
+        /// The internet switch and its address name, from before this fork removed internet access
+        /// (docs/reachable-plan.md): cleared at launch.
+        static let retired = ["internetAccess", "remoteAddressName"]
         static let settingsTab = "settingsTab", permissionsOnboardingDismissed = "permissionsOnboardingDismissed"
         static let askedScreenRecording = "askedScreenRecording", askedAccessibility = "askedAccessibility"
         static let logShowsStats = "logShowsStats"
@@ -67,17 +70,6 @@ final class HostSettings {
     var askedAccessibility: Bool { didSet { defaults.set(askedAccessibility, forKey: Key.askedAccessibility) } }
     /// The Log window shows the once-a-second stats and client lines.
     var logShowsStats: Bool { didSet { defaults.set(logShowsStats, forKey: Key.logShowsStats) } }
-    /// The router's dynamic DNS name for the internet switch ("home.example.net", or with ":port"
-    /// when the router forwards another outside port); "" for none. Not in HostConfig: it changes
-    /// no listener, only the addresses devices learn (`RemoteAccess.setAddressName`).
-    var remoteAddressName: String {
-        didSet {
-            guard remoteAddressName != oldValue else { return }
-            defaults.set(remoteAddressName, forKey: Key.remoteAddressName)
-            onAddressNameChange?()
-        }
-    }
-    @ObservationIgnored var onAddressNameChange: (@MainActor () -> Void)?
     /// "Check for updates automatically" (Settings › General): once a day, GitHub's releases feed
     /// (UpdateChecker). On by default; `-updateCheck 0` turns it off for one run without saving.
     var updateCheck: Bool {
@@ -105,11 +97,10 @@ final class HostSettings {
             Key.virtualDisplay: standard.virtualDisplay,
             // Off, like the CLI: an existing install has no key, so it stops asking for AWDL.
             Key.directWireless: standard.directWireless,
-            // Off, and the internet switch too: only the Mac's own user widens exposure.
+            // On (this fork): a paired device reaches its Mac through a VPN as it does at home.
+            // Turned off, the Mac gives devices none of its addresses and runs no remote door.
             Key.remoteAccess: standard.remoteAccess,
             Key.remotePort: standard.remotePort,
-            Key.internetAccess: standard.internetAccess,
-            Key.remoteAddressName: "",
             Key.updateCheck: true,
             // On, like the CLI: each device has its own switch, and a password manager's copies never go.
             Key.shareClipboard: standard.shareClipboard,
@@ -124,13 +115,12 @@ final class HostSettings {
                             directWireless: defaults.bool(forKey: Key.directWireless),
                             remoteAccess: defaults.bool(forKey: Key.remoteAccess),
                             remotePort: defaults.integer(forKey: Key.remotePort),
-                            internetAccess: defaults.bool(forKey: Key.internetAccess),
                             // Never a default or a launch argument: it lives with the trust list
                             // (the identity store), from which AppModel reads it at launch, before
                             // the host starts, and to which the Devices pane saves it.
                             requirePairing: HostConfig.standard.requirePairing,
                             shareClipboard: defaults.bool(forKey: Key.shareClipboard)).validated()
-        remoteAddressName = defaults.string(forKey: Key.remoteAddressName) ?? ""
+        Key.retired.forEach(defaults.removeObject(forKey:))
         updateCheck = defaults.bool(forKey: Key.updateCheck)
         settingsTab = defaults.string(forKey: Key.settingsTab).flatMap(SettingsTab.init(rawValue:)) ?? .general
         permissionsOnboardingDismissed = defaults.bool(forKey: Key.permissionsOnboardingDismissed)
@@ -152,7 +142,6 @@ final class HostSettings {
         if config.directWireless != old.directWireless { defaults.set(config.directWireless, forKey: Key.directWireless) }
         if config.remoteAccess != old.remoteAccess { defaults.set(config.remoteAccess, forKey: Key.remoteAccess) }
         if config.remotePort != old.remotePort { defaults.set(config.remotePort, forKey: Key.remotePort) }
-        if config.internetAccess != old.internetAccess { defaults.set(config.internetAccess, forKey: Key.internetAccess) }
         if config.shareClipboard != old.shareClipboard { defaults.set(config.shareClipboard, forKey: Key.shareClipboard) }
     }
 

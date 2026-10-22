@@ -154,8 +154,8 @@ check("a saved host must parse without a port",
 let info = MacInfo(macID: m1.macID, name: "Studio\u{202E}", issuedAt: 60, remoteAccess: true, remotePort: 7460, internet: false,
                    addresses: [a("mac.tail1.ts.net", "vpn", "Tailscale"), a("fe80::1", "lan", "Wi-Fi"), a("127.0.0.1", "lan", "This Mac"), a("192.168.1.5", "lan", "Wi-Fi")])
 let r1 = SavedMacs.refreshed(m1, info: info, fingerprint: key(1), allowLoopback: false)
-check("refresh: name (clean), port and the Mac's addresses; typed and lastWorked kept; link-local and loopback dropped",
-      r1?.name == "Studio" && r1?.remotePort == 7460 && r1?.addresses.map(\.host) == ["mac.tail1.ts.net", "192.168.1.5"]
+check("refresh: name (clean), port and the Mac's addresses, then the VPN one it lacks; typed and lastWorked kept; link-local and loopback dropped",
+      r1?.name == "Studio" && r1?.remotePort == 7460 && r1?.addresses.map(\.host) == ["mac.tail1.ts.net", "192.168.1.5", "100.64.0.9"]
       && r1?.typedAddresses == m1.typedAddresses && r1?.lastWorked == m1.lastWorked && r1?.infoIssuedAt == 60)
 check("refresh: loopback kept when allowed (DEBUG)", SavedMacs.refreshed(m1, info: info, fingerprint: key(1), allowLoopback: true)?.addresses.map(\.host).contains("127.0.0.1") == true)
 check("refresh: another key, another Mac ID, or not newer: nothing",
@@ -173,16 +173,50 @@ let off18 = { () -> MacInfo in var i = info; i.remoteAccess = false; i.issuedAt 
 let rOff = SavedMacs.refreshed(m1, info: off18, fingerprint: key(1), allowLoopback: false)
 check("refresh: a list from a Mac with Remote Access off keeps the saved addresses", rOff?.addresses == m1.addresses && rOff?.infoIssuedAt == 71)
 let onlyLocal18 = { () -> MacInfo in var i = info; i.addresses = [a("fe80::1", "lan", "Wi-Fi"), a("127.0.0.1", "lan", "This Mac")]; i.issuedAt = 72; return i }()
-check("refresh: a list with nothing keepable (link-local, loopback in Release) keeps the saved addresses",
-      SavedMacs.refreshed(m1, info: onlyLocal18, fingerprint: key(1), allowLoopback: false)?.addresses == m1.addresses)
-check("refresh: a list with something in it replaces the saved one (Remote Access on)",
+var m1lan = m1; m1lan.addresses.append(a("192.168.1.5", "lan", "Wi-Fi"))
+check("refresh: a list with nothing keepable (link-local, loopback in Release) keeps the saved addresses, LAN ones too",
+      SavedMacs.refreshed(m1, info: onlyLocal18, fingerprint: key(1), allowLoopback: false)?.addresses == m1.addresses
+      && SavedMacs.refreshed(m1lan, info: onlyLocal18, fingerprint: key(1), allowLoopback: false)?.addresses == m1lan.addresses)
+check("refresh: a list with something in it goes first, the VPN addresses it lacks after it (Remote Access on)",
       SavedMacs.refreshed(m1, info: { var i = info; i.addresses = [a("100.101.102.103", "vpn", "Tailscale")]; i.issuedAt = 73; return i }(),
-                          fingerprint: key(1), allowLoopback: false)?.addresses.map(\.host) == ["100.101.102.103"])
+                          fingerprint: key(1), allowLoopback: false)?.addresses.map(\.host)
+        == ["100.101.102.103", "100.64.0.9"])
+// docs/reachable-plan.md: Tailscale on while connected, then a session at home with it off. The
+// Tailscale name and address stay, after the Wi-Fi one; the old Wi-Fi address goes.
+let withTS = [a("mac.tail1.ts.net", "vpn", "Tailscale"), a("100.88.1.2", "vpn", "Tailscale"), a("192.168.1.5", "lan", "Wi-Fi")]
+let tsOff = SavedMacs.remembering([a("192.168.1.9", "lan", "Wi-Fi")], from: withTS)
+check("remember: Tailscale off at home keeps its name and address after the new Wi-Fi one, not the old Wi-Fi one",
+      tsOff.map(\.host) == ["192.168.1.9", "mac.tail1.ts.net", "100.88.1.2"])
+check("remember: Tailscale back on: the Mac's own order, nothing twice (names compared without case)",
+      SavedMacs.remembering([a("MAC.tail1.ts.net", "vpn", "Tailscale"), a("100.88.1.2", "vpn", "Tailscale"), a("192.168.1.9", "lan", "Wi-Fi")], from: tsOff).map(\.host)
+        == ["MAC.tail1.ts.net", "100.88.1.2", "192.168.1.9"])
+check("remember: the same host on another port is another address",
+      SavedMacs.remembering([a("100.88.1.2", "vpn", "Tailscale", port: 7460)], from: [a("100.88.1.2", "vpn", "Tailscale")]).count == 2)
+check("remember: at most 12, the new list first",
+      SavedMacs.remembering((1...10).map { a("100.88.0.\($0)", "vpn", "Tailscale") }, from: (11...20).map { a("100.88.0.\($0)", "vpn", "Tailscale") }).map(\.host)
+        == (1...12).map { "100.88.0.\($0)" })
 // Then a pairing made over the overlay's typed path (no addresses but the typed one), refreshed by
 // this session's kind 18: the Mac's own list, the typed one kept.
 var typedOnly = savedMac(1); typedOnly.addresses = []; typedOnly.infoIssuedAt = 0
 check("refresh: a typed pairing takes the session's kind 18 list", SavedMacs.refreshed(typedOnly, info: info, fingerprint: key(1), allowLoopback: false)?.allAddresses.map(\.host)
       == ["mac.tail1.ts.net", "192.168.1.5", "home.example.net"])
+
+// MARK: The card's route word (RemoteDialPolicy.routeWord, docs/reachable-plan.md)
+func cand(_ host: String, _ kind: String, _ via: String) -> R.Candidate { R.Candidate(host: host, port: 7455, kind: kind, via: via) }
+check("route word: Tailscale's shapes are Tailscale, whatever the service is called",
+      R.routeWord(cand("100.88.1.2", "vpn", "VPN (utun4)"), usedTunnel: true) == "Tailscale"
+      && R.routeWord(cand("mac.tail1.ts.net", "vpn", "Tailscale"), usedTunnel: true) == "Tailscale"
+      && R.routeWord(cand("fd7a:115c:a1e0::1", "vpn", ""), usedTunnel: false) == "Tailscale")
+check("route word: another VPN by its own name, an unnamed tunnel VPN",
+      R.routeWord(cand("10.8.0.6", "vpn", "WireGuard"), usedTunnel: true) == "WireGuard"
+      && R.routeWord(cand("10.8.0.6", "vpn", "VPN (utun9)"), usedTunnel: true) == "VPN"
+      && R.routeWord(cand("10.8.0.6", "vpn", ""), usedTunnel: true) == "VPN")
+check("route word: a LAN address through a tunnel is VPN; dialed directly, its network",
+      R.routeWord(cand("192.168.1.5", "lan", "Wi-Fi"), usedTunnel: true) == "VPN"
+      && R.routeWord(cand("192.168.1.5", "lan", "Wi-Fi"), usedTunnel: false) == "Wi-Fi")
+check("route word: a typed address is Remote",
+      R.routeWord(cand("home.example.net", "internet", ""), usedTunnel: false) == "Remote"
+      && R.routeWord(cand("192.168.1.5", "lan", ""), usedTunnel: false) == "Remote")
 
 // MARK: The scanner's gate (RemoteDialPolicy.scanStartsPairing)
 let s1 = Data([1, 2, 3]), s2 = Data([4, 5, 6])

@@ -120,6 +120,20 @@ enum RemoteDialPolicy {
         }
     }
 
+    /// How a saved Mac's card names the way it answered from afar, a check's or a session's
+    /// (docs/reachable-plan.md): Tailscale for Tailscale's shapes, whatever its service is called
+    /// (Tailscale from the App Store names none: "VPN (utun4)"); another VPN's own name
+    /// ("WireGuard"), or "VPN" for an unnamed tunnel; any address reached through a tunnel (a LAN
+    /// address through a VPN into the home network) "VPN"; this network's address dialed directly,
+    /// its network ("Wi‑Fi", "Ethernet"); anything else (a typed address) "Remote".
+    static func routeWord(_ c: Candidate, usedTunnel: Bool) -> String {
+        if isVPNAddress(c.host) { return "Tailscale" }
+        if c.kind == MacAddress.vpn { return !c.via.isEmpty && !c.via.hasPrefix("VPN (") ? c.via : "VPN" }
+        if usedTunnel { return "VPN" }
+        if c.kind == MacAddress.lan, !c.via.isEmpty { return c.via }
+        return "Remote"
+    }
+
     static func isTailscaleName(_ host: String) -> Bool {
         let h = host.lowercased()
         return h.hasSuffix(".ts.net") || h.hasSuffix(".ts.net.")

@@ -316,7 +316,6 @@ struct TrustSnapshot: Sendable {
     /// never one a device opened by asking (docs/home-pairing-plan.md §4.6).
     var remotePairingOpen = false
     var remoteAccess = false
-    var internetAccess = false
     /// The home door admits only paired keys (on a TLS home door; the plain one has no pairing).
     var requirePairing = true
     /// Interface → network service name ("utun4" → "Tailscale"), for a session's route label.

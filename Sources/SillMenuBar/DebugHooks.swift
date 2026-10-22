@@ -15,8 +15,7 @@ import StreamProtocol
 ///                                              a control would (maxFPS, captureScale, bitrate,
 ///                                              awayBitrate, awayCaptureScale,
 ///                                              prioritizeSpeed, virtualDisplay, directWireless,
-///                                              remoteAccess, remotePort, internetAccess,
-///                                              remoteAddressName=host[:port], updateCheck,
+///                                              remoteAccess, remotePort, updateCheck,
 ///                                              requirePairing=0|1). Saved like any change
 ///                                              (requirePairing in the identity store: memory, or
 ///                                              SILL_TEST_REMOTE_DIR)
@@ -167,15 +166,13 @@ enum DebugHooks {
                 let changes = parts[1].split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
                 after(delay) {
                     var config = model.settings.config
-                    var addressName: String?
                     var requirePairing: Bool?
                     var updateCheck: Bool?
                     for change in changes {
-                        apply(change, to: &config, addressName: &addressName, requirePairing: &requirePairing, updateCheck: &updateCheck)
+                        apply(change, to: &config, requirePairing: &requirePairing, updateCheck: &updateCheck)
                     }
                     print("SillSetAfter \(parts[0]) s: \(changes.joined(separator: ", "))")
                     model.settings.config = config    // one assignment: several keys, one apply
-                    if let addressName { model.settings.remoteAddressName = addressName }
                     if let updateCheck { model.settings.updateCheck = updateCheck }
                     // Through the identity store first, as the Devices pane's switch goes.
                     if let requirePairing { model.setRequirePairing(requirePairing) }
@@ -329,7 +326,7 @@ enum DebugHooks {
         }
     }
 
-    private static func apply(_ change: String, to config: inout HostConfig, addressName: inout String?, requirePairing: inout Bool?,
+    private static func apply(_ change: String, to config: inout HostConfig, requirePairing: inout Bool?,
                               updateCheck: inout Bool?) {
         let kv = change.split(separator: "=", maxSplits: 1).map(String.init)
         guard kv.count == 2 else { print("SillSetAfter: can’t read “\(change)”"); return }
@@ -346,9 +343,7 @@ enum DebugHooks {
         case "directWireless": config.directWireless = flag
         case "remoteAccess": config.remoteAccess = flag
         case "remotePort": if let v = Int(value) { config.remotePort = v }
-        case "internetAccess": config.internetAccess = flag
         case "shareClipboard": config.shareClipboard = flag
-        case "remoteAddressName": addressName = value
         case "requirePairing": requirePairing = flag
         case "updateCheck": updateCheck = flag
         default: print("SillSetAfter: no setting called \(key)")
@@ -411,9 +406,8 @@ enum DebugHooks {
             }
         }
         for sample in remotePaneSamples() {
-            let pane = RemoteAccessPane(status: sample.status, remoteAccess: .constant(sample.status.remoteAccess),
-                                        internetAccess: .constant(sample.status.internetAccess), port: 7455,
-                                        addressName: sample.status.addressName, actions: RemoteAccessPane.Actions())
+            let pane = RemoteAccessPane(status: sample.status, remoteAccess: .constant(sample.status.remoteAccess), port: 7455,
+                                        actions: RemoteAccessPane.Actions())
                 .formStyle(.grouped)
                 .frame(width: 520)
                 .background(Color(nsColor: .windowBackgroundColor))
@@ -794,7 +788,7 @@ extension DebugHooks {
         var status: RemoteStatus
     }
 
-    /// pane-remote-{off,tailscale,notconnected,novpn,internet,cgnat,doublenat,inuse,keychain}.
+    /// pane-remote-{off,tailscale,notconnected,novpn,inuse,keychain}.
     static func remotePaneSamples() -> [RemotePaneSample] {
         let now = previewNow
         let ipad = PairedDeviceSummary(id: "ipad", keyPrefix: "5KD2Q7", name: "iPad (iPad14,1)", model: "iPad14,1",
@@ -803,31 +797,16 @@ extension DebugHooks {
         let iphone = PairedDeviceSummary(id: "iphone", keyPrefix: "9XQ3M1", name: "iPhone (iPhone17,1)", model: "iPhone17,1",
                                          pairedAt: now.addingTimeInterval(-86_400), method: PairRequest.code)
         let wifi = [MacAddress(host: "192.168.1.20", kind: MacAddress.lan, via: "Wi\u{2011}Fi")]
-        let internetAddresses = tailscaleAddresses + [
-            MacAddress(host: "home.example.net", port: 17455, kind: MacAddress.internet, via: "Address name"),
-            MacAddress(host: "203.0.113.9", kind: MacAddress.internet, via: "Router"),
-            MacAddress(host: "2001:db8::20", kind: MacAddress.internet, via: "IPv6"),
-        ]
         func on(_ addresses: [MacAddress], listener: RemoteStatus.Listener = .listening(7455), vpnDown: [String] = [],
                 paired: [PairedDeviceSummary] = [ipad, iphone]) -> RemoteStatus {
             RemoteStatus(remoteAccess: true, listener: listener, addresses: addresses, vpnDown: vpnDown,
                          lanAddress: "192.168.1.20", paired: paired)
-        }
-        func internet(_ router: RemoteStatus.Router, _ addresses: [MacAddress]) -> RemoteStatus {
-            var s = on(addresses)
-            s.internetAccess = true
-            s.router = router
-            s.addressName = "home.example.net:17455"
-            return s
         }
         return [
             RemotePaneSample(name: "off", status: RemoteStatus(lanAddress: "192.168.1.20", paired: [ipad])),
             RemotePaneSample(name: "tailscale", status: on(tailscaleAddresses)),
             RemotePaneSample(name: "notconnected", status: on(wifi, vpnDown: ["Tailscale"], paired: [ipad])),
             RemotePaneSample(name: "novpn", status: on(wifi, paired: [])),
-            RemotePaneSample(name: "internet", status: internet(.address("203.0.113.9"), internetAddresses)),
-            RemotePaneSample(name: "cgnat", status: internet(.carrierNAT("100.72.14.3"), tailscaleAddresses)),
-            RemotePaneSample(name: "doublenat", status: internet(.doubleNAT, tailscaleAddresses)),
             RemotePaneSample(name: "inuse", status: on(tailscaleAddresses, listener: .portInUse(7455))),
             RemotePaneSample(name: "keychain",
                              status: RemoteStatus(identityProblem: "the key couldn’t be read: The user name or passphrase you entered is not correct.")),

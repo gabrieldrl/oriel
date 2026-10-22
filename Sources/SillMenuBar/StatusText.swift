@@ -168,8 +168,8 @@ enum StatusText {
         return port
     }
 
-    /// The Remote Access… item's subtitle: "Off", "On · Tailscale", "On · Tailscale and the
-    /// internet", "On · no VPN on this Mac", "Port 7455 is in use" or "Unavailable: the keychain
+    /// The Remote Access… item's subtitle: "Off", "On · Tailscale", "On · Tailscale and WireGuard",
+    /// "On · no VPN on this Mac", "Port 7455 is in use" or "Unavailable: the keychain
     /// couldn’t be used".
     static func remoteAccessNote(_ r: RemoteStatus?) -> String? {
         guard let r else { return nil }
@@ -182,7 +182,6 @@ enum StatusText {
         }
         var ways: [String] = []
         for a in r.addresses where a.kind == MacAddress.vpn && !ways.contains(a.via) { ways.append(a.via) }
-        if r.internetAccess { ways.append("the internet") }
         guard let last = ways.last else { return "On · no VPN on this Mac" }
         return "On · " + (ways.count == 1 ? last : ways.dropLast().joined(separator: ", ") + " and " + last)
     }

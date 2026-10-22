@@ -11,9 +11,8 @@ import StreamProtocol
 /// service covers but has a routable IPv4 ("VPN (utun6)"; Tailscale from the App Store has a
 /// service with no Setup: key, so no name), and the primary Wi‑Fi or Ethernet service's IPv4
 /// (kind "lan"). Hidden: loopback and link-local, peer-to-peer (awdl, llw, nan), unnamed tunnels
-/// (utun0–3, the CoreDevice tunnel's ULA), temporary and deprecated IPv6, LAN ULAs. With the
-/// internet switch on, then: the address name (with its own port), the router's IPv4 and one
-/// stable global IPv6.
+/// (utun0–3, the CoreDevice tunnel's ULA), temporary and deprecated IPv6, LAN ULAs. Never an
+/// internet address: this fork has no internet access (docs/reachable-plan.md).
 enum AddressList {
     /// An IPv6 address with its interface flags (IN6_IFF_*).
     struct IPv6Entry: Equatable, Sendable {
@@ -48,9 +47,6 @@ enum AddressList {
         var tunnels: [Tunnel] = []
         /// Service ID → its MagicDNS name, only when it resolved to the tunnel's own address.
         var magicDNS: [String: String] = [:]
-        var internet = false
-        var addressName: ParsedAddress?
-        var routerIPv4: String?
         /// TEST ONLY: a host that does not advertise lists 127.0.0.1 first, so the simulator can
         /// reach it.
         var testLoopback = false
@@ -75,13 +71,6 @@ enum AddressList {
         if let lan = primaryLAN(input), let a = lan.ipv4.first(where: { routableV4($0, onTunnel: false) }) {
             add(MacAddress(host: a, kind: MacAddress.lan, via: lan.name.isEmpty ? lan.interface : lan.name))
         }
-        if input.internet {
-            if let name = input.addressName {
-                add(MacAddress(host: name.host, port: name.port, kind: MacAddress.internet, via: "Address name"))
-            }
-            if let r = input.routerIPv4 { add(MacAddress(host: r, kind: MacAddress.internet, via: "Router")) }
-            if let v6 = stableGlobalV6(input) { add(MacAddress(host: v6, kind: MacAddress.internet, via: "IPv6")) }
-        }
         return out
     }
 
@@ -100,15 +89,9 @@ enum AddressList {
         return lans.first { $0.interface == input.primaryInterface } ?? lans.first
     }
 
-    /// This network's IPv4, for the port-forward instruction and the typed pairing path.
+    /// This network's IPv4, for the typed pairing path.
     static func lanAddress(_ input: Input) -> String? {
         primaryLAN(input)?.ipv4.first { routableV4($0, onTunnel: false) }
-    }
-
-    /// The primary non-tunnel interface, which the router is asked on.
-    static func routerInterface(_ input: Input) -> String? {
-        if let p = input.primaryInterface, isLAN(p) { return p }
-        return primaryLAN(input)?.interface
     }
 
     /// Named VPN services the Mac has set up that have no address now: "Tailscale — Not connected".
@@ -154,16 +137,5 @@ enum AddressList {
 
     static func isLinkLocalV6(_ a: String) -> Bool {
         IPBytes.parse(a).map { $0.count == 16 && IPBytes.isLinkLocal($0) } ?? false
-    }
-
-    /// One stable global IPv6 (2000::/3) on a LAN service, for the internet switch.
-    static func stableGlobalV6(_ input: Input) -> String? {
-        let lans = input.services.filter { isLAN($0.interface) }.sorted { ($0.interface == input.primaryInterface ? 0 : 1, $0.interface) < ($1.interface == input.primaryInterface ? 0 : 1, $1.interface) }
-        for s in lans {
-            for e in s.ipv6 where usableV6(e) {
-                if let b = IPBytes.parse(e.address), b.count == 16, b[0] & 0xE0 == 0x20 { return e.address }
-            }
-        }
-        return nil
     }
 }

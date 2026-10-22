@@ -35,27 +35,14 @@ let noah: [S] = [
 ]
 let magic = "lab-macbook-pro.tail5678.ts.net"
 var input = AddressList.Input(services: noah, primaryInterface: "en0", tunnels: [], magicDNS: ["ts": magic])
-// With the internet switch on too: an address name, the router's address, a stable global IPv6.
-var withInternet = input
-withInternet.services[6].ipv6.append(V6(address: "2001:db8::20", flags: 0x400))
-withInternet.internet = true
-withInternet.addressName = ParsedAddress(host: "home.example.net", port: 17455, kind: .name)
-withInternet.routerIPv4 = "203.0.113.9"
 let noahList = AddressList.build(input)
-let noahInternet = AddressList.build(withInternet)
 let lan = AddressList.lanAddress(input)
 check("the store as AddressList builds it: name, v4, v6 (vpn), LAN (\(noahList.map { "\($0.host)/\($0.kind)" }))",
       noahList.map { "\($0.host)/\($0.kind)" } == ["\(magic)/vpn", "100.88.123.45/vpn", "fd7a:115c:a1e0::abcd:ef01/vpn", "10.128.0.34/lan"])
-check("with the internet switch: also the address name, the router, the IPv6 (internet)",
-      noahInternet.filter { $0.kind == MacAddress.internet }.map(\.host) == ["home.example.net", "203.0.113.9", "2001:db8::20"])
 check("Noah's store: the MagicDNS name, the Tailscale IPv4 under it (\(show(choose(noahList, lan: lan))))",
       choose(noahList, lan: lan) == C(primary: magic, secondary: "100.88.123.45"))
-check("…the same with the internet switch on: no router or address name in the window",
-      choose(noahInternet, lan: lan) == C(primary: magic, secondary: "100.88.123.45"), show(choose(noahInternet, lan: lan)))
 check("…on port 7456: both with :7456",
       choose(noahList, lan: lan, port: 7456) == C(primary: "\(magic):7456", secondary: "100.88.123.45:7456"), show(choose(noahList, lan: lan, port: 7456)))
-check("…on port 17455 with the internet switch: both with :17455, not the address name's port",
-      choose(noahInternet, lan: lan, port: 17455) == C(primary: "\(magic):17455", secondary: "100.88.123.45:17455"))
 check("…on the default port: no port", !choose(noahList, lan: lan).primary.contains(":") && choose(noahList, lan: lan).secondary?.contains(":") == false)
 
 // MagicDNS not kept (the name did not resolve to the tunnel's address): the IPv4 alone.
@@ -75,10 +62,6 @@ let lanOnlyInput = AddressList.Input(services: [noah[6]], primaryInterface: "en0
 check("LAN only: this network's address (\(show(choose(AddressList.build(lanOnlyInput), lan: AddressList.lanAddress(lanOnlyInput)))))",
       choose(AddressList.build(lanOnlyInput), lan: AddressList.lanAddress(lanOnlyInput)) == C(primary: "10.128.0.34", secondary: nil))
 check("LAN only on port 7456", choose(AddressList.build(lanOnlyInput), lan: "10.128.0.34", port: 7456) == C(primary: "10.128.0.34:7456", secondary: nil))
-var lanInternet = AddressList.Input(services: [withInternet.services[6]], primaryInterface: "en0")
-lanInternet.internet = true; lanInternet.addressName = withInternet.addressName; lanInternet.routerIPv4 = "203.0.113.9"
-check("LAN and the internet switch, no VPN: still this network's address",
-      choose(AddressList.build(lanInternet), lan: "10.128.0.34") == C(primary: "10.128.0.34", secondary: nil))
 // Tailscale down (the service has no address): nothing of it is listed.
 var down = input; down.services[4].ipv4 = []; down.services[4].ipv6 = [V6(address: "fe80::dc68:1", flags: 0)]; down.magicDNS = [:]
 check("Tailscale down: this network's address", choose(AddressList.build(down), lan: lan) == C(primary: "10.128.0.34", secondary: nil))
@@ -230,10 +213,8 @@ check("a VPN name's own port wins over the door's",
         == C(primary: "m.example.net:9000", secondary: "10.1.1.1:7456"))
 
 // MARK: Fallbacks after the LAN, as before
-var internetOnly = AddressList.Input(services: [], primaryInterface: nil)
-internetOnly.internet = true; internetOnly.addressName = ParsedAddress(host: "home.example.net", port: 17455, kind: .name); internetOnly.routerIPv4 = "203.0.113.9"
-check("no VPN and no LAN, the internet switch on: the first address listed, with its own port",
-      choose(AddressList.build(internetOnly), lan: nil) == C(primary: "home.example.net:17455", secondary: nil), show(choose(AddressList.build(internetOnly), lan: nil)))
+check("no VPN and no LAN, an older list's internet address name: the first address listed, with its own port",
+      choose([MacAddress(host: "home.example.net", port: 17455, kind: "internet", via: "Address name")], lan: nil) == C(primary: "home.example.net:17455", secondary: nil))
 var testHost = lanOnlyInput; testHost.testLoopback = true
 check("a test host (127.0.0.1 listed first): this network's address still wins",
       choose(AddressList.build(testHost), lan: "10.128.0.34") == C(primary: "10.128.0.34", secondary: nil))

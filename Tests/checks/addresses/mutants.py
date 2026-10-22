@@ -8,7 +8,6 @@ M = [
     (A, "temporary IPv6 shown", "return e.flags & IPv6Entry.temporary == 0 && e.flags & IPv6Entry.deprecated == 0", "return e.flags & IPv6Entry.deprecated == 0"),
     (A, "deprecated IPv6 shown", "return e.flags & IPv6Entry.temporary == 0 && e.flags & IPv6Entry.deprecated == 0", "return e.flags & IPv6Entry.temporary == 0"),
     (A, "100.64/10 on a LAN shown", "return onTunnel || !IPBytes.isCarrierShared(b)", "return true"),
-    (A, "global IPv6 without the switch", "        if input.internet {\n            if let name = input.addressName {", "        if let v6 = stableGlobalV6(input) { add(MacAddress(host: v6, kind: MacAddress.internet, via: \"IPv6\")) }\n        if input.internet {\n            if let name = input.addressName {"),
     (A, "no cap", "static let maxCount = 12", "static let maxCount = 99"),
     (A, "LAN before VPN", "        if let lan = primaryLAN(input), let a = lan.ipv4.first(where: { routableV4($0, onTunnel: false) }) {", "        if false, let lan = primaryLAN(input), let a = lan.ipv4.first(where: { routableV4($0, onTunnel: false) }) {"),
     (A, "MagicDNS without ts.net", ".first(where: { $0.lowercased().hasSuffix(\".ts.net\") })", ".first"),

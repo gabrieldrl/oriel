@@ -27,8 +27,6 @@ enum DoorPolicy {
         /// Require pairing (the home door's; the Mac's alone, never a device's).
         var requirePairing = true
         var remoteAccess = false
-        /// Already false while Remote Access is off (RemoteAccess.apply).
-        var internetAccess = false
         /// A pairing window is open: the home door takes its proofs.
         var pairingOpen = false
         /// One the remote door takes proofs for: opened by the Mac's user (or the CLI's --remote),
@@ -40,20 +38,20 @@ enum DoorPolicy {
 
     /// Before a connection starts, so a refused one gets no byte: the home door takes loopback,
     /// this Mac's own networks and peer-to-peer Wi-Fi (Direct Wireless), never a VPN or the
-    /// internet; the remote door takes loopback, this Mac's networks and VPNs, the internet only
-    /// with internet access, and never peer-to-peer Wi-Fi.
-    static func admitsBeforeStart(_ door: Door, origin: OriginPolicy.Origin, internetAccess: Bool) -> Bool {
+    /// internet; the remote door takes loopback, this Mac's networks and VPNs, never the internet
+    /// and never peer-to-peer Wi-Fi.
+    static func admitsBeforeStart(_ door: Door, origin: OriginPolicy.Origin) -> Bool {
         switch door {
         case .home: return OriginPolicy.homeAdmits(origin)
-        case .remote: return OriginPolicy.remoteAdmits(origin, internetAccess: internetAccess)
+        case .remote: return OriginPolicy.remoteAdmits(origin)
         }
     }
 
     /// The minute's summary's word for a connection refused before it started; nil when it is
     /// admitted. At home "vpn" or "internet", the plain door's words; at the remote door
     /// "internet" for every refused origin, peer-to-peer Wi-Fi included, as before.
-    static func refusalBeforeStart(_ door: Door, origin: OriginPolicy.Origin, internetAccess: Bool) -> String? {
-        guard !admitsBeforeStart(door, origin: origin, internetAccess: internetAccess) else { return nil }
+    static func refusalBeforeStart(_ door: Door, origin: OriginPolicy.Origin) -> String? {
+        guard !admitsBeforeStart(door, origin: origin) else { return nil }
         switch door {
         case .home: return origin == .vpn ? "vpn" : "internet"
         case .remote: return "internet"
@@ -120,19 +118,19 @@ enum DoorPolicy {
 
     /// A session the device gate held (the floor above "0": up to 2 s while it reads the hello, the
     /// first message inside TLS) is neither pending nor a client meanwhile, so a change that closes
-    /// sessions (Remove, Require pairing on, Remote Access or internet access off) could not reach
-    /// it. Judged again as the gate admits it, from the switches as they are then: the goodbye that
-    /// change sends its sessions, or nil to admit it. `wasPaired`: its key was paired when `.ready`
-    /// admitted it. Remote, in the order its changes are checked: "removed", "remoteOff",
-    /// "internetOff" (an origin the internet switch now refuses), then "busy" at
-    /// `maxRemoteSessions`. Home: a key that was paired and no longer is, "removed"; an unpaired
+    /// sessions (Remove, Require pairing on, Remote Access off) could not reach it. Judged again as
+    /// the gate admits it, from the switches as they are then: the goodbye that change sends its
+    /// sessions, or nil to admit it. `wasPaired`: its key was paired when `.ready` admitted it.
+    /// Remote, in the order its changes are checked: "removed", "remoteOff", "internetOff" (an
+    /// origin the remote door never admits: refused before it started, so never here, but judged
+    /// again all the same), then "busy" at `maxRemoteSessions`. Home: a key that was paired and no longer is, "removed"; an unpaired
     /// key while Require pairing is on, "pairingRequired".
     static func afterGate(_ door: Door, wasPaired: Bool, origin: OriginPolicy.Origin, _ t: Trust, remoteSessions: Int) -> String? {
         switch door {
         case .remote:
             if !t.hasKey || !t.paired { return Goodbye.removed }
             if !t.remoteAccess { return Goodbye.remoteOff }
-            if !OriginPolicy.remoteAdmits(origin, internetAccess: t.internetAccess) { return Goodbye.internetOff }
+            if !OriginPolicy.remoteAdmits(origin) { return Goodbye.internetOff }
             if remoteSessions >= maxRemoteSessions { return Goodbye.busy }
             return nil
         case .home:

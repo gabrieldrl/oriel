@@ -120,9 +120,6 @@ final class AppModel {
                     settings.config = away ? settings.config.applyingAway(change) : settings.config.applying(change)
                     return settings.config
                 }
-                // Not in HostConfig (it moves no listener): handed over on its own.
-                remote.setAddressName(settings.remoteAddressName)
-                settings.onAddressNameChange = { [settings, weak remote] in remote?.setAddressName(settings.remoteAddressName) }
                 await c.start(preselect: nil, promptForPermissions: false)
                 Stats.shared.startPrinting()
                 print("Sill \(Self.version) (\(Self.build)) running from \(Bundle.main.bundlePath); log file \(HostLog.shared.fileURL?.path ?? "none")")

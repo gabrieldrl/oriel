@@ -17,29 +17,24 @@ check("the ALPNs are sill/1 and sill-pair/1", session == "sill/1" && pairing == 
 
 var gate = 0, gateOK = 0
 for o in origins {
-    for ia in [false, true] {
-        gate += 2
-        let home = D.admitsBeforeStart(.home, origin: o, internetAccess: ia)
-        let remote = D.admitsBeforeStart(.remote, origin: o, internetAccess: ia)
-        if home == [.loopback, .direct, .lan].contains(o) { gateOK += 1 } else { print("  home \(o) ia=\(ia): \(home)") }
-        if remote == ([.loopback, .lan, .vpn].contains(o) || (o == .internet && ia)) { gateOK += 1 } else { print("  remote \(o) ia=\(ia): \(remote)") }
-    }
+    gate += 2
+    let home = D.admitsBeforeStart(.home, origin: o)
+    let remote = D.admitsBeforeStart(.remote, origin: o)
+    if home == [.loopback, .direct, .lan].contains(o) { gateOK += 1 } else { print("  home \(o): \(home)") }
+    if remote == [.loopback, .lan, .vpn].contains(o) { gateOK += 1 } else { print("  remote \(o): \(remote)") }
 }
-check("before start: \(gateOK) of \(gate) (home: loopback, direct, lan; remote: loopback, lan, vpn, internet with access)", gate == gateOK)
-check("before start: home refuses a VPN and the internet whatever the switch",
-      !D.admitsBeforeStart(.home, origin: .vpn, internetAccess: true) && !D.admitsBeforeStart(.home, origin: .internet, internetAccess: true))
+check("before start: \(gateOK) of \(gate) (home: loopback, direct, lan; remote: loopback, lan, vpn)", gate == gateOK)
+check("before start: home refuses a VPN and the internet",
+      !D.admitsBeforeStart(.home, origin: .vpn) && !D.admitsBeforeStart(.home, origin: .internet))
 check("before start: home takes peer-to-peer Wi-Fi (Direct Wireless), the remote door never",
-      D.admitsBeforeStart(.home, origin: .direct, internetAccess: false) && !D.admitsBeforeStart(.remote, origin: .direct, internetAccess: true))
-check("before start: the remote door takes the internet only with access",
-      !D.admitsBeforeStart(.remote, origin: .internet, internetAccess: false) && D.admitsBeforeStart(.remote, origin: .internet, internetAccess: true))
+      D.admitsBeforeStart(.home, origin: .direct) && !D.admitsBeforeStart(.remote, origin: .direct))
+check("before start: the remote door never takes the internet (no internet access)", !D.admitsBeforeStart(.remote, origin: .internet))
 for o in origins {
-    for ia in [false, true] {
-        let h = D.refusalBeforeStart(.home, origin: o, internetAccess: ia)
-        let r = D.refusalBeforeStart(.remote, origin: o, internetAccess: ia)
-        let hExp: String? = [.loopback, .direct, .lan].contains(o) ? nil : (o == .vpn ? "vpn" : "internet")
-        let rExp: String? = D.admitsBeforeStart(.remote, origin: o, internetAccess: ia) ? nil : "internet"
-        check("refusal word: \(o) ia=\(ia): home \(h ?? "admitted"), remote \(r ?? "admitted")", h == hExp && r == rExp)
-    }
+    let h = D.refusalBeforeStart(.home, origin: o)
+    let r = D.refusalBeforeStart(.remote, origin: o)
+    let hExp: String? = [.loopback, .direct, .lan].contains(o) ? nil : (o == .vpn ? "vpn" : "internet")
+    let rExp: String? = D.admitsBeforeStart(.remote, origin: o) ? nil : "internet"
+    check("refusal word: \(o): home \(h ?? "admitted"), remote \(r ?? "admitted")", h == hExp && r == rExp)
 }
 
 // MARK: The verify block
@@ -47,9 +42,9 @@ for o in origins {
 let alpns: [String?] = [session, pairing, nil, "h2", "sill/2", "SILL/1", ""]
 func allTrusts() -> [T] {
     var out: [T] = []
-    for bits in 0..<128 {
+    for bits in 0..<64 {
         out.append(T(hasKey: bits & 1 != 0, paired: bits & 2 != 0, requirePairing: bits & 4 != 0, remoteAccess: bits & 8 != 0,
-                     internetAccess: bits & 16 != 0, pairingOpen: bits & 32 != 0, remotePairingOpen: bits & 64 != 0))
+                     pairingOpen: bits & 16 != 0, remotePairingOpen: bits & 32 != 0))
     }
     return out
 }
@@ -64,7 +59,7 @@ for door in [D.Door.home, .remote] { for a in alpns { for t in allTrusts() {
     vb += 1
     if D.trusts(door, alpn: a, t) == trustOracle(door, a, t) { vbOK += 1 } else { print("  verify \(door) \(a ?? "nil") \(t)") }
 } } }
-check("verify block: \(vbOK) of \(vb) combinations (2 doors × 7 ALPNs × 128 trusts) match §4.2's table", vb == vbOK)
+check("verify block: \(vbOK) of \(vb) combinations (2 doors × 7 ALPNs × 64 trusts) match §4.2's table", vb == vbOK)
 check("verify, home sill/1: a paired key", D.trusts(.home, alpn: session, T(paired: true)))
 check("verify, home sill/1: an unpaired key with Require pairing on is refused", !D.trusts(.home, alpn: session, T(paired: false, requirePairing: true)))
 check("verify, home sill/1: any key while Require pairing is off", D.trusts(.home, alpn: session, T(paired: false, requirePairing: false)))
@@ -134,7 +129,7 @@ func afterGateOracle(_ door: D.Door, wasPaired: Bool, _ o: OriginPolicy.Origin, 
     case .remote:
         if !t.hasKey || !t.paired { return "removed" }
         if !t.remoteAccess { return "remoteOff" }
-        if o == .direct || (o == .internet && !t.internetAccess) { return "internetOff" }
+        if o == .direct || o == .internet { return "internetOff" }
         if n >= 8 { return "busy" }
         return nil
     case .home:
@@ -150,16 +145,16 @@ for door in [D.Door.home, .remote] { for w in [false, true] { for o in origins {
     if got == afterGateOracle(door, wasPaired: w, o, t, n) { agOK += 1 } else { print("  afterGate \(door) wasPaired \(w) \(o) \(t) \(n): \(got ?? "nil")") }
 } } } } }
 check("after the gate: \(agOK) of \(ag) combinations (both doors, paired at `.ready` or not, every origin, 0, 7, 8, 9 remote sessions) match", ag == agOK)
-let full = T(paired: true, requirePairing: true, remoteAccess: true, internetAccess: true)
+let full = T(paired: true, requirePairing: true, remoteAccess: true)
 check("after the gate, remote: nothing changed → admitted, from every origin the door takes",
-      [OriginPolicy.Origin.loopback, .lan, .vpn, .internet].allSatisfy { D.afterGate(.remote, wasPaired: true, origin: $0, full, remoteSessions: 0) == nil })
+      [OriginPolicy.Origin.loopback, .lan, .vpn].allSatisfy { D.afterGate(.remote, wasPaired: true, origin: $0, full, remoteSessions: 0) == nil })
 check("after the gate, remote: removed meanwhile → removed, before any other change",
       D.afterGate(.remote, wasPaired: true, origin: .internet, T(paired: false, remoteAccess: false), remoteSessions: 9) == Goodbye.removed)
-check("after the gate, remote: Remote Access off meanwhile → remoteOff, before the internet switch and the limit",
-      D.afterGate(.remote, wasPaired: true, origin: .internet, T(paired: true, remoteAccess: false, internetAccess: false), remoteSessions: 9) == Goodbye.remoteOff)
-check("after the gate, remote: internet access off meanwhile → internetOff for an internet origin only, before the limit",
-      D.afterGate(.remote, wasPaired: true, origin: .internet, T(paired: true, remoteAccess: true, internetAccess: false), remoteSessions: 9) == Goodbye.internetOff
-      && [OriginPolicy.Origin.loopback, .lan, .vpn].allSatisfy { D.afterGate(.remote, wasPaired: true, origin: $0, T(paired: true, remoteAccess: true, internetAccess: false), remoteSessions: 0) == nil })
+check("after the gate, remote: Remote Access off meanwhile → remoteOff, before the origin and the limit",
+      D.afterGate(.remote, wasPaired: true, origin: .internet, T(paired: true, remoteAccess: false), remoteSessions: 9) == Goodbye.remoteOff)
+check("after the gate, remote: an internet origin (never admitted before start) → internetOff, before the limit",
+      D.afterGate(.remote, wasPaired: true, origin: .internet, full, remoteSessions: 9) == Goodbye.internetOff
+      && [OriginPolicy.Origin.loopback, .lan, .vpn].allSatisfy { D.afterGate(.remote, wasPaired: true, origin: $0, full, remoteSessions: 0) == nil })
 check("after the gate, remote: the limit reached meanwhile → busy at 8 sessions, the 8th served",
       D.afterGate(.remote, wasPaired: true, origin: .lan, full, remoteSessions: 8) == Goodbye.busy
       && D.afterGate(.remote, wasPaired: true, origin: .lan, full, remoteSessions: 7) == nil)
@@ -180,7 +175,7 @@ for t in allTrusts() where t.hasKey { for o in origins { for n in [0, 8] {
     // Admitted after the gate exactly when `.ready` would admit the session now: at the remote door
     // with an origin its switches take, at home for a key that was not paired at `.ready`.
     agSame += 2
-    let remoteNow = D.atReady(.remote, alpn: session, t, remoteSessions: n) == .session && D.admitsBeforeStart(.remote, origin: o, internetAccess: t.internetAccess)
+    let remoteNow = D.atReady(.remote, alpn: session, t, remoteSessions: n) == .session && D.admitsBeforeStart(.remote, origin: o)
     if (D.afterGate(.remote, wasPaired: true, origin: o, t, remoteSessions: n) == nil) == remoteNow { agSameOK += 1 }
     if (D.afterGate(.home, wasPaired: false, origin: o, t, remoteSessions: n) == nil) == (D.atReady(.home, alpn: session, t, remoteSessions: n) == .session) { agSameOK += 1 }
 } } }

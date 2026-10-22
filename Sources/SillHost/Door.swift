@@ -141,7 +141,7 @@ final class Door {
     /// What DoorPolicy knows about a key, from the snapshot as it is now.
     private func trustFor(_ fp: Data?, _ t: TrustSnapshot) -> DoorPolicy.Trust {
         DoorPolicy.Trust(hasKey: fp != nil, paired: fp.map { t.paired[$0] != nil } ?? false, requirePairing: t.requirePairing,
-                         remoteAccess: t.remoteAccess, internetAccess: t.internetAccess, pairingOpen: t.pairingOpen,
+                         remoteAccess: t.remoteAccess, pairingOpen: t.pairingOpen,
                          remotePairingOpen: t.remotePairingOpen)
     }
 
@@ -171,7 +171,7 @@ final class Door {
         // already waiting with the whole server flight, the Mac's certificate included, before any
         // state callback could refuse it. A source this door does not admit gets no byte.
         if let a = server.arrivalBeforeStart(of: c, remoteDoor: kind == .remote),
-           let word = DoorPolicy.refusalBeforeStart(kind, origin: a.origin, internetAccess: trust.snapshot.internetAccess) {
+           let word = DoorPolicy.refusalBeforeStart(kind, origin: a.origin) {
             c.cancel()
             refusals.count(word)
             countFailure(source, now)
@@ -231,7 +231,7 @@ final class Door {
             pending[id] = p
         }
         let origin = p.origin ?? .internet
-        if let word = DoorPolicy.refusalBeforeStart(kind, origin: origin, internetAccess: trust.snapshot.internetAccess) {
+        if let word = DoorPolicy.refusalBeforeStart(kind, origin: origin) {
             refuse(id, word)
             c.cancel()
             return false
@@ -320,7 +320,7 @@ final class Door {
         switch reason {
         case Goodbye.removed: print("Removed \(who): disconnecting it at \(endpoint).")
         case Goodbye.remoteOff: print("Remote access off: disconnecting \(who) at \(endpoint).")
-        case Goodbye.internetOff: print("Internet access off: disconnecting \(who) at \(endpoint).")
+        case Goodbye.internetOff: print("From outside this Mac’s networks: disconnecting \(who) at \(endpoint).")
         case Goodbye.pairingRequired: print("Require pairing: disconnecting \(who) at \(endpoint), which isn’t paired.")
         case Goodbye.busy: refusals.count("limit")
         default: break

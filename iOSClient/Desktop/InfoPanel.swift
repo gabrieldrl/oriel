@@ -1,4 +1,5 @@
 import SwiftUI
+import Network
 import StreamProtocol
 
 /// The small info button over the picture's top-right corner (DesktopScreen): a glass circle that
@@ -28,6 +29,8 @@ struct InfoButton: View {
 /// What the stream is doing, in a glass panel at the picture's top-right corner: the round trip, the
 /// frames' age, the frame rate, the bandwidth this device receives, the picture's size and the way to
 /// the Mac. Every figure is the last second's (StreamClient.linkStats); "–" for a second without one.
+/// Under them the Mac's addresses this device knows: the one this session runs on, and each saved
+/// one with whether it answered a check made as the panel opens (StreamClient.checkSessionRoutes).
 /// Open, it is the screen's open control (QuickPillFocus): a touch anywhere else puts it away.
 struct InfoPanel: View {
     @ObservedObject var client: StreamClient
@@ -56,6 +59,17 @@ struct InfoPanel: View {
                 }
             }
             .font(.system(size: 13, weight: .medium))
+            if !addresses.isEmpty {
+                Rectangle().fill(.white.opacity(0.15)).frame(height: 1)
+                Text("Addresses")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.65))
+                VStack(spacing: 8) {
+                    ForEach(addresses, id: \.id) { address in
+                        AddressRow(address: address)
+                    }
+                }
+            }
         }
         .foregroundStyle(.white)
         .padding(16)
@@ -69,6 +83,7 @@ struct InfoPanel: View {
         .onAppear {
             focus?.opened(Self.id) { open = false }
             focus?.moved(Self.id, to: frame)
+            client.checkSessionRoutes()
         }
         .onDisappear { focus?.closed(Self.id) }
         .accessibilityElement(children: .contain)
@@ -96,6 +111,65 @@ struct InfoPanel: View {
         return client.route?.word
     }
 
+    /// One of the Mac's addresses: how it is reached, the address, and its state.
+    struct Address {
+        let id: String
+        let way: String
+        /// IPv4 first, then IPv6.
+        let hosts: [String]
+        /// "Connected", "Reachable", "No answer", "Checking…".
+        let state: String
+        let dot: Color
+    }
+
+    /// Each of the Mac's routes, its IPv4 and IPv6 under it ("Wi‑Fi", "Tailscale"), the one this session
+    /// runs on "Connected". A nearby session's own address joins its route (by address, else the
+    /// network's way), or stands alone first when no saved address is on that network.
+    private var addresses: [Address] {
+        let green = Color(red: 0.2, green: 0.82, blue: 0.4)
+        let grey = Color(white: 0.45)
+        let session = client.session
+        let nearby = session?.route.isRemote == false
+        let here = nearby ? Self.remoteHost(client.connection) : nil
+        let routes = session?.macID.map { client.groupedRoutes($0) } ?? []
+        let checked = session?.macID.flatMap { client.routeReach[$0] } ?? [:]
+        let mine = routes.firstIndex { route in
+            if let here { return route.hosts.contains(here) }
+            return session?.candidate.map { route.keys.contains($0.key) } ?? false
+        } ?? (nearby ? routes.firstIndex { $0.lan && $0.way == client.route?.word } : nil)
+        var out: [Address] = []
+        if let here, mine == nil {
+            out.append(Address(id: "session", way: client.route?.word ?? "This network", hosts: [here], state: "Connected", dot: green))
+        }
+        for (i, route) in routes.enumerated() {
+            if i == mine {
+                // A nearby session may have reached an address the Mac does not list (IPv6 link-local).
+                let hosts = route.displays + (here.map { route.hosts.contains($0) ? [] : [$0] } ?? [])
+                out.append(Address(id: route.id, way: route.way, hosts: hosts, state: "Connected", dot: green))
+                continue
+            }
+            switch route.reachable(checked) {
+            case true?: out.append(Address(id: route.id, way: route.way, hosts: route.displays, state: "Reachable", dot: green))
+            case false?: out.append(Address(id: route.id, way: route.way, hosts: route.displays, state: "No answer", dot: grey))
+            case nil: out.append(Address(id: route.id, way: route.way, hosts: route.displays, state: "Checking…", dot: grey))
+            }
+        }
+        return out
+    }
+
+    /// The address a connection reached, without an IPv6 zone: "192.168.1.20".
+    private static func remoteHost(_ connection: NWConnection?) -> String? {
+        guard case .hostPort(let host, _)? = connection?.currentPath?.remoteEndpoint else { return nil }
+        let text: String
+        switch host {
+        case .ipv4(let a): text = "\(a)"
+        case .ipv6(let a): text = "\(a)"
+        case .name(let name, _): text = name
+        @unknown default: return nil
+        }
+        return text.split(separator: "%").first.map(String.init)
+    }
+
     /// "7 ms, worst 24".
     private static func spread(_ spread: StreamClient.MedianMax?) -> String {
         guard let spread else { return "–" }
@@ -113,8 +187,36 @@ struct InfoPanel: View {
     }
 }
 
+/// One line of the panel's Addresses: the way and its state over the address.
+private struct AddressRow: View {
+    let address: InfoPanel.Address
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Circle().fill(address.dot).frame(width: 7, height: 7)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(address.way).font(.system(size: 13, weight: .medium))
+                    Spacer(minLength: 8)
+                    Text(address.state).font(.system(size: 12, weight: .medium)).foregroundStyle(.white.opacity(0.65))
+                }
+                ForEach(address.hosts, id: \.self) { host in
+                    Text(host)
+                        .font(.system(size: 12))
+                        .monospacedDigit()
+                        .foregroundStyle(.white.opacity(0.65))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
 /// Liquid Glass on iOS 26, a dark material before it. Lit: white, as an open control's choice is.
-private struct InfoGlass<S: Shape>: View {
+/// The home screen's card overlays use it too.
+struct InfoGlass<S: Shape>: View {
     let shape: S
     let lit: Bool
 

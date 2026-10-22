@@ -290,7 +290,8 @@ extension StreamClient {
 
     /// Dials a saved Mac at its saved addresses (§7.5). A tap on its Remote row, Connect Remotely
     /// on its network row, the session after a pairing, the automatic reconnect, `-SillDialSaved`.
-    func dialSaved(_ macID: String, why: DialReason) {
+    /// `only` (`Candidate.key`s): those addresses alone, a route picked in the home screen's Connect menu.
+    func dialSaved(_ macID: String, why: DialReason, only: [String]? = nil) {
         guard let mac = savedMac(macID), let pin = mac.fingerprintData else { return }
         let name = displayName(macID)
         guard let identity = DeviceIdentity.existing() else {
@@ -304,8 +305,9 @@ extension StreamClient {
         }
         hostName = name
         status = why == .automatic ? "Reconnecting to \(name) remotely…" : "Connecting to \(name) remotely…"
-        let candidates = RemoteDialPolicy.order(mac.allAddresses, remotePort: mac.remotePort, lastWorked: mac.lastWorked,
+        var candidates = RemoteDialPolicy.order(mac.allAddresses, remotePort: mac.remotePort, lastWorked: mac.lastWorked,
                                                 localIPv4: Self.localIPv4Networks())
+        if let only { candidates = candidates.filter { only.contains($0.key) } }
         #if DEBUG
         print("remote: dialing \(name) (\(macID)) \(why): \(candidates.map(\.key))")
         #endif
@@ -710,9 +712,9 @@ extension StreamClient {
 
     /// A tap on a saved Mac's network row menu: Connect Remotely, a remote dial at home, to test
     /// the VPN path.
-    func connectRemotely(_ macID: String) {
+    func connectRemotely(_ macID: String, only: [String]? = nil) {
         reconnect = nil
-        dialSaved(macID, why: .connectRemotely)
+        dialSaved(macID, why: .connectRemotely, only: only)
     }
 
     // MARK: Kind 18

@@ -90,7 +90,7 @@ do {
     eq(off.changes(to: standard), "share clipboard off → on", "changes: and back")
     check(!off.validated().shareClipboard && standard.validated().shareClipboard, "validated keeps it either way")
     let made = HostConfig(maxFPS: 60, captureScale: 1, bitrate: 8_000_000, awayBitrate: 4_000_000, awayCaptureScale: 1, prioritizeSpeed: false,
-                          virtualDisplay: false, directWireless: false, remoteAccess: false, remotePort: 7455, internetAccess: false,
+                          virtualDisplay: false, directWireless: false, remoteAccess: false, remotePort: 7455,
                           requirePairing: true, shareClipboard: false)
     check(!made.shareClipboard, "a HostConfig made with it off has it off (as Sill.app's settings make one)")
     let all = HostSettingsChange(token: 1, maxFPS: 60, bitrate: 25_000_000, captureScale: 1, prioritizeSpeed: true, virtualDisplay: true,

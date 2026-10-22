@@ -763,7 +763,7 @@ package final class StreamCoordinator {
         if old.directWireless != next.directWireless { server.setPeerToPeer(next.directWireless) }
         // The doors', not the pipeline's: RemoteAccess starts, stops or moves the remote door, and
         // Require pairing changes who the home door admits (and its TXT record).
-        if old.remoteAccess != next.remoteAccess || old.remotePort != next.remotePort || old.internetAccess != next.internetAccess
+        if old.remoteAccess != next.remoteAccess || old.remotePort != next.remotePort
             || old.requirePairing != next.requirePairing {
             remote?.apply(next)
         }

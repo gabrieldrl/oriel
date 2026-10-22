@@ -128,7 +128,8 @@ enum SavedMacs {
 
     /// A verified kind 18 laid over `mac`: nil unless the signing key is the pin, the Mac ID is the
     /// saved one and it is newer than the last taken. Refreshes the name, the port and the Mac's
-    /// addresses; typed addresses and the one that last worked stay. An empty list, or one from a
+    /// addresses (`remembering`: the VPN ones it no longer lists stay after them); typed addresses
+    /// and the one that last worked stay. An empty list, or one from a
     /// Mac with Remote Access off, leaves the saved addresses alone: the Mac sends none while off
     /// (and none before its first look at its networks), and a device that took that at home had
     /// nothing to dial once away, after Remote Access came back on.
@@ -139,9 +140,27 @@ enum SavedMacs {
         if !clean.isEmpty { next.name = clean }
         if (1...65535).contains(info.remotePort) { next.remotePort = info.remotePort }
         let addresses = filtered(info.addresses, allowLoopback: allowLoopback)
-        if info.remoteAccess, !addresses.isEmpty { next.addresses = addresses }
+        if info.remoteAccess, !addresses.isEmpty { next.addresses = remembering(addresses, from: mac.addresses) }
         next.infoIssuedAt = info.issuedAt
         return next
+    }
+
+    /// At most this many of a Mac's own addresses are kept: as many as a Mac lists (AddressList).
+    static let maxAddresses = 12
+
+    /// A Mac's new list, then the VPN addresses this device learned of it before and the new list
+    /// lacks, at most `maxAddresses` (docs/reachable-plan.md). A VPN that is off now (Tailscale
+    /// turned off at home) still reaches the Mac once it is back on: Tailscale keeps a machine's
+    /// address and its MagicDNS name. Each came in a kind 18 the Mac's key signed, and every dial
+    /// pins that key, so an address that is someone else's by now gets nowhere. A LAN address
+    /// is that network's alone, and at home Bonjour finds the Mac: only the new list's are kept.
+    static func remembering(_ new: [MacAddress], from old: [MacAddress]) -> [MacAddress] {
+        var out = new
+        for a in old where a.kind == MacAddress.vpn
+            && !out.contains(where: { $0.host.lowercased() == a.host.lowercased() && $0.port == a.port }) {
+            out.append(a)
+        }
+        return Array(out.prefix(maxAddresses))
     }
 
     /// What each row calls its Mac: the saved name, and "Mac mini (2)" for the second one of that

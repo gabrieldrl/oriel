@@ -3,7 +3,8 @@ import Foundation
 /// Where a connection comes from, told from its addresses and the interface it arrived on, and
 /// which door admits it (docs/remote-access-plan.md §4.4). The home door (plain TCP, Bonjour)
 /// serves only loopback, link-local (AWDL included) and this Mac's own networks; the remote door
-/// (TLS, paired devices) also serves VPNs, and internet sources only with the Mac's internet switch.
+/// (TLS, paired devices) also serves VPNs, and never an internet source: this fork has no internet
+/// access (docs/reachable-plan.md).
 ///
 /// Defence in depth, not the boundary: a router that source-NATs or hairpins a port forward makes
 /// an internet peer look like `lan`. Pairing is the boundary.
@@ -92,13 +93,12 @@ enum OriginPolicy {
         o == .loopback || o == .direct || o == .lan
     }
 
-    /// The remote door: loopback, this Mac's networks and VPNs; the internet only with the Mac's
-    /// switch; never peer-to-peer (Direct Wireless is the home door's).
-    static func remoteAdmits(_ o: Origin, internetAccess: Bool) -> Bool {
+    /// The remote door: loopback, this Mac's networks and VPNs; never the internet, and never
+    /// peer-to-peer (Direct Wireless is the home door's).
+    static func remoteAdmits(_ o: Origin) -> Bool {
         switch o {
         case .loopback, .lan, .vpn: return true
-        case .internet: return internetAccess
-        case .direct: return false
+        case .internet, .direct: return false
         }
     }
 

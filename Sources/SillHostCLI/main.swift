@@ -12,6 +12,9 @@ setvbuf(stdout, nil, _IOLBF, 0)
 // Sources/SillHost/HostConfig.swift now (`HostConfig.standard`), which is also where the menu bar
 // app's Settings start. Change, rebuild, measure.
 var config = HostConfig.standard
+// Sill.app's Remote Access is on from the start; the CLI's remote door runs only with --remote,
+// so it never takes 7455 from Sill.app.
+config.remoteAccess = false
 
 // Optional. Streams the first window whose app name or title matches, before any client asks.
 // Normally left off: the client picks a window from its bar.
@@ -44,18 +47,12 @@ config.shareClipboard = !CommandLine.arguments.contains("--no-clipboard")
 // PORT or any free port, so it never collides with Sill.app's 7455. A new in-memory identity and
 // trust list every run. A pairing window is always open (a fresh one after each use or expiry);
 // its code and link are printed here, to this process's stdout only, and again when a device
-// near the Mac asks (kind 21). `--internet` also admits sources outside this Mac's networks and
-// VPNs. TEST ONLY: SILL_TEST_REMOTE_DIR=<dir> keeps the identity and pairings in a 0700
+// near the Mac asks (kind 21). Never sources outside this Mac's networks and VPNs: this fork has
+// no internet access (docs/reachable-plan.md). TEST ONLY: SILL_TEST_REMOTE_DIR=<dir> keeps the identity and pairings in a 0700
 // directory, on a --synthetic host only.
 let remoteFlag = CommandLine.arguments.first { $0 == "--remote" || $0.hasPrefix("--remote=") }
-let internetFlag = CommandLine.arguments.contains("--internet")
-if internetFlag && remoteFlag == nil {
-    print("--internet needs --remote.")
-    exit(2)
-}
 if let remoteFlag {
     config.remoteAccess = true
-    config.internetAccess = internetFlag
     if remoteFlag.hasPrefix("--remote=") {
         guard let p = Int(remoteFlag.dropFirst("--remote=".count)), (1024...65535).contains(p) else {
             print("--remote=PORT takes a port from 1024 to 65535.")
@@ -129,9 +126,6 @@ func startHost() {
                                           homePairing: pairingFlag, testHooks: true)
             coordinator = c
             await c.start(preselect: preselect)
-            if remote != nil, internetFlag {
-                print("Internet access on for this run: the remote door also admits paired devices from outside this Mac's networks and VPNs.")
-            }
             remote?.openPairing(requestedBy: nil)
             if synthetic { print("Synthetic mode: pick Desktop on the device (or from a test client) to stream a test pattern.") }
             if virtualDisplay { print("Virtual display mode: a picked window streams from its own HiDPI display; Ctrl-C puts it back.") }

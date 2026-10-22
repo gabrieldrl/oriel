@@ -183,16 +183,6 @@ package struct RemoteStatus: Equatable {
         case portInUse(Int)
         case failed(String)
     }
-    /// The router's own internet address, asked read-only while the internet switch is on.
-    package enum Router: Equatable {
-        case off, asking
-        case address(String)
-        /// The router's address is itself in 100.64/10: the provider shares it among many homes.
-        case carrierNAT(String)
-        /// The router sits behind another router (a private address, or kDNSServiceErr_DoubleNAT).
-        case doubleNAT
-        case noAnswer
-    }
     package enum Pairing: Equatable {
         case closed
         /// `byDevice`: a device opened it by asking (shown in front without the keyboard).
@@ -205,17 +195,13 @@ package struct RemoteStatus: Equatable {
     }
 
     package var remoteAccess: Bool
-    package var internetAccess: Bool
     package var listener: Listener
     /// In dial order, as kind 18 carries them.
     package var addresses: [MacAddress]
     /// Named VPN services with no address: "Tailscale" shows as "Tailscale — Not connected".
     package var vpnDown: [String]
-    /// This network's address, for the port-forward instruction and the typed pairing path.
+    /// This network's address, for the typed pairing path.
     package var lanAddress: String?
-    package var router: Router
-    /// The address name setting, as shown.
-    package var addressName: String
     package var pairing: Pairing
     package var paired: [PairedDeviceSummary]
     /// "The keychain couldn’t be used: …" when the identity could not be loaded.
@@ -227,13 +213,13 @@ package struct RemoteStatus: Equatable {
     /// "An iPhone or iPad Needs Sill Updated" (10 minutes from it).
     package var olderDeviceAt: Date?
 
-    package init(remoteAccess: Bool = false, internetAccess: Bool = false, listener: Listener = .off, addresses: [MacAddress] = [],
-                 vpnDown: [String] = [], lanAddress: String? = nil, router: Router = .off, addressName: String = "",
+    package init(remoteAccess: Bool = false, listener: Listener = .off, addresses: [MacAddress] = [],
+                 vpnDown: [String] = [], lanAddress: String? = nil,
                  pairing: Pairing = .closed, paired: [PairedDeviceSummary] = [], identityProblem: String? = nil,
                  homeDoor: HomeDoor = .plain, pairingRequest: PairingRequest? = nil, olderDeviceAt: Date? = nil) {
-        self.remoteAccess = remoteAccess; self.internetAccess = internetAccess; self.listener = listener
-        self.addresses = addresses; self.vpnDown = vpnDown; self.lanAddress = lanAddress; self.router = router
-        self.addressName = addressName; self.pairing = pairing; self.paired = paired; self.identityProblem = identityProblem
+        self.remoteAccess = remoteAccess; self.listener = listener
+        self.addresses = addresses; self.vpnDown = vpnDown; self.lanAddress = lanAddress
+        self.pairing = pairing; self.paired = paired; self.identityProblem = identityProblem
         self.homeDoor = homeDoor; self.pairingRequest = pairingRequest; self.olderDeviceAt = olderDeviceAt
     }
 }
