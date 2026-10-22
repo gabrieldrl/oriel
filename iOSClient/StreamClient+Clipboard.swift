@@ -28,7 +28,8 @@ struct ClipboardReceipt: Equatable {
 // The clipboard, this device's side (kind 32; docs/clipboard-plan.md). ClipboardPolicy has the rules;
 // this reads and writes UIPasteboard and keeps the session's state.
 //
-// - The Mac's text: written with `.localOnly` (Universal Clipboard does not carry it back to the Mac)
+// - The Mac's text: on the new screen held until its clipboard pill is tapped (`macClipboardText`),
+//   on the classic one at once; written with `.localOnly` (Universal Clipboard does not carry it back to the Mac)
 //   and a 10-minute expiration, while the switch is on; its change count becomes the handled one, so
 //   the chip never offers the Mac's own text back.
 // - This device's text: Sill never reads the clipboard by itself (iOS would ask "Allow Paste?"). It
@@ -118,7 +119,10 @@ extension StreamClient {
     /// The Settings group's switch moved.
     func clipboardSwitchChanged() {
         updateClipboardSubscription()
-        if !Self.clipboardOn { hideClipboardChip() }
+        if !Self.clipboardOn {
+            hideClipboardChip()
+            macClipboardText = nil
+        }
     }
 
     /// A move handed the session to its new connection (`finishMove`): the Mac keeps subscriptions per
@@ -131,6 +135,7 @@ extension StreamClient {
     /// The session ended: nothing of it is kept but the handled count.
     func resetClipboard() {
         hostClipboard = nil
+        macClipboardText = nil
         clipboardSubscribed = false
         clipboardSent = nil
         clipboardReceipt = nil
@@ -146,11 +151,33 @@ extension StreamClient {
 
     // MARK: The Mac's text
 
-    /// A kind 32 from the Mac.
+    /// A kind 32 from the Mac: written at once on the classic screen, held for the clipboard pill on
+    /// the new one.
     func receiveClipboard(_ payload: Data) {
-        let board = UIPasteboard.general
         guard let text = ClipboardPolicy.deviceWrites(payload, switchOn: Self.clipboardOn, hostClipboard: hostClipboard,
-                                                      lastSent: clipboardSent, changeCount: board.changeCount) else { return }
+                                                      lastSent: clipboardSent,
+                                                      changeCount: UIPasteboard.general.changeCount) else { return }
+        if StreamScreen.classic {
+            writeFromMac(text)
+        } else {
+            macClipboardText = text
+            #if DEBUG
+            print("clipboard: holding \(text.utf8.count) bytes from the Mac for the pill")
+            #endif
+        }
+    }
+
+    /// The clipboard pill's tap: the Mac's waiting text onto this device's clipboard.
+    func takeMacClipboard() {
+        guard let text = macClipboardText else { return }
+        macClipboardText = nil
+        writeFromMac(text)
+        let mac = macName.isEmpty ? "the Mac" : macName
+        UIAccessibility.post(notification: .announcement, argument: "Copied from \(mac)")
+    }
+
+    private func writeFromMac(_ text: String) {
+        let board = UIPasteboard.general
         board.setItems([[UTType.utf8PlainText.identifier: text]],
                        options: [.localOnly: true, .expirationDate: Date().addingTimeInterval(ClipboardPolicy.deviceExpiry)])
         clipboardHandled = board.changeCount

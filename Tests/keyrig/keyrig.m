@@ -141,6 +141,7 @@ static int point(NSString *script, double settle, double hold) {
                              @"HIDVirtualDevice": @YES };
     id service = startService(delegate, settle);
     int failures = 0;
+    uint32_t held = 0;   // the buttons down, carried on every move until `button 0`
     NSCharacterSet *separators = [NSCharacterSet characterSetWithCharactersInString:@";|"];
     for (NSString *raw in [script componentsSeparatedByCharactersInSet:separators]) {
         NSString *step = [raw stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
@@ -150,7 +151,11 @@ static int point(NSString *script, double settle, double hold) {
         double a = numbers.count > 0 ? [numbers[0] doubleValue] : 0, b = numbers.count > 1 ? [numbers[1] doubleValue] : 0;
         IOHIDEventRef event = NULL;
         if ([words[0] isEqualToString:@"wait"]) { spin(a); continue; }
-        if ([words[0] isEqualToString:@"move"] && numbers.count == 2) event = move(kCFAllocatorDefault, mach_absolute_time(), a, b, 0, 0, 0);
+        if ([words[0] isEqualToString:@"move"] && numbers.count == 2) event = move(kCFAllocatorDefault, mach_absolute_time(), a, b, 0, held, 0);
+        else if ([words[0] isEqualToString:@"button"] && numbers.count == 1) {
+            held = (uint32_t)a;
+            event = move(kCFAllocatorDefault, mach_absolute_time(), 0, 0, 0, held, 0);
+        }
         else if ([words[0] isEqualToString:@"wheel"] && numbers.count == 1) event = scroll(kCFAllocatorDefault, mach_absolute_time(), 0, a, 0, 0);
         else if ([words[0] isEqualToString:@"phase"] && words.count == 3 && numbers.count == 2) {
             NSDictionary *bits = @{ @"began": @1, @"changed": @2, @"ended": @4 };
@@ -176,7 +181,7 @@ static int point(NSString *script, double settle, double hold) {
 }
 
 static int usage(void) {
-    out(@"usage: keyrig keys <USAGE[:down|:up],…> [settle] [hold] | point <move DX,DY|wheel DY|phase P DX,DY|momentum BITS DY|wait S;…> [settle] [hold]");
+    out(@"usage: keyrig keys <USAGE[:down|:up],…> [settle] [hold] | point <move DX,DY|button MASK|wheel DY|phase P DX,DY|momentum BITS DY|wait S;…> [settle] [hold]");
     return 2;
 }
 

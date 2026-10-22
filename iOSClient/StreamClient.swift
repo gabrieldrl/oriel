@@ -787,6 +787,9 @@ final class StreamClient: ObservableObject {
     /// Mac takes and sends (`WindowList.clipboard`, 1 for text), nil from a Mac before it or with Share
     /// clipboard with devices off. Cleared with the session.
     @Published var hostClipboard: Int?
+    /// Text copied on the Mac that waits for the new screen's clipboard pill (DesktopScreen's
+    /// QuickControls) to put it on this device's clipboard; the classic screen writes it at once.
+    @Published var macClipboardText: String?
     /// The chip "Paste on ‹Mac›" is offered (ClipboardPolicy.offersChip) until it is used, dismissed or
     /// its time is up; the stream screen hides it while something is open over the stream.
     @Published var clipboardChip = false

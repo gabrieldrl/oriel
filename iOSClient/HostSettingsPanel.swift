@@ -36,8 +36,6 @@ struct HostSettingsPanel: View {
     @AccessibilityFocusState private var headerFocused: Bool
     /// Two seconds on this connection and still no state: the Mac runs a Sill without settings.
     @State private var olderMac = false
-    /// Bumped when Low Power Mode toggles, so the frame rate note is read again.
-    @State private var powerState = 0
     /// This device's switch for three-finger gestures (docs/trackpad-gestures-plan.md §8): on unless
     /// turned off, read by `StreamClient.sendGesture` at each gesture, never sent.
     @AppStorage(StreamClient.gesturesKey) private var gesturesOn = true
@@ -50,9 +48,6 @@ struct HostSettingsPanel: View {
     /// This device's switch for the clipboard (docs/clipboard-plan.md): on unless turned off, read by
     /// StreamClient+Clipboard at each decision; a change subscribes or stops at once.
     @AppStorage(StreamClient.clipboardKey) private var clipboardOn = true
-    /// VoiceOver is on: it keeps three-finger swipes and taps for itself, so the This iPad group says
-    /// its rows do the gestures instead.
-    @State private var voiceOver = HostSettingsPanel.voiceOverRunning
 
     private var mac: String { client.macName.isEmpty ? "the Mac" : client.macName }
     private static let shape = RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -131,12 +126,6 @@ struct HostSettingsPanel: View {
             let elapsed = client.connectedAt.map { Date().timeIntervalSince($0) } ?? 0
             if elapsed < 2 { try? await Task.sleep(for: .seconds(2 - elapsed)) }
             if !Task.isCancelled { olderMac = true }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange).receive(on: RunLoop.main)) { _ in
-            powerState += 1
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIAccessibility.voiceOverStatusDidChangeNotification).receive(on: RunLoop.main)) { _ in
-            voiceOver = Self.voiceOverRunning
         }
     }
 
@@ -255,7 +244,7 @@ struct HostSettingsPanel: View {
                     Callout(text: "The picture is arriving slowly from \(mac). Choose Low quality or Standard resolution.")
                 }
                 streamRows(shown)
-                Footnote(text: streamFooter)
+                GroupGap()
                 // Which quality these rows set, away from home or at home.
                 if let note = AwayCopy.footnote(state.away, mac: mac, remoteAccessOn: client.macInfo?.remoteAccess == true) {
                     Footnote(text: note, top: 0)
@@ -280,12 +269,12 @@ struct HostSettingsPanel: View {
                     .accessibilityHint(state.virtualDisplayNote ?? "")
                     .rowFrame()
                 }
+                // Only why it can't be turned on; what it does is left to its name.
                 if let note = state.virtualDisplayNote {
                     Footnote(text: note, warning: true)
                 } else {
-                    Footnote(text: "The window you pick moves onto an invisible display on \(mac) while it streams, so it keeps updating when covered.")
+                    GroupGap()
                 }
-                Footnote(text: "Applies to every device streaming from \(mac). The stream restarts for a moment.")
                 // Direct Wireless Connection: how devices reach the Mac, not how it streams; after the
                 // closing footer, whose "the stream restarts" is not true of it, and last, the least
                 // changed row with the longest footer (the compact halves' 259 pt shows the rest
@@ -503,7 +492,7 @@ struct HostSettingsPanel: View {
                     .padding(.bottom, -6)
                     .accessibilityHidden(true)      // announced as it came
             }
-            Footnote(text: ClipboardPolicy.Copy.footnote(on: clipboardOn, mac: mac, device: device))
+            GroupGap()
         }
         Rows {
             Toggle(isOn: $gesturesOn) {
@@ -519,7 +508,12 @@ struct HostSettingsPanel: View {
                 }
             }
         }
-        Footnote(text: gesturesFooter)
+        // Only why the switch does nothing; what the gestures do is in the rows above.
+        if gesturesOn, !macTakesGestures {
+            Footnote(text: "Update Sill on \(mac) to use these.", warning: true)
+        } else {
+            GroupGap()
+        }
     }
 
     /// The Mac's window list said it takes the gestures (`WindowList.gestures`).
@@ -543,18 +537,6 @@ struct HostSettingsPanel: View {
         ("arrow.down.right.and.arrow.up.left", "Pinch", "Apps", [GestureRow.Action(name: "Apps", gesture: .pinch)]),
         ("arrow.up.left.and.arrow.down.right", "Spread", "Show Desktop", [GestureRow.Action(name: "Show Desktop", gesture: .spread)]),
     ]
-
-    /// Under the switch: where the gestures go and what they do, or why nothing happens.
-    private var gesturesFooter: String {
-        guard gesturesOn else { return "Three-finger strokes do nothing while this is off." }
-        guard macTakesGestures else { return "Update Sill on \(mac) to use these." }
-        // VoiceOver keeps three-finger swipes and taps for itself, and no touch of them reaches Sill.
-        var text = voiceOver ? "VoiceOver keeps three-finger gestures for itself, so the rows above do them on \(mac) instead."
-            : "Three fingers on the trackpad or over the stream."
-        text += " While a window streams, a gesture shows the Desktop first, and the opposite gesture closes what one opened. \(mac) does these with its own keyboard shortcuts: one turned off in its Keyboard settings does nothing."
-        if device == "iPad" { text += " Four-finger swipes and a Magic Keyboard trackpad’s gestures stay with iPadOS." }
-        return text
-    }
 
     /// "through Tailscale (mac-mini.tail1234.ts.net)": the first VPN or internet address the Mac
     /// gave; otherwise "through your VPN or the internet".
@@ -620,26 +602,6 @@ struct HostSettingsPanel: View {
     private func directFooter(on: Bool) -> String {
         var text = "Lets devices reach \(mac) without a shared Wi\u{2011}Fi network, the way AirDrop does. While it’s on, streaming over Wi\u{2011}Fi can stutter."
         if on, client.connectedDirectly { text += " This \(device) is connected directly: turning this off disconnects it." }
-        return text
-    }
-
-    /// Under the stream rows: what Quality counts and what its top presets need (the Mac's
-    /// Settings › Streaming says the same). A frame rate limit above what this screen shows changes
-    /// nothing for it, which is worth saying on a 60 Hz device; away from home this device asks
-    /// for 60 fps.
-    private var streamFooter: String {
-        _ = powerState
-        var text = "Quality is per 60 fps; a 120 fps stream gets twice as much. " + QualityPreset.fastLinkNote
-        let away = client.awayCapsFrameRate
-        let wanted = StreamClient.wantedFPS(remote: away)
-        guard wanted < 120 else { return text }
-        if away, StreamClient.wantedFPS() > wanted {
-            text += " Away from home, this \(device) asks for \(wanted) fps, which halves the data your Mac sends."
-        } else if ProcessInfo.processInfo.isLowPowerModeEnabled, StreamClient.screenMaximumFPS() >= 120 {
-            text += " Low Power Mode holds this \(device) to \(wanted) fps."
-        } else {
-            text += " This \(device) shows up to \(wanted) fps."
-        }
         return text
     }
 }
@@ -826,6 +788,11 @@ private struct Footnote: View {
         .padding(.top, top)
         .padding(.bottom, 12)
     }
+}
+
+/// The space a footnote would leave between two groups, for a group with none.
+private struct GroupGap: View {
+    var body: some View { Color.clear.frame(height: 12).accessibilityHidden(true) }
 }
 
 /// Something to know before touching anything: the Mac did not answer, its hardware encoder is

@@ -454,17 +454,7 @@ struct PortraitStreamScreen: View {
     /// a phone sends its layout's picture instead (`phone`), the same rect or, with Larger Picture,
     /// the room this pane sits at the top of.
     private func picturePane(measured: Bool) -> some View {
-        ZStack {
-            StreamView(client: client)
-            InputOverlay(videoSize: client.videoSize,
-                         send: { client.sendInput($0) },
-                         setOwnPointer: { client.setOwnPointer($0, from: $1) },
-                         proxy: overlay,
-                         isKeyboardShown: $keyboardShown,
-                         latchedModifiers: latched,
-                         onModifiersConsumed: { latched = [] },
-                         sendGesture: { client.sendGesture($0, fingers: $1) })
-        }
+        StreamSurface(client: client, overlay: overlay, keyboardShown: $keyboardShown, latched: $latched)
         .background(Palette.panel)
         .overlay(alignment: .top) { LinkLineView(text: linkLine) }
         .clipShape(streamShape)

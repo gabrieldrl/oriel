@@ -101,6 +101,10 @@ enum DuoLayout {
 // MARK: - Screen
 
 struct StreamScreen: View {
+    /// This screen instead of DesktopScreen, the one being designed again: `-SillClassicScreen 1`
+    /// for a run, or `defaults write` it for good.
+    static var classic: Bool { UserDefaults.standard.bool(forKey: "SillClassicScreen") }
+
     @ObservedObject var client: StreamClient
     @State private var drawerOpen = false
     @State private var keyboardShown = false
@@ -1065,18 +1069,7 @@ struct StreamScreen: View {
         ZStack(alignment: .topLeading) {
             Color.black
 
-            ZStack {
-                StreamView(client: client)
-                // Same frame as the video, so a touch maps straight onto the streamed frame.
-                InputOverlay(videoSize: client.videoSize,
-                             send: { client.sendInput($0) },
-                             setOwnPointer: { client.setOwnPointer($0, from: $1) },
-                             proxy: overlay,
-                             isKeyboardShown: $keyboardShown,
-                             latchedModifiers: latched,
-                             onModifiersConsumed: { latched = [] },
-                             sendGesture: { client.sendGesture($0, fingers: $1) })
-            }
+            StreamSurface(client: client, overlay: overlay, keyboardShown: $keyboardShown, latched: $latched)
             .background(Palette.panel)
             .overlay(alignment: .top) { LinkLineView(text: shownLinkLine) }
             .clipShape(streamShape)

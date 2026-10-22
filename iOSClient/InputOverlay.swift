@@ -74,6 +74,26 @@ final class InputOverlayView: UIView, UIKeyInput, UIGestureRecognizerDelegate {
     private weak var wheelScroll: UIPanGestureRecognizer?
     /// The Pencil's hover and the iPad's pointer, which the pointer's scrolls recognize alongside.
     private weak var hover: UIHoverGestureRecognizer?
+    private var fingerRecognizers: [UIGestureRecognizer] = []
+
+    /// Fingers and the Pencil on the picture reach the Mac (taps, drags, scrolls, gestures). Off in
+    /// the new screen's Trackpad mode: then a touch that is not the iPad's own pointer goes through
+    /// this view to the trackpad under it (`hitTest`), and the Pencil's hover moves nothing.
+    var takesFingers = true {
+        didSet { if takesFingers != oldValue { fingerRecognizers.forEach { $0.isEnabled = takesFingers } } }
+    }
+    /// The iPad's own pointer (a Magic Keyboard's trackpad, a mouse) over the picture is the Mac's:
+    /// its moves, clicks and scrolls. Off in the new screen's Touch mode. A press already down still
+    /// comes up.
+    var takesPointer = true {
+        didSet {
+            guard takesPointer != oldValue else { return }
+            trackpadScroll?.isEnabled = takesPointer
+            wheelScroll?.isEnabled = takesPointer
+        }
+    }
+    /// The iPad's pointer holds a button down here: its up is sent whatever `takesPointer` says by then.
+    private var pointerPressed = false
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -109,6 +129,7 @@ final class InputOverlayView: UIView, UIKeyInput, UIGestureRecognizerDelegate {
         pan.allowedTouchTypes = directOnly
         pan.delegate = self
         addGestureRecognizer(pan)
+        fingerRecognizers = [tap, longPress, pan]
 
         // Pencil hover on the iPads that support it, and the trackpad/mouse pointer everywhere.
         let hover = UIHoverGestureRecognizer(target: self, action: #selector(handleHover))
@@ -434,13 +455,14 @@ final class InputOverlayView: UIView, UIKeyInput, UIGestureRecognizerDelegate {
     ///
     /// Both send the same moves; they differ only in what drew this device's pointer: the Pencil's
     /// position is kept (drawn only with Q2's flip), the iPad's own pointer keeps none, as iPadOS
-    /// draws it. Only a Pencil reports a height or a tilt (a trackpad or mouse pointer reads 0 for
-    /// both), which is how the two are told apart here.
+    /// draws it. Only a Pencil reports a height or a tilt (a trackpad or mouse pointer reads a height
+    /// of 0 and stands upright, an altitude of π/2), which is how the two are told apart here.
     @objc private func handleHover(_ gesture: UIHoverGestureRecognizer) {
         switch gesture.state {
         case .began, .changed:
             if gesture.state == .began { hoverIsPencil = false }
-            if gesture.zOffset > 0 || gesture.altitudeAngle > 0 { hoverIsPencil = true }
+            if gesture.zOffset > 0 || gesture.altitudeAngle < .pi / 2 - 0.01 { hoverIsPencil = true }
+            guard hoverIsPencil ? takesFingers : takesPointer else { return }
             let at = sendPointer(.move, at: gesture.location(in: self), clamped: true)
             if hoverIsPencil { setOwnPointer(at, .pencil) } else { setOwnPointer(nil, .none) }
         default:
@@ -456,8 +478,16 @@ final class InputOverlayView: UIView, UIKeyInput, UIGestureRecognizerDelegate {
 
     /// Pencil and iPad trackpad/mouse touches are handled here as a pointer: move, then a click.
     /// Finger touches stay with the gesture recognizers above (tap, long-press, pan).
-    private static func pointerTouch(in touches: Set<UITouch>) -> UITouch? {
-        touches.first { $0.type == .pencil || $0.type == .indirectPointer }
+    /// The iPad's own pointer only while this view takes it (or holds its button down).
+    private func pointerTouch(in touches: Set<UITouch>) -> UITouch? {
+        touches.first { $0.type == .pencil || ($0.type == .indirectPointer && (takesPointer || pointerPressed)) }
+    }
+
+    /// While this view does not take fingers, only the iPad's own pointer lands here: a press of it
+    /// carries its buttons, a finger's or the Pencil's none, and goes on to the view under this one.
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        if !takesFingers, let event, event.type == .touches, event.buttonMask.isEmpty { return nil }
+        return super.hitTest(point, with: event)
     }
 
     /// This device's own pointer after a pointer touch at `at`: the Pencil's position, from
@@ -472,7 +502,7 @@ final class InputOverlayView: UIView, UIKeyInput, UIGestureRecognizerDelegate {
         // Any new touch stops a coasting flick, the way touching a moving list does on iOS (and
         // before the Pencil clicks on content that is still sliding).
         momentum.stop()
-        guard let touch = Self.pointerTouch(in: touches) else {
+        guard let touch = pointerTouch(in: touches) else {
             super.touchesBegan(touches, with: event); return
         }
         let point = touch.location(in: self)
@@ -480,11 +510,12 @@ final class InputOverlayView: UIView, UIKeyInput, UIGestureRecognizerDelegate {
         ownPointer(at, for: touch)
         // A trackpad's secondary click (two fingers, or right button) is a right click on the Mac.
         pointerButtonIsSecondary = touch.type == .indirectPointer && (event?.buttonMask.contains(.secondary) ?? false)
+        if touch.type == .indirectPointer { pointerPressed = true }
         sendPointer(pointerButtonIsSecondary ? .rightDown : .leftDown, at: point, clamped: false)
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = Self.pointerTouch(in: touches) else {
+        guard let touch = pointerTouch(in: touches) else {
             super.touchesMoved(touches, with: event); return
         }
         // A move while the button is down is a drag on the host's side.
@@ -492,20 +523,22 @@ final class InputOverlayView: UIView, UIKeyInput, UIGestureRecognizerDelegate {
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = Self.pointerTouch(in: touches) else {
+        guard let touch = pointerTouch(in: touches) else {
             super.touchesEnded(touches, with: event); return
         }
         if let at = sendPointer(pointerButtonIsSecondary ? .rightUp : .leftUp, at: touch.location(in: self), clamped: true) { ownPointer(at, for: touch) }
         pointerButtonIsSecondary = false
+        if touch.type == .indirectPointer { pointerPressed = false }
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = Self.pointerTouch(in: touches) else {
+        guard let touch = pointerTouch(in: touches) else {
             super.touchesCancelled(touches, with: event); return
         }
         // Never leave the button stuck down.
         if let at = sendPointer(pointerButtonIsSecondary ? .rightUp : .leftUp, at: touch.location(in: self), clamped: true) { ownPointer(at, for: touch) }
         pointerButtonIsSecondary = false
+        if touch.type == .indirectPointer { pointerPressed = false }
     }
 
     // MARK: - Keyboard
@@ -891,6 +924,38 @@ final class InputOverlayProxy {
 /// disconnect notifications (all keyboards count as one). DEBUG `-SillHardwareKeyboard 1|0` says so
 /// instead for a run (the harness, the gates), and `-SillKeyProbe 1` prints every key GameController
 /// sees ("hwkey: usage 41 down via GameController"), beside UIKit's own channels. Main thread.
+/// Whether a pointer device is attached to this device: a Magic Keyboard's trackpad, a Magic
+/// Trackpad or a mouse (GameController's `GCMouse`, which counts each). The new screen goes to Trackpad
+/// mode as one connects and back to Touch as the last goes. DEBUG `-SillPointerDevice 1|0` says so
+/// instead for a run. Main thread.
+final class PointerDeviceMonitor: ObservableObject {
+    static let shared = PointerDeviceMonitor()
+    @Published private(set) var attached: Bool
+
+    private init() {
+        attached = Self.override ?? !GCMouse.mice().isEmpty
+        let center = NotificationCenter.default
+        for name in [Notification.Name.GCMouseDidConnect, .GCMouseDidDisconnect] {
+            center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in self?.changed() }
+        }
+    }
+
+    private func changed() {
+        let now = Self.override ?? !GCMouse.mice().isEmpty
+        #if DEBUG
+        print("pointer device: \(GCMouse.mice().count) attached" + (Self.override == nil ? "" : " (-SillPointerDevice keeps it)"))
+        #endif
+        if now != attached { attached = now }
+    }
+
+    private static var override: Bool? {
+        #if DEBUG
+        if let raw = UserDefaults.standard.string(forKey: "SillPointerDevice") { return raw == "1" }
+        #endif
+        return nil
+    }
+}
+
 final class HardwareKeyboardMonitor: ObservableObject {
     static let shared = HardwareKeyboardMonitor()
     @Published private(set) var attached: Bool
@@ -950,6 +1015,9 @@ struct InputOverlay: UIViewRepresentable {
     var onModifiersConsumed: () -> Void = {}
     /// `StreamClient.sendGesture`; see `InputOverlayView.sendGesture`.
     var sendGesture: (TrackpadGestures.Gesture, Int) -> Bool = { _, _ in false }
+    /// See `InputOverlayView.takesFingers` and `takesPointer`.
+    var takesFingers = true
+    var takesPointer = true
 
     func makeUIView(context: Context) -> InputOverlayView {
         let view = InputOverlayView(frame: .zero)
@@ -964,6 +1032,8 @@ struct InputOverlay: UIViewRepresentable {
         uiView.setOwnPointer = setOwnPointer
         uiView.latchedModifiers = latchedModifiers
         uiView.sendGesture = sendGesture
+        uiView.takesFingers = takesFingers
+        uiView.takesPointer = takesPointer
         // Called straight from a UIKit text-input callback, never from inside a SwiftUI update,
         // so writing the binding here needs no hop.
         uiView.onModifiersConsumed = onModifiersConsumed

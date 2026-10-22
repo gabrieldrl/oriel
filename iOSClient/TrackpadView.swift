@@ -85,6 +85,8 @@ struct TrackpadView: UIViewRepresentable {
     let onModifiersConsumed: () -> Void
     var verticalSpan: CGFloat? = nil
     var sendGesture: (TrackpadGestures.Gesture, Int) -> Bool = { _, _ in false }
+    /// See `TrackpadSurface.fingersOnly`.
+    var fingersOnly = false
 
     func makeUIView(context: Context) -> TrackpadSurface {
         let view = TrackpadSurface(frame: .zero)
@@ -104,6 +106,7 @@ struct TrackpadView: UIViewRepresentable {
         uiView.latchedModifiers = latched
         uiView.verticalSpan = verticalSpan
         uiView.sendGesture = sendGesture
+        uiView.fingersOnly = fingersOnly
         // Called from a gesture callback, never from inside a SwiftUI update, so the binding write
         // it performs needs no hop to the next runloop turn.
         uiView.onModifiersConsumed = onModifiersConsumed
@@ -131,6 +134,23 @@ final class TrackpadSurface: UIView, UIGestureRecognizerDelegate {
     /// pointer as far down as across on a 16:10 picture, and the extra height is room, not a slower
     /// pointer. Pointer motion, two-finger scrolling and its coast all use it.
     var verticalSpan: CGFloat?
+    /// Only fingers and the Pencil work the pad, never the iPad's own pointer: the new screen's pad
+    /// lies over the picture, and the pointer goes through it to the picture's own input
+    /// (InputOverlayView.takesPointer), its moves, presses and scrolls alike (`hitTest`).
+    var fingersOnly = false {
+        didSet {
+            guard fingersOnly != oldValue else { return }
+            let types: [UITouch.TouchType] = fingersOnly ? [.direct, .pencil] : [.direct, .indirect, .pencil, .indirectPointer]
+            gestureRecognizers?.forEach { $0.allowedTouchTypes = types.map { NSNumber(value: $0.rawValue) } }
+        }
+    }
+
+    /// Fingers only: the pointer's hover and scrolls, and a press of its buttons (a finger's or the
+    /// Pencil's carries none), go on to the view under the pad.
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        if fingersOnly, let event, event.type != .touches || !event.buttonMask.isEmpty { return nil }
+        return super.hitTest(point, with: event)
+    }
     /// `verticalSpan`, or the pad's height.
     private var ySpan: CGFloat { verticalSpan.flatMap { $0 > 0 ? $0 : nil } ?? bounds.height }
     /// A three- or four-finger gesture the pad decided, for the Mac (`StreamClient.sendGesture`,

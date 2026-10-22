@@ -30,7 +30,11 @@ struct ContentView: View {
         ZStack {
             Color.black.ignoresSafeArea()
             if client.connected {
-                StreamScreen(client: client)
+                if StreamScreen.classic {
+                    StreamScreen(client: client)
+                } else {
+                    DesktopScreen(client: client)
+                }
             } else {
                 ConnectScreen(client: client)
             }
@@ -597,7 +601,9 @@ struct LayoutHarness: View {
         if spec.live {
             ZStack {
                 Color.black
-                if live.connected {
+                if live.connected, !StreamScreen.classic {
+                    DesktopScreen(client: live)
+                } else if live.connected {
                     StreamScreen(client: live,
                                  drawerOpen: spec.drawerOpen,
                                  keyboardShown: spec.keyboardShown,
@@ -614,6 +620,8 @@ struct LayoutHarness: View {
                 Color.black
                 ConnectScreen(client: mock, adding: options.adding, typed: options.typed, scannerOverride: options.scanner)
             }
+        } else if !StreamScreen.classic {
+            DesktopScreen(client: mock)
         } else {
             StreamScreen(client: mock,
                          drawerOpen: spec.drawerOpen,
