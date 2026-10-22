@@ -10,8 +10,7 @@ struct AppsPill: View {
 
     var body: some View {
         QuickPillFace(icon: AppsTray.icon, text: "Apps")
-            .quickPillFrame()
-            .foregroundStyle(open ? Color.black : Color.white)
+            .quickPillFrame(open ? .black : .white)
             .background(Capsule().fill(open ? Color.white : QuickControlStyle.fill))
             .contentShape(Capsule())
             .onTapGesture { onTap() }

@@ -818,6 +818,30 @@ final class StreamClient: ObservableObject {
     var soundSentAt: TimeInterval = 0
     var soundSendWork: DispatchWorkItem?
     let soundPlayer = SoundPlayer()
+    /// The Mac's extended displays (kinds 49 to 51, StreamClient+Displays, docs/displays-plan.md): what
+    /// this session's Mac makes (`WindowList.displays`), nil from a Mac before them. Cleared with the
+    /// session.
+    @Published var hostDisplays: Int?
+    /// This device's displays on the Mac, as its last kind 49 listed them, how many it may have, and
+    /// why the last add made nothing.
+    @Published var extendedDisplays: [ExtendedDisplay] = []
+    @Published var displaysMax = 0
+    @Published var displaysProblem: String?
+    /// Each display's picture (0: the Mac's own), every few seconds.
+    @Published var displayPictures: [UInt32: UIImage] = [:]
+    var displaysSubscribed = false
+    /// An add is waiting for the Mac's list: the displays before it, so the new one is streamed.
+    var pendingNewDisplay: Set<UInt32>?
+    /// A source this device asked for, whose display's settings go to the Mac once its state and list
+    /// are in (`applyDisplaySettings`).
+    var displaySettingsArriving: StreamSource?
+    /// The Mac's screen off and its own input away (kind 52, StreamClient+Curtain): whether this
+    /// session's Mac offers it (`WindowList.curtain`), whether it is up for this device, and why not.
+    @Published var hostCurtain: Int?
+    @Published var curtainOn = false
+    @Published var curtainProblem: String?
+    /// This connection has asked for it, as this device keeps it for this Mac.
+    var curtainAsked = false
     /// Text copied on the Mac that waits for the new screen's clipboard pill (DesktopScreen's
     /// QuickControls) to put it on this device's clipboard; the classic screen writes it at once.
     @Published var macClipboardText: String?
@@ -2411,8 +2435,10 @@ final class StreamClient: ObservableObject {
         menusMoved()
         // The Mac keeps the clipboard's subscription per connection: the new one subscribes too.
         clipboardMoved()
-        // And the sound's.
+        // And the sound's, and the displays'.
         soundMoved()
+        displaysMoved()
+        curtainMoved()
         if fenced {
             DispatchQueue.main.asyncAfter(deadline: .now() + Self.fenceTimeout) { [weak self] in
                 guard let self, let released = self.link.release(old) else { return }
@@ -3088,7 +3114,8 @@ final class StreamClient: ObservableObject {
         cancelRemoteDial()
         let c = connection
         connection = nil
-        c?.cancel()
+        // Disconnect is from the whole Mac: this device's displays go now (StreamClient+Displays).
+        if let c, displaysSubscribed { endDisplays(closing: c) } else { c?.cancel() }
         tearDown(status: Self.lookingOnNetwork)
         updateDiscovery()
     }
@@ -3214,8 +3241,10 @@ final class StreamClient: ObservableObject {
         resetMenus()
         // Nor the clipboard's subscription, its chip or its note.
         resetClipboard()
-        // Nor its sound.
+        // Nor its sound, nor its displays.
         resetSound()
+        resetDisplays()
+        resetCurtain()
     }
 
     // MARK: - Client → host
@@ -3224,6 +3253,7 @@ final class StreamClient: ObservableObject {
     /// answers with a fresh window list. It counts for the tour as something happening.
     func select(_ source: StreamSource) {
         noteAction()
+        noteShown(source)
         request(source)
     }
 
@@ -3233,6 +3263,8 @@ final class StreamClient: ObservableObject {
     private func request(_ source: StreamSource) {
         choicesSent += 1
         send(.selectSource, Wire.encode(source))
+        displaySettingsArriving = source
+        applyDisplaySettings()
         #if DEBUG
         // Layout harness (mock, no connection): show the pick locally so taps can be checked.
         if connection == nil { DispatchQueue.main.async { self.active = source } }
@@ -3684,6 +3716,9 @@ final class StreamClient: ObservableObject {
                 self.hostClipboardChanged(list.clipboard)
                 // The Mac's sound: the first list that says it sends it subscribes.
                 self.hostSoundChanged(list.sound)
+                // Its extended displays: the same, which brings this device's back.
+                self.hostDisplaysChanged(list.displays)
+                self.hostCurtainChanged(list.curtain)
                 if !self.sessionListed {
                     self.sessionListed = true
                     #if DEBUG
@@ -3708,7 +3743,7 @@ final class StreamClient: ObservableObject {
                 if self.macName != list.macName { self.macName = list.macName; self.loadWindowOrder() }
                 let previous = self.active
                 self.windows = list.windows
-                self.active = list.active
+                self.active = list.source
                 // Forget thumbnails for windows that are gone.
                 let live = Set(list.windows.map(\.id))
                 self.thumbnails = self.thumbnails.filter { live.contains($0.key) }
@@ -3735,7 +3770,7 @@ final class StreamClient: ObservableObject {
                     let watched: DiscoveryPolicy.Watched
                     switch previous {
                     case .none: watched = .nothing
-                    case .desktop: watched = .desktop
+                    case .desktop, .display: watched = .desktop
                     case .window(let id): watched = .window(listed: list.windows.contains { $0.id == id })
                     }
                     switch DiscoveryPolicy.autoDesktop(watched: watched, sinceLastAuto: Date().timeIntervalSince(self.lastAutoDesktop)) {
@@ -3744,7 +3779,8 @@ final class StreamClient: ObservableObject {
                         if watched == .desktop { print("session: the Mac stopped the Desktop; asking for it again") }
                         #endif
                         self.lastAutoDesktop = Date()
-                        self.request(.desktop)
+                        // A connection's first: the display this device last watched on this Mac.
+                        self.request(previous == .none ? self.firstSource() : .desktop)
                     case .askAfterWait:
                         guard case .window(let id) = previous else { break }
                         // A window can drop off the list for a second or two (a Space change,
@@ -3843,6 +3879,30 @@ final class StreamClient: ObservableObject {
             DispatchQueue.main.async {
                 guard self.connection === from else { return }
                 self.receiveSoundControl(data)
+            }
+        case .curtain:
+            // The Mac's screen off: its answer (StreamClient+Curtain).
+            guard let state = Wire.decode(CurtainControl.self, from: data) else { return }
+            let from = connection
+            DispatchQueue.main.async {
+                guard self.connection === from else { return }
+                self.receiveCurtain(state)
+            }
+        case .displays:
+            // This device's extended displays (StreamClient+Displays).
+            guard let list = Wire.decode(DisplayList.self, from: data) else { return }
+            let from = connection
+            DispatchQueue.main.async {
+                guard self.connection === from else { return }
+                self.receiveDisplays(list)
+                self.showNewDisplay()
+            }
+        case .displayThumbnail:
+            guard let (id, jpeg) = ImageBlob.decodeThumbnail(data), let image = UIImage(data: jpeg) else { return }
+            let from = connection
+            DispatchQueue.main.async {
+                guard self.connection === from else { return }
+                self.displayPictures[id] = image
             }
         case .macMenu:
             // The Mac's menus: a top level, or the answer to one of this connection's kind 27s or 25s
@@ -3992,9 +4052,18 @@ final class StreamClient: ObservableObject {
 extension StreamClient {
     /// A control's action: its field set to an absolute value. Sends only what changes what is
     /// shown, and nothing before this connection's first state (an older Mac never sends one).
-    /// Nothing else ever sends a change: not a connect, not a broadcast, not an `onChange`. Main thread.
+    /// Kept for the display showing (`rememberDisplaySettings`). The only other change sent is a
+    /// display's own, when this device asks to show it (`applyDisplaySettings`): never a connect alone,
+    /// a broadcast or an `onChange`. Main thread.
     func changeSettings(_ change: HostSettingsChange) {
         noteAction()
+        rememberDisplaySettings(change)
+        sendSettings(change)
+    }
+
+    /// A change on its way to the Mac: the person's (`changeSettings`), or a display's own brought back
+    /// (`applyDisplaySettings`). Main thread.
+    func sendSettings(_ change: HostSettingsChange) {
         // The move home carries a session whose remote connection went (`rescue`): a pick now was
         // made against the away state, and held it would reach the Mac on the home connection.
         guard !(sessionDead && moveHomeUnderWay) else { return }
@@ -4018,6 +4087,7 @@ extension StreamClient {
         if !refused.isEmpty { settingsRefusals += 1 }
         scheduleSettingsExpiry()
         rememberDirectWireless(state)
+        applyDisplaySettings()
         #if DEBUG
         logLink(from: linkBefore, to: state.link)
         #endif

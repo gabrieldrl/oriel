@@ -83,6 +83,15 @@ The clipboard (kind 32; docs/clipboard-plan.md). Each kind 32 received is printe
   --sound            a kind 48 {} right after the select: the Mac's sound (kind 47 counted each second,
                      its format and every kind 48 printed; docs/mac-sound-plan.md)
   --raw48=JSON@T     this literal kind 48 payload T seconds in: {"muted":true}, {"volume":0.3,"token":2}
+  --displays         a kind 50 {} before the select: the extended displays' subscription (docs/displays-plan.md),
+                     which brings this client's back; every kind 49 is printed, kind 51 counted, and the
+                     window list's displays= and showing= when the host says them. The positional source
+                     and --pick also take display:ID
+  --raw50=JSON@T     this literal kind 50 payload T seconds in: {"action":"add","width":1180,"height":760},
+                     {"action":"remove","id":ID}, {"action":"resize","id":ID,"match":"primary"}, {"action":"end"};
+                     LAST in it is the last display a kind 49 listed, as --pick=display:last@T is
+  --raw52=JSON@T     this literal kind 52 payload T seconds in: {"on":true}, {"on":false} (the Mac's screen
+                     off, docs/curtain-plan.md); each kind 52 is printed, and the window list's curtain=
   --raw32=JSON@T     this literal kind 32 payload T seconds in (split on the last @), as written:
                      {"stop":true} ends the subscription
   --expect=clipboard=TEXT  (with --expect's other keys, or alone) at exit, the last kind 32's text;
@@ -135,7 +144,7 @@ with status 2 (--raw17 and --input go out as written). Find PORT with: lsof -nP 
 The --synthetic hosts do not advertise over Bonjour, so this is the only way to reach them."""
 import json, re, socket, struct, sys, time
 
-KIND = {0:"ps",1:"frame",2:"list",3:"thumb",4:"icon",5:"apps",11:"pong",13:"tick",14:"cursor",16:"settings",18:"macinfo",20:"pairresult",22:"goodbye",24:"menu",26:"pointer",32:"clipboard",47:"sound",48:"soundctl"}
+KIND = {0:"ps",1:"frame",2:"list",3:"thumb",4:"icon",5:"apps",11:"pong",13:"tick",14:"cursor",16:"settings",18:"macinfo",20:"pairresult",22:"goodbye",24:"menu",26:"pointer",32:"clipboard",47:"sound",48:"soundctl",49:"displays",51:"displaypic"}
 BOOL = {"1": True, "0": False, "true": True, "false": False, "on": True, "off": False, "yes": True, "no": False}
 BOOL_KEYS = {"prioritizeSpeed", "virtualDisplay", "directWireless", "persistent", "virtualDisplayAvailable",
              "thisConnectionAway", "awayRunning"}
@@ -146,7 +155,7 @@ SET_KEYS = {"maxFPS", "bitrate", "captureScale", "prioritizeSpeed", "virtualDisp
 AWAY_KEYS = {"homeBitrate", "homeCaptureScale", "awayBitrate", "awayCaptureScale", "thisConnectionAway", "awayRunning"}
 EXPECT_KEYS = SET_KEYS | {"persistent", "virtualDisplayAvailable", "linkState", "clipboard"} | AWAY_KEYS
 TIMED = ("set", "raw17", "pick", "fps-after", "stop-ping", "stop-read", "pairing-wanted", "fetch", "press", "raw25", "raw27",
-         "move", "tap", "key", "input", "gesture", "raw28", "copy", "copy-bytes", "raw32", "raw48")
+         "move", "tap", "key", "input", "gesture", "raw28", "copy", "copy-bytes", "raw32", "raw48", "raw50", "raw52")
 INPUT = ("move", "tap", "key", "input")
 # What --gesture may send: TrackpadGesture's six names (Gesture.swift). Anything else goes with --raw28.
 GESTURES = ("swipeUp", "swipeDown", "swipeLeft", "swipeRight", "pinch", "spread")
@@ -163,7 +172,12 @@ def source(spec):
     if spec == "desktop": return {"desktop": {}}
     if spec == "none": return {"none": {}}
     if spec.startswith("window:") and spec[7:].isdigit(): return {"window": {"_0": int(spec[7:])}}
-    raise ValueError(f"not a source: {spec!r} (desktop, none or window:ID)")
+    if spec.startswith("display:") and spec[8:].isdigit(): return {"display": {"_0": int(spec[8:])}}
+    if spec == "display:last": return {"display": {"_0": "LAST"}}   # a timed pick's: resolved when sent
+    raise ValueError(f"not a source: {spec!r} (desktop, none, window:ID, display:ID or display:last)")
+
+# The last display a kind 49 listed: --pick=display:last and LAST in --raw50 name it.
+last_display = None
 
 def number(v, what, kind=int):
     try: return kind(v)
@@ -487,7 +501,7 @@ try:
         elif name in VALUED:
             if not body: raise ValueError(f"--{name} needs a value")
             if name in ("big-payload", "flood") and number(body, f"--{name}") < 1: raise ValueError(f"--{name} must be at least 1")
-        elif a not in ("--junk", "--stats", "--tls", "--expect-tls-fail", "--menus", "--pointer", "--no-select", "--pair-ask", "--clipboard", "--sound",
+        elif a not in ("--junk", "--stats", "--tls", "--expect-tls-fail", "--menus", "--pointer", "--no-select", "--pair-ask", "--clipboard", "--sound", "--displays",
                        "--pair-ask=cable", "--pair-cancel") and not a.startswith(("--fps=", "--expect=")):
             raise ValueError(f"unknown flag {a!r}")
     events.sort(key=lambda e: (e[0], e[1]))
@@ -625,6 +639,9 @@ try:
         if hello_delay:
             time.sleep(hello_delay)
         s.sendall(msg(23, json.dumps(hello).encode())); print(f"  sent hello {json.dumps(hello)}" + (f" after {hello_delay:g} s" if hello_delay else ""))
+    if "--displays" in flags:
+        # The displays' subscription (kind 50 {}), before the pick, as a device sends it at its first list.
+        s.sendall(msg(50, b"{}")); print("  sent displays subscription")
     if "--no-select" not in flags: s.sendall(msg(6, json.dumps(sel).encode()))
     if "--menus" in flags:
         # The subscription (kind 27 without an id); its token is the first of the shared counter.
@@ -706,7 +723,8 @@ def fire(e, now):
     elif name == "raw17":
         s.sendall(msg(17, text.encode())); print(f"  sent raw kind 17 {text} at {at}")
     elif name == "pick":
-        s.sendall(msg(6, json.dumps(parsed).encode())); print(f"  sent pick {text} at {at}")
+        body = json.dumps(parsed).replace('"LAST"', str(last_display))
+        s.sendall(msg(6, body.encode())); print(f"  sent pick {body} at {at}")
     elif name == "fps-after":
         s.sendall(viewport(parsed)); print(f"  sent viewport fps={parsed} at {at}")
     elif name == "stop-ping":
@@ -751,6 +769,11 @@ def fire(e, now):
         s.sendall(msg(32, text.encode())); print(f"  sent raw kind 32 {text} at {at}")
     elif name == "raw48":
         s.sendall(msg(48, text.encode())); print(f"  sent raw kind 48 {text} at {at}")
+    elif name == "raw52":
+        s.sendall(msg(52, text.encode())); print(f"  sent raw kind 52 {text} at {at}")
+    elif name == "raw50":
+        body = text.replace("LAST", str(last_display))
+        s.sendall(msg(50, body.encode())); print(f"  sent raw kind 50 {body} at {at}")
 while time.time() - t0 < dur:
     now = time.time()
     while events and now - t0 >= events[0][0]:
@@ -797,7 +820,19 @@ while time.time() - t0 < dur:
         elif kind == 2:
             d = json.loads(payload)
             print(f"  windowList: {len(d.get('windows', []))} windows, active={d.get('active')}"
-                  + (f" clipboard={d['clipboard']}" if "clipboard" in d else ""))
+                  + (f" clipboard={d['clipboard']}" if "clipboard" in d else "")
+                  + (f" displays={d['displays']}" if "displays" in d else "")
+                  + (f" showing={d['showing']}" if "showing" in d else "")
+                  + (f" curtain={d['curtain']}" if "curtain" in d else ""))
+        elif kind == 52:
+            print(f"  curtain at {time.time()-t0:.3f}s: {payload.decode(errors='replace')}")
+        elif kind == 49:
+            print(f"  displays at {time.time()-t0:.3f}s: {payload.decode(errors='replace')}")
+            try:
+                listed = json.loads(payload).get("displays") or []
+                if listed: last_display = listed[-1]["id"]
+            except ValueError:
+                pass
         elif kind == 47:
             if payload[:1] == b"\x01":
                 print(f"  sound format at {time.time()-t0:.3f}s: {payload[1:].decode(errors='replace')}")

@@ -122,6 +122,8 @@ final class InputInjector {
             Stats.shared.bump("in.dry")
             return false
         }
+        // Sill's own, which the curtain lets through (MacCurtain) while it stops the Mac's.
+        event.setIntegerValueField(.eventSourceUserData, value: CurtainPolicy.marker)
         event.post(tap: .cghidEventTap)
         return true
     }

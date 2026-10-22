@@ -82,6 +82,17 @@ public enum StreamMessageKind: UInt8 {
     case soundControl = 48   // both ways: JSON SoundControl. Device → host: any kind 48 subscribes; `muted`
                              // and `volume` set the Mac's. Host → device: the Mac's volume and mute, after
                              // every change. Only to a host whose window list says `sound` 1 or more
+    // Extended displays (Displays.swift; docs/displays-plan.md), after the sound's. Older readers map
+    // them to `.unknown` and skip them.
+    case displays = 49       // host → device: JSON DisplayList — this device's extended displays, after its
+                             // kind 50 subscribed and after every change. Only to a host whose window list
+                             // says `displays` 1 or more does a device send kind 50
+    case displayControl = 50 // device → host: JSON DisplayControl — any subscribes (and brings this device's
+                             // displays back); `add`, `remove`, `end`
+    case displayThumbnail = 51 // host → device: ImageBlob thumbnail, the id a display's (0: the Mac's own),
+                             // every few seconds to a subscribed device
+    case curtain = 52        // both ways: JSON CurtainControl (Curtain.swift) — the device's on or off, the
+                             // host's answer with its state; only with a host whose window list says `curtain`
     case unknown = 255       // never sent: what parseHeader yields for a kind this build does not know
 }
 

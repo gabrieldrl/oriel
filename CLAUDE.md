@@ -56,6 +56,21 @@ block), so each card reads "Online · Wi‑Fi", "Online · Tailscale" or "Offlin
 2026-10-22: this fork won't be compatible with later Sill releases, so the compatibility floor below
 doesn't bind changes like these. Its device tests are in the plan.
 
+**Extended displays (in progress on `dev`; `docs/displays-plan.md`).** A Displays pill beside Apps
+opens a sheet of Primary, up to 4 of this device's own displays (CGVirtualDisplay, serials stable per
+device so macOS keeps their arrangement) and Add Display; a tap streams one. Disconnect takes the
+device's displays now, a lost connection after 30 s; reconnecting brings them back with their
+windows. Wire: `StreamSource.display`, `WindowList.displays`/`showing`, kinds 49–51.
+Mac: `Sources/SillHost/Displays/` (DisplayPolicy pure, `Tests/checks/displays`). Device:
+StreamClient+Displays, DisplaysTray. Untested with a real display; the plan lists the device tests.
+
+**The Mac's screen off (in progress on `dev`; `docs/curtain-plan.md`).** An eye pill between
+Clipboard and Disconnect, kept per Mac on the device: the Mac's displays black, the built-in at
+brightness 0, its own keyboard and trackpad stopped by an HID event tap (Sill's posted events carry
+`CurtainPolicy.marker` and pass). Up while any connection wants it, down when none does. Wire:
+`WindowList.curtain`, kind 52. Mac: `Sources/SillHost/Curtain/` (CurtainPolicy pure,
+`Tests/checks/curtain`). Device: StreamClient+Curtain. Untested on a device.
+
 **To do, remind Gabriel: layouts per device.** The new screen is laid out for an iPad held sideways
 only. Still to design (UX work, Gabriel's call): an iPad upright, a phone upright and sideways, and
 the iPhone Duo's poses (the classic StreamScreen and PortraitStreamScreen have each today).

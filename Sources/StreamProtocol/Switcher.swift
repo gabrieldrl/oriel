@@ -5,6 +5,10 @@ public enum StreamSource: Codable, Hashable {
     case none
     case window(UInt32)   // CGWindowID, stable for the life of the window
     case desktop          // the Mac's main display
+    /// One of the Mac's extended displays (Displays.swift), by its `ExtendedDisplay.id`. A device sends
+    /// it only to a host whose window list says `displays` 1 or more; a host never sends it: its
+    /// window list says `desktop` with `showing`, which an older device reads as the Desktop.
+    case display(UInt32)
 }
 
 /// One on-screen Mac window, as the client sees it. WindowList order is stable: first seen first.
@@ -64,13 +68,32 @@ public struct WindowList: Codable {
     /// (`SoundControl.generation`). Nil from every host before 2026-10-22, to which a device sends no
     /// kind 48.
     public var sound: Int?
+    /// Whether this host makes extended displays for its devices (kinds 49 to 51, Displays.swift): 1 is
+    /// `DisplayControl.generation`. Nil from every host before 2026-10-22 and from one that cannot make
+    /// them (no AppKit loop, the private API missing): a device sends it no kind 50 and no
+    /// `StreamSource.display`.
+    public var displays: Int?
+    /// While `active` is `desktop`: the extended display streaming (its `ExtendedDisplay.id`), nil for
+    /// the Mac's own. The JSON key is "showing".
+    public var showing: UInt32?
+    /// Whether this host can turn its screen off and its own input away while a device works it (kind
+    /// 52, Curtain.swift): 1 is `CurtainControl.generation`. Nil from a host without it: a device sends
+    /// it no kind 52.
+    public var curtain: Int?
 
     public init(macName: String, windows: [WindowInfo], active: StreamSource, launchID: String? = nil,
                 hostVersion: String? = nil, protocol: Int? = nil, gestures: Int? = nil, clipboard: Int? = nil,
-                sound: Int? = nil) {
+                sound: Int? = nil, displays: Int? = nil, showing: UInt32? = nil, curtain: Int? = nil) {
         self.macName = macName; self.windows = windows; self.active = active; self.launchID = launchID
         self.hostVersion = hostVersion; self.protocol = `protocol`; self.gestures = gestures
-        self.clipboard = clipboard; self.sound = sound
+        self.clipboard = clipboard; self.sound = sound; self.displays = displays; self.showing = showing
+        self.curtain = curtain
+    }
+
+    /// What streams, as a device of this generation reads it: `display` for an extended display.
+    public var source: StreamSource {
+        if active == .desktop, let showing { return .display(showing) }
+        return active
     }
 }
 

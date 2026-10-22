@@ -19,6 +19,10 @@ struct DesktopScreen: View {
     /// The key row's sheet is up (KeyRowSheet). It and the Apps sheet rise from the same edge, so
     /// one opening puts the other away.
     @State private var keyRowOpen = UserDefaults.standard.bool(forKey: "SillKeyRowOpen")
+    /// The Displays sheet is up (DisplaysTray), from the same edge. `-SillDisplaysOpen 1` starts with it up.
+    @State private var displaysOpen = UserDefaults.standard.bool(forKey: "SillDisplaysOpen")
+    /// The screen's size: the most room the picture has (`room`), a new display's size.
+    @State private var screenSize: CGSize = .zero
     /// The info panel is up at the picture's top-right corner (InfoPanel). `-SillInfoOpen 1` starts with it up.
     @State private var infoOpen = UserDefaults.standard.bool(forKey: "SillInfoOpen")
     /// Trackpad input: the whole screen is a relative trackpad that moves a cursor drawn on the
@@ -48,6 +52,9 @@ struct DesktopScreen: View {
     var body: some View {
         GeometryReader { _ in
             display
+            .onGeometryChange(for: CGSize.self, of: { $0.size }) { size in
+                if screenSize != size { screenSize = size }
+            }
             .opacity(shown ? 1 : 0)
             .allowsHitTesting(!leaving)
             .environment(\.quickPillFocus, pillFocus)
@@ -73,8 +80,9 @@ struct DesktopScreen: View {
             .onAppear { withAnimation(.easeOut(duration: 0.5)) { shown = true } }
             // This device's cursor shows only while the trackpad moves it; the Mac's shows either way.
             .onChange(of: trackpadInput, initial: true) { _, on in client.setPointerLayout(portrait: on) }
-            .onChange(of: appsOpen) { _, up in if up { keyRowOpen = false } }
-            .onChange(of: keyRowOpen) { _, up in if up { appsOpen = false } }
+            .onChange(of: appsOpen) { _, up in if up { keyRowOpen = false; displaysOpen = false } }
+            .onChange(of: keyRowOpen) { _, up in if up { appsOpen = false; displaysOpen = false } }
+            .onChange(of: displaysOpen) { _, up in if up { appsOpen = false; keyRowOpen = false } }
             // Rotation animates, so let the size settle.
             .onChange(of: panelSize) { _, _ in sendViewport(after: 0.25) }
     }
@@ -99,6 +107,17 @@ struct DesktopScreen: View {
                     KeyRowSheet(client: client, open: $keyRowOpen, latched: $latched, picture: panelSize)
                         .opacity(1 - ripple)
                 }
+                // The Mac's name just above the picture, centred, in line with the info button.
+                .overlay(alignment: .top) {
+                    Text(client.macName)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineLimit(1)
+                        .frame(maxWidth: max(panelSize.width - 2 * (InfoButton.size + 16), 0))
+                        .alignmentGuide(.top) { $0[.bottom] + Self.infoGap + (InfoButton.size - $0.height) / 2 }
+                        .opacity(1 - ripple)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 // The info button just above the picture's top-right corner, its panel on the corner.
                 .overlay(alignment: .topTrailing) {
                     InfoButton(open: infoOpen) { withAnimation(.spring(duration: 0.35, bounce: 0.12)) { infoOpen.toggle() } }
@@ -119,6 +138,12 @@ struct DesktopScreen: View {
                              picture: panelSize)
                         .opacity(1 - ripple)
                 }
+                .overlay(alignment: .bottom) {
+                    DisplaysTray(client: client, open: $displaysOpen,
+                                 previewRadius: panelSize.height * MacDisplayShape.cornerRadiusPerHeight,
+                                 picture: panelSize, room: room)
+                        .opacity(1 - ripple)
+                }
                 // The surface takes the picture's own shape, so the video fills it edge to edge and a
                 // touch anywhere on it lands on the Mac.
                 .aspectRatio(videoSize, contentMode: .fit)
@@ -127,8 +152,9 @@ struct DesktopScreen: View {
                 }
             QuickControls(client: client, trackpadInput: $trackpadInput, onDisconnect: leave,
                           appsOpen: appsOpen, onApps: { appsOpen.toggle() },
+                          displaysOpen: displaysOpen, onDisplays: { displaysOpen.toggle() },
                           keyboardShown: keyboardShown, onKeyboard: { overlay.toggleKeyboard() },
-                          keyRowOpen: $keyRowOpen)
+                          keyRowOpen: $keyRowOpen, displayRoom: room)
                 .frame(width: panelSize.width, alignment: .leading)
                 .opacity(1 - ripple)
         }
@@ -136,6 +162,15 @@ struct DesktopScreen: View {
         // Room above the picture for the info button.
         .padding(.top, InfoButton.size + Self.infoGap - 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// The most room the picture has on this screen, in points: the screen less the margins, the room
+    /// above for the info button and the controls under it. A new display is made this size, so it
+    /// fills the screen as the picture.
+    private var room: CGSize {
+        let top = 24 + InfoButton.size + Self.infoGap - 16
+        return CGSize(width: max(screenSize.width - 48, 0),
+                      height: max(screenSize.height - top - 24 - 16 - QuickControlStyle.height, 0))
     }
 
     /// Disconnect: the ripple runs out from the picture's centre, then the session ends and the
@@ -146,6 +181,7 @@ struct DesktopScreen: View {
         pillFocus.closeOpen()
         appsOpen = false
         keyRowOpen = false
+        displaysOpen = false
         infoOpen = false
         withAnimation(.easeOut(duration: 0.6)) { ripple = 1 } completion: { client.disconnect() }
     }

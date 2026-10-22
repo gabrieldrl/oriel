@@ -359,7 +359,7 @@ final class WindowCatalog {
 
     // MARK: Image encoding (thread-safe)
 
-    nonisolated private static func jpeg(_ image: CGImage, quality: CGFloat) -> Data? {
+    nonisolated static func jpeg(_ image: CGImage, quality: CGFloat) -> Data? {
         let data = NSMutableData()
         guard let dest = CGImageDestinationCreateWithData(data, UTType.jpeg.identifier as CFString, 1, nil) else { return nil }
         CGImageDestinationAddImage(dest, image, [kCGImageDestinationLossyCompressionQuality: quality] as CFDictionary)

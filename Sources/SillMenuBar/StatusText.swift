@@ -244,7 +244,10 @@ enum StatusText {
         let title: String, symbol: String
         switch stream.kind {
         case .window: title = middleTruncated(stream.title, to: 44); symbol = "macwindow"
-        case .desktop: title = "Whole Desktop"; symbol = "menubar.dock.rectangle"
+        // An extended display (ExtendedDisplays) streams as the Desktop's kind, under its own name.
+        case .desktop:
+            title = stream.title.hasPrefix("Display ") ? stream.title : "Whole Desktop"
+            symbol = stream.title.hasPrefix("Display ") ? "display.2" : "menubar.dock.rectangle"
         case .testPattern: title = "Test Pattern"; symbol = "checkerboard.rectangle"
         }
         // The encoder only produces a frame when the picture changed (ScreenCaptureKit delivers

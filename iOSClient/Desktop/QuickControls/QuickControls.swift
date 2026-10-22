@@ -4,8 +4,11 @@ import StreamProtocol
 /// The row of quick controls under the Mac's picture on the new main screen (DesktopScreen),
 /// across the picture's width, built from the shared pieces in this folder (FlipToggle,
 /// MorphingPicker, QuickControlStyle, QuickPillFocus): Resolution, Frame Rate, then Quality, which
-/// moves along whatever comes after it when it opens; Apps in the middle (AppsPill); at the trailing edge Touch or Trackpad, the
-/// Mac’s sound (MacSoundControl), typing (TypingControl: the keyboard and the key row), its clipboard (ClipboardControl) and Disconnect. The settings
+/// moves along whatever comes after it when it opens, and while an extended display streams its size
+/// (DisplaySizeControl); Apps in the middle (AppsPill), with Displays
+/// beside it (DisplaysPill); at the trailing edge Touch or Trackpad, the
+/// Mac’s sound (MacSoundControl), typing (TypingControl: the keyboard and the key row), its clipboard (ClipboardControl), its
+/// screen off (CurtainControl) and Disconnect. The settings
 /// controls and Disconnect are below; the sound and the clipboard have files of their own.
 ///
 /// The three settings are the Mac's own, as its menu sets them: one stream serves every device, so
@@ -20,10 +23,21 @@ struct QuickControls: View {
     /// The Apps pill (AppsPill): lit while the Apps sheet is up, and its tap.
     let appsOpen: Bool
     let onApps: () -> Void
+    /// The Displays pill (DisplaysPill), beside Apps for a Mac that makes extended displays.
+    let displaysOpen: Bool
+    let onDisplays: () -> Void
     /// The typing pill (TypingControl): the on-screen keyboard is up, and the key row's sheet.
     let keyboardShown: Bool
     let onKeyboard: () -> Void
     @Binding var keyRowOpen: Bool
+    /// The room this screen gives the picture: an extended display's default size (DisplaySizeControl).
+    let displayRoom: CGSize
+
+    /// The extended display streaming, if one is.
+    private var shownDisplay: ExtendedDisplay? {
+        guard case .display(let id) = client.active else { return nil }
+        return client.extendedDisplays.first { $0.id == id }
+    }
 
     var body: some View {
         HStack(spacing: 14) {
@@ -32,16 +46,50 @@ struct QuickControls: View {
                 FrameRateControl(client: client, maxFPS: shown.maxFPS)
                 QualityControl(client: client, bitrate: shown.bitrate)
             }
+            if let display = shownDisplay {
+                DisplaySizeControl(client: client, display: display, room: displayRoom)
+            }
             Spacer(minLength: 0)
             AppsPill(open: appsOpen, onTap: onApps)
+            if client.hostMakesDisplays {
+                DisplaysPill(open: displaysOpen, onTap: onDisplays)
+            }
             Spacer(minLength: 0)
             InputControl(trackpadInput: $trackpadInput)
             MacSoundControl(client: client)
             TypingControl(keyboardShown: keyboardShown, onKeyboard: onKeyboard, keyRowOpen: $keyRowOpen)
             ClipboardControl(client: client)
+            if client.hostHasCurtain {
+                CurtainControl(client: client)
+            }
             DisconnectControl(client: client, onDisconnect: onDisconnect)
         }
         .frame(height: QuickControlStyle.height)
+    }
+}
+
+/// The Mac's screen off, on a tap (StreamClient+Curtain): an open eye while the Mac shows its screen, a
+/// closed one, lit, while it is dark and its own keyboard and trackpad do nothing. Orange when the Mac
+/// could not (Sill may not control it: Accessibility).
+private struct CurtainControl: View {
+    @ObservedObject var client: StreamClient
+
+    var body: some View {
+        let on = client.curtainOn
+        let refused = client.curtainProblem != nil
+        Image(systemName: on ? "eye.slash" : "eye")
+            .font(QuickControlStyle.iconFont)
+            .foregroundStyle(on ? Color.black : refused ? Color.orange : Color.white)
+            .contentTransition(.symbolEffect(.replace))
+            .quickCircle(on ? Color.white : QuickControlStyle.fill)
+            .onTapGesture { client.setCurtain(!on) }
+            .animation(.easeOut(duration: 0.2), value: on)
+            .accessibilityElement()
+            .accessibilityLabel("Mac's Screen Off")
+            .accessibilityValue(on ? "On" : "Off")
+            .accessibilityHint(refused ? "The Mac couldn’t: allow Sill in Privacy & Security › Accessibility on the Mac."
+                               : "Darkens the Mac and stops its own keyboard and trackpad while you work it from here.")
+            .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
     }
 }
 
@@ -78,6 +126,34 @@ private struct TypingControl: View {
                   accessibilityLabel: keyRowOpen ? "Hide the key row" : "Show the key row",
                   action: { keyRowOpen.toggle() }),
         ])
+    }
+}
+
+/// An extended display's size, on a tap: Default (the room this screen gives the picture, as a new
+/// display gets) or Match Primary (the Mac's own display's size and scale). A round icon, and the
+/// system's menu with the current one ticked; the display is made again at the pick and keeps streaming.
+private struct DisplaySizeControl: View {
+    @ObservedObject var client: StreamClient
+    let display: ExtendedDisplay
+    let room: CGSize
+
+    var body: some View {
+        let matching = Binding(get: { display.matchesPrimary == true },
+                               set: { client.resizeDisplay(display.id, matchingPrimary: $0, room: room) })
+        Menu {
+            Picker("Display Size", selection: matching) {
+                Text("Default").tag(false)
+                Text("Match Primary").tag(true)
+            }
+        } label: {
+            Image(systemName: "aspectratio")
+                .font(QuickControlStyle.iconFont)
+                .foregroundStyle(.white)
+                .quickCircle()
+        }
+        .menuOrder(.fixed)
+        .accessibilityLabel("Display Size")
+        .accessibilityValue(display.matchesPrimary == true ? "Match Primary" : "Default")
     }
 }
 

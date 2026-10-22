@@ -494,7 +494,7 @@ struct StreamScreen: View {
         let streaming: String
         switch client.active {
         case .none: streaming = "nothing streams"
-        case .desktop: streaming = "the Desktop streams"
+        case .desktop, .display: streaming = "the Desktop streams"
         case .window: streaming = "a window streams"
         }
         var line = "larger picture: the switch " + (largerPicture ? "on" : "off") + ", " + streaming + ": "
@@ -2103,7 +2103,7 @@ extension PhonePortraitLayout.Streaming {
     init(_ source: StreamSource) {
         switch source {
         case .none: self = .nothing
-        case .desktop: self = .desktop
+        case .desktop, .display: self = .desktop
         case .window: self = .window
         }
     }

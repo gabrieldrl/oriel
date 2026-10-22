@@ -34,9 +34,10 @@ struct QuickPillFace: View {
 }
 
 extension View {
-    /// A pill's room around its face: the row's height, the icon's inset before it, the text's after.
-    func quickPillFrame() -> some View {
-        foregroundStyle(.white)
+    /// A pill's room around its face: the row's height, the icon's inset before it, the text's after;
+    /// its icon and text in `color` (black on a lit pill's white).
+    func quickPillFrame(_ color: Color = .white) -> some View {
+        foregroundStyle(color)
             .font(QuickControlStyle.font)
             .padding(.leading, QuickControlStyle.iconInset)
             .padding(.trailing, QuickControlStyle.labelPadding)

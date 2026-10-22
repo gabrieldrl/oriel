@@ -262,6 +262,11 @@ package final class StreamCoordinator {
     /// The Mac's sound on the devices (kinds 47 and 48, HostSound; docs/mac-sound-plan.md): the tap
     /// runs only while a device listens and the Mac is not muted.
     let sound: HostSound
+    /// Each device's extended displays (kinds 49 to 51, ExtendedDisplays; docs/displays-plan.md): made
+    /// only for a device that subscribed, and only under the AppKit loop with the private API there.
+    let displays: ExtendedDisplays
+    /// The Mac's screen off and its own input away while a device works it (kind 52).
+    let curtain: MacCurtain
     /// TEST ONLY. `SILL_TEST_MENU_PID=<pid>` on a --synthetic host: the test pattern's menus are that
     /// process's (the gates' fixture, Scripts/menufixture.swift), read and pressed through the same
     /// code, never activated (the Desktop's rule). Nil otherwise; `testMenuLine` is what `start`
@@ -325,6 +330,11 @@ package final class StreamCoordinator {
         clipboard = HostClipboard(server: server, enabled: config.shareClipboard, launchID: launch, synthetic: synthetic)
         // A synthetic host plays a test tone, never this Mac's sound.
         sound = HostSound(server: server, synthetic: synthetic)
+        // A synthetic host makes none on this Mac: entries streamed as the test pattern.
+        displays = ExtendedDisplays(server: server, synthetic: synthetic,
+                                    available: synthetic || (appKitLoop && VirtualDisplay.checkPrivateAPI().isEmpty))
+        // Its black windows are AppKit's: Sill.app, or a synthetic host's state alone.
+        curtain = MacCurtain(server: server, synthetic: synthetic, available: synthetic || appKitLoop)
         let hook = Self.testMenuHook(synthetic: synthetic)
         testMenuPID = hook.pid
         testMenuLine = hook.line
@@ -343,7 +353,11 @@ package final class StreamCoordinator {
         // The identity's TXT record (its tag, and `p` on a TLS home door) must be in the first
         // registration: set before `server.start()`.
         remote?.attach(server: server, status: status, macName: macName, requirePairing: config.requirePairing)
-        catalog.preferMainDisplay = virtualDisplay   // the Desktop source must never capture the virtual display
+        // The Desktop source must never capture a virtual display.
+        catalog.preferMainDisplay = virtualDisplay || displays.available
+        displays.onGone = { [weak self] id in Task { @MainActor in await self?.displayGone(id) } }
+        displays.onRemade = { [weak self] id in Task { @MainActor in await self?.displayRemade(id) } }
+        curtain.onCovered = { [weak self] in Task { @MainActor in await self?.curtainCovered() } }
         stage.onLost = { [weak self] in Task { @MainActor in await self?.stageLost() } }
         status.update { $0.synthetic = synthetic; $0.virtualDisplayOn = config.virtualDisplay }
         // Every change of the snapshot re-publishes the devices' settings state (deduplicated, so
@@ -407,6 +421,8 @@ package final class StreamCoordinator {
                 self.menus.clientLeft(connection)
                 self.clipboard.clientLeft(connection)
                 self.sound.clientLeft(connection)
+                self.displays.clientLeft(connection)
+                self.curtain.clientLeft(connection)
                 self.releaseKeys(of: id)
                 self.status.update { $0.devices.removeAll { $0.id == id } }
                 // The last device at home left devices away behind: the away quality, at once.
@@ -464,7 +480,12 @@ package final class StreamCoordinator {
         }
         capture.onStopped = { [weak self] error in
             print("Capture stopped: \(error.localizedDescription)")
-            Task { @MainActor in await self?.select(.none) }
+            Task { @MainActor in
+                guard let self else { return }
+                // An extended display made again at a new size: its stream starts again once it is up.
+                if case .display(let id) = self.active, self.displays.remaking.contains(id) { return }
+                await self.select(.none)
+            }
         }
         // Status for the menu bar app. The server's callbacks hop here from its network queue; the
         // stats tick runs on the main queue, which under the CLI's dispatchMain is drained by a
@@ -767,7 +788,7 @@ package final class StreamCoordinator {
             || old.requirePairing != next.requirePairing {
             remote?.apply(next)
         }
-        catalog.preferMainDisplay = next.virtualDisplay   // the Desktop source must never capture the virtual display
+        catalog.preferMainDisplay = next.virtualDisplay || displays.available   // the Desktop source must never capture a virtual display
         if old.virtualDisplay && !next.virtualDisplay {
             stage.release()        // idempotent: select has already sent a staged window home
             status.update { $0.lastStageFailure = nil }
@@ -1038,6 +1059,15 @@ package final class StreamCoordinator {
         case .soundControl:
             // The Mac's sound (HostSound): a subscription, the device's mute or volume. No `await`.
             sound.received(message.payload, from: connection, who: deviceName(connection))
+        case .displayControl:
+            // Its extended displays (ExtendedDisplays): a subscription, which brings them back, or an
+            // add, a remove, its Disconnect. Its owner is its key, else (no key) its name.
+            let who = deviceName(connection)
+            let owner = DisplayPolicy.owner(fingerprint: routes[ObjectIdentifier(connection)]?.fingerprint, name: who)
+            await displays.received(message.payload, from: connection, owner: owner, who: who)
+        case .curtain:
+            // The Mac's screen off and its own input away (MacCurtain): on or off. No `await`.
+            curtain.received(message.payload, from: connection, who: deviceName(connection))
         case .pressMenuItem:
             guard let r = Wire.decode(PressMenuItem.self, from: message.payload) else { return }
             // One of the Mac's menu items chosen from a device acts as a click on it would, and may
@@ -1063,6 +1093,8 @@ package final class StreamCoordinator {
             // client's input moves that pointer (a synthetic host posts nothing).
             if synthetic, pointer.hasTestPointer { return Self.testPatternRect }
             return catalog.display?.frame
+        case .display(let id):
+            return displays.bounds(id)
         case .window(let id):
             // On the virtual display the video is the captured crop, not the whole window: an app
             // that took a larger size than asked overhangs the display and the overhang is not shown.
@@ -1106,6 +1138,9 @@ package final class StreamCoordinator {
         case .desktop:
             if synthetic { return pointer.hasTestPointer ? .rect(Self.testPatternRect) : nil }
             return catalog.display.map { .rect($0.frame) }
+        case .display(let id):
+            if synthetic { return nil }
+            return displays.bounds(id).map { .rect($0) }
         case .window(let id):
             guard !synthetic else { return nil }
             if virtualDisplay, stage.isStaged, let onScreen = stage.captureRectOnScreen { return .rect(onScreen) }
@@ -1333,6 +1368,15 @@ package final class StreamCoordinator {
         var describe = ""
         var title = ""                   // for the app's menu: "Safari — Apple Developer", "Whole Desktop"
         var kind = HostStatusSnapshot.Stream.Kind.window
+        // An extended display streams once it is up (it may be coming back for a device that has just
+        // subscribed); one that is not there gives the Mac's own display.
+        var source = source
+        var shown: ExtendedDisplays.Live?
+        if case .display(let id) = source {
+            shown = await displays.ready(id)
+            guard !shuttingDown else { active = .none; broadcastList(); return }
+            if shown == nil { print("Display \(id) is not there; streaming the whole desktop."); source = .desktop }
+        }
         switch source {
         case .none:
             active = .none
@@ -1424,6 +1468,30 @@ package final class StreamCoordinator {
                 width = evenPixels(CGFloat(d.width) * captureScale); height = evenPixels(CGFloat(d.height) * captureScale)
                 describe = "the whole desktop\(useSoftwareEncoder ? " (software encoder)" : "")"
                 title = "Whole Desktop"; kind = .desktop
+            }
+        case .display:
+            guard let shown else { active = .none; broadcastList(); return }
+            title = shown.name; kind = .desktop
+            if synthetic {
+                width = evenPixels(CGFloat(shown.width) * captureScale); height = evenPixels(CGFloat(shown.height) * captureScale)
+                describe = "\(shown.name), a synthetic test pattern\(useSoftwareEncoder ? " (software encoder)" : "")"
+            } else {
+                // The display as ScreenCaptureKit lists it, without Sill's own windows, as the Desktop's.
+                guard let did = displays.displayID(shown.id),
+                      let content = try? await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true),
+                      let d = content.displays.first(where: { $0.displayID == did }) else {
+                    print("\(shown.name) is not in the list of displays; nothing streams.")
+                    active = .none; broadcastList(); return
+                }
+                guard !shuttingDown else { active = .none; broadcastList(); return }
+                let own = content.applications.filter { $0.processID == WindowCatalog.ownPID }
+                filter = SCContentFilter(display: d, excludingApplications: own, exceptingWindows: [])
+                // No more pixels than the display has: one made at 1× (matching a Mac's own display at
+                // its full resolution) is captured at 1× under Retina too.
+                let pixels = CGFloat(CGDisplayCopyDisplayMode(did)?.pixelWidth ?? d.width * 2) / CGFloat(max(d.width, 1))
+                let scale = min(captureScale, max(pixels.rounded(), 1))
+                width = evenPixels(CGFloat(d.width) * scale); height = evenPixels(CGFloat(d.height) * scale)
+                describe = "\(shown.name)\(useSoftwareEncoder ? " (software encoder)" : "")"
             }
         }
 
@@ -1752,7 +1820,7 @@ package final class StreamCoordinator {
             }
             guard let app = catalog.window(id: id)?.owningApplication, app.processID != WindowCatalog.ownPID else { return nil }
             return Self.menuTarget(pid: app.processID, window: id)
-        case .desktop:
+        case .desktop, .display:
             return desktopMenuTarget()
         }
     }
@@ -1783,14 +1851,14 @@ package final class StreamCoordinator {
     /// Every catalog poll (2 s) while a device is connected.
     private func menusPolled() {
         guard menus.hasSubscribers else { return }
-        if active == .desktop { menuTargetChanged() }
+        if active.isDesktop { menuTargetChanged() }
         menus.catalogPolled()
     }
 
     /// A device's click or key on the Desktop can bring another app forward (50–200 ms later): its
     /// menus are looked at again 0.3 s after, at most once per 0.5 s.
     private func desktopInputMayActivate(_ event: InputEvent) {
-        guard active == .desktop, menus.hasSubscribers, !menuFrontCheckPending else { return }
+        guard active.isDesktop, menus.hasSubscribers, !menuFrontCheckPending else { return }
         switch event {
         case .pointer(let action, _, _): guard action == .leftDown || action == .rightDown else { return }
         case .key(_, let down, _): guard down else { return }
@@ -1802,7 +1870,7 @@ package final class StreamCoordinator {
             try? await Task.sleep(for: .seconds(wait))
             self.menuFrontCheckPending = false
             self.menuFrontCheckAt = CFAbsoluteTimeGetCurrent()
-            if self.active == .desktop { self.menuTargetChanged() }
+            if self.active.isDesktop { self.menuTargetChanged() }
         }
     }
 
@@ -1814,7 +1882,7 @@ package final class StreamCoordinator {
             frontmostObserver = NSWorkspace.shared.notificationCenter.addObserver(
                 forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: nil) { [weak self] _ in
                 Task { @MainActor in
-                    guard let self, self.active == .desktop else { return }
+                    guard let self, self.active.isDesktop else { return }
                     self.menuTargetChanged()
                 }
             }
@@ -1889,6 +1957,30 @@ package final class StreamCoordinator {
         if case .window = active { await select(active) }
     }
 
+    /// An extended display went (removed, its device gone, the system took it): if it was streaming,
+    /// the Mac's own display streams in its place.
+    private func displayGone(_ id: UInt32) async {
+        guard active == .display(id) else { return }
+        await select(.desktop)
+    }
+
+    /// An extended display was made again at a new size (`resize`): if it was streaming, its stream
+    /// starts again at that size. A switch under way at that moment is waited out.
+    private func displayRemade(_ id: UInt32) async {
+        for _ in 0..<40 where switching { try? await Task.sleep(for: .milliseconds(50)) }
+        guard active == .display(id) else { return }
+        await select(.display(id))
+    }
+
+    /// The curtain's black windows are up: the Mac's own display streams again, without them.
+    /// Its extended displays are never covered, and a window's stream is that window alone.
+    private func curtainCovered() async {
+        for _ in 0..<40 where switching { try? await Task.sleep(for: .milliseconds(50)) }
+        guard active == .desktop, !synthetic else { return }
+        print("Curtain: the Mac's own display streams again, without the curtain's windows.")
+        await select(.desktop)
+    }
+
     /// Called by HostShutdown on the main queue just before `exit` (or, for the app's Quit, just
     /// before AppKit exits): every key and button a device holds down on the Mac goes up (a modifier
     /// left down would outlive Sill: the Mac's next click a ⌘-click), every connected device hears why
@@ -1902,6 +1994,8 @@ package final class StreamCoordinator {
         server.goodbyeAll(Goodbye(reason: Goodbye.quit), within: 0.1)
         shuttingDown = true
         sound.stop()
+        displays.shutdown()
+        curtain.shutdown()
         restoreFits(keeping: nil)
         stage.release()
     }
@@ -1913,6 +2007,8 @@ package final class StreamCoordinator {
     package func releaseKeysForExit() {
         injector.releaseAll()
         sound.stop()
+        displays.shutdown()
+        curtain.shutdown()
         restoreFits(keeping: nil)
     }
 
@@ -2331,10 +2427,11 @@ package final class StreamCoordinator {
 
     private func listMessage() -> StreamMessage {
         StreamMessage(kind: .windowList, timestamp: Date().timeIntervalSince1970, isKeyframe: false,
-                      payload: Wire.encode(WindowList(macName: macName, windows: catalog.infos, active: active, launchID: launchID,
+                      payload: Wire.encode(WindowList(macName: macName, windows: catalog.infos, active: active.listed.active, launchID: launchID,
                                                       hostVersion: hostVersion, protocol: SillProtocol.current,
                                                       gestures: TrackpadGesture.generation, clipboard: clipboard.advertised,
-                                                      sound: sound.advertised)))
+                                                      sound: sound.advertised, displays: displays.advertised,
+                                                      showing: active.listed.showing, curtain: curtain.advertised)))
     }
 
     private func broadcastList() { server.broadcast(listMessage()) }
