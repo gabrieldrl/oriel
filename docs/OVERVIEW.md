@@ -1,10 +1,10 @@
 # Sill: project overview
 
 A short guide to this repository for someone who just forked it. It condenses
-`CLAUDE.md` (the upstream maintainer's ~6,000-line working notes), `docs/BRIEF.md`,
+`docs/NOTES.md` (the upstream maintainer's ~6,000-line working notes, CLAUDE.md until 2026-10-22), `docs/BRIEF.md`,
 `docs/DEVELOPMENT.md` and the plan files, and adds a snapshot of upstream activity
 as of 2026-10-21. When this file and the code disagree, the code wins; when you
-need the full detail, `CLAUDE.md` and `docs/DEVELOPMENT.md` have it.
+need the full detail, `docs/NOTES.md` and `docs/DEVELOPMENT.md` have it.
 
 ## 1. What Sill is
 
@@ -196,7 +196,7 @@ Things to know:
 
 The full list of flags, test hooks (`SILL_TEST_*` environment variables,
 `-Sill*` launch arguments, the iOS debug harness) and headless recipes is in
-**CLAUDE.md, "Build and run"**, with friendlier explanations in
+**`docs/NOTES.md`, "Build and run"**, with friendlier explanations in
 `docs/DEVELOPMENT.md`, "Test tools".
 
 ## 5. Feature status
@@ -292,7 +292,7 @@ messages and `CLAUDE.md` entry say. The last commit on `upstream/main` is
 
 ## 7. Rules worth keeping
 
-From `CLAUDE.md` "Conventions", "Decisions already made" and "Compatibility floor":
+From `CLAUDE.md` "Conventions", "Decisions already made" and "Compatibility floor" (the floor in full there):
 
 - **Swift and Apple frameworks only.** No third-party dependencies unless `BRIEF.md` explicitly allows one.
 - **Zero operating costs, no servers.** No relay, no account system, no backend. Remote access means the user's own VPN or port forward. The only network call that isn't to the user's own devices is the daily GitHub Releases check.
