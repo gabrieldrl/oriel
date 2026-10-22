@@ -75,6 +75,13 @@ public enum StreamMessageKind: UInt8 {
                              // on), its text becomes the Mac's clipboard, and `stop` ends the subscription; only
                              // to a host whose window list says `clipboard` 1 or more. Host → device: text copied
                              // on the Mac (or sent by another device), only to a connection that subscribed
+    // The Mac's sound (Sound.swift; docs/mac-sound-plan.md), clear of every number upstream's open work
+    // claims (33 to 46). Older readers map them to `.unknown` and skip them.
+    case sound = 47          // host → device: a type byte, then JSON SoundFormat (1) or binary SoundPackets
+                             // (2): AAC-ELD, to a device that subscribed with a kind 48
+    case soundControl = 48   // both ways: JSON SoundControl. Device → host: any kind 48 subscribes; `muted`
+                             // and `volume` set the Mac's. Host → device: the Mac's volume and mute, after
+                             // every change. Only to a host whose window list says `sound` 1 or more
     case unknown = 255       // never sent: what parseHeader yields for a kind this build does not know
 }
 

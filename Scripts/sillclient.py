@@ -80,6 +80,9 @@ The clipboard (kind 32; docs/clipboard-plan.md). Each kind 32 received is printe
   --copy=TEXT@T      a kind 32 with this text T seconds in (\n, \t, \xHH and \uXXXX escapes decoded), as a
                      device's Paste sends it: the host's pasteboard is set to it, and the other subscribers get it
   --copy-bytes=N@T   the same with N bytes of "x" (the cap is 262,144)
+  --sound            a kind 48 {} right after the select: the Mac's sound (kind 47 counted each second,
+                     its format and every kind 48 printed; docs/mac-sound-plan.md)
+  --raw48=JSON@T     this literal kind 48 payload T seconds in: {"muted":true}, {"volume":0.3,"token":2}
   --raw32=JSON@T     this literal kind 32 payload T seconds in (split on the last @), as written:
                      {"stop":true} ends the subscription
   --expect=clipboard=TEXT  (with --expect's other keys, or alone) at exit, the last kind 32's text;
@@ -132,7 +135,7 @@ with status 2 (--raw17 and --input go out as written). Find PORT with: lsof -nP 
 The --synthetic hosts do not advertise over Bonjour, so this is the only way to reach them."""
 import json, re, socket, struct, sys, time
 
-KIND = {0:"ps",1:"frame",2:"list",3:"thumb",4:"icon",5:"apps",11:"pong",13:"tick",14:"cursor",16:"settings",18:"macinfo",20:"pairresult",22:"goodbye",24:"menu",26:"pointer",32:"clipboard"}
+KIND = {0:"ps",1:"frame",2:"list",3:"thumb",4:"icon",5:"apps",11:"pong",13:"tick",14:"cursor",16:"settings",18:"macinfo",20:"pairresult",22:"goodbye",24:"menu",26:"pointer",32:"clipboard",47:"sound",48:"soundctl"}
 BOOL = {"1": True, "0": False, "true": True, "false": False, "on": True, "off": False, "yes": True, "no": False}
 BOOL_KEYS = {"prioritizeSpeed", "virtualDisplay", "directWireless", "persistent", "virtualDisplayAvailable",
              "thisConnectionAway", "awayRunning"}
@@ -143,7 +146,7 @@ SET_KEYS = {"maxFPS", "bitrate", "captureScale", "prioritizeSpeed", "virtualDisp
 AWAY_KEYS = {"homeBitrate", "homeCaptureScale", "awayBitrate", "awayCaptureScale", "thisConnectionAway", "awayRunning"}
 EXPECT_KEYS = SET_KEYS | {"persistent", "virtualDisplayAvailable", "linkState", "clipboard"} | AWAY_KEYS
 TIMED = ("set", "raw17", "pick", "fps-after", "stop-ping", "stop-read", "pairing-wanted", "fetch", "press", "raw25", "raw27",
-         "move", "tap", "key", "input", "gesture", "raw28", "copy", "copy-bytes", "raw32")
+         "move", "tap", "key", "input", "gesture", "raw28", "copy", "copy-bytes", "raw32", "raw48")
 INPUT = ("move", "tap", "key", "input")
 # What --gesture may send: TrackpadGesture's six names (Gesture.swift). Anything else goes with --raw28.
 GESTURES = ("swipeUp", "swipeDown", "swipeLeft", "swipeRight", "pinch", "spread")
@@ -484,7 +487,7 @@ try:
         elif name in VALUED:
             if not body: raise ValueError(f"--{name} needs a value")
             if name in ("big-payload", "flood") and number(body, f"--{name}") < 1: raise ValueError(f"--{name} must be at least 1")
-        elif a not in ("--junk", "--stats", "--tls", "--expect-tls-fail", "--menus", "--pointer", "--no-select", "--pair-ask", "--clipboard",
+        elif a not in ("--junk", "--stats", "--tls", "--expect-tls-fail", "--menus", "--pointer", "--no-select", "--pair-ask", "--clipboard", "--sound",
                        "--pair-ask=cable", "--pair-cancel") and not a.startswith(("--fps=", "--expect=")):
             raise ValueError(f"unknown flag {a!r}")
     events.sort(key=lambda e: (e[0], e[1]))
@@ -629,6 +632,9 @@ try:
     if "--clipboard" in flags:
         # The clipboard's subscription (kind 32 {}), as a device whose Share Clipboard is on sends it.
         s.sendall(msg(32, b"{}")); print("  sent clipboard subscription")
+    if "--sound" in flags:
+        # The sound's subscription (kind 48 {}), as a device sends it at connect (docs/mac-sound-plan.md).
+        s.sendall(msg(48, b"{}")); print("  sent sound subscription")
 except (OSError, ssl.SSLError) as e:
     print(f"TLS refused: {e}"); sys.exit(0 if expect_tls_fail else 1)
 if big_payload:
@@ -686,6 +692,7 @@ def menu_line(it):
     if it.get("enabled") is False: t += " (off)"
     return t
 pinging = True; reading = True; rtts = []; key_times = []; window_frames = {}; first_kinds = []; served = False; ages = []
+sound_sec = {}         # this second's kind 47 messages, packets and segment starts
 clipboards = []        # every kind 32's text, in order (--expect=clipboard checks the last)
 def bump(k, n=1):
     per[k] = per.get(k, 0) + n; tot[k] = tot.get(k, 0) + n
@@ -742,6 +749,8 @@ def fire(e, now):
         s.sendall(msg(32, body)); print(f"  sent clipboard text, {len(parsed.encode())} bytes ({len(body)} of JSON) at {at}")
     elif name == "raw32":
         s.sendall(msg(32, text.encode())); print(f"  sent raw kind 32 {text} at {at}")
+    elif name == "raw48":
+        s.sendall(msg(48, text.encode())); print(f"  sent raw kind 48 {text} at {at}")
 while time.time() - t0 < dur:
     now = time.time()
     while events and now - t0 >= events[0][0]:
@@ -789,6 +798,15 @@ while time.time() - t0 < dur:
             d = json.loads(payload)
             print(f"  windowList: {len(d.get('windows', []))} windows, active={d.get('active')}"
                   + (f" clipboard={d['clipboard']}" if "clipboard" in d else ""))
+        elif kind == 47:
+            if payload[:1] == b"\x01":
+                print(f"  sound format at {time.time()-t0:.3f}s: {payload[1:].decode(errors='replace')}")
+            elif payload[:1] == b"\x02" and len(payload) >= 9:
+                sound_sec["msgs"] = sound_sec.get("msgs", 0) + 1
+                sound_sec["packets"] = sound_sec.get("packets", 0) + payload[8]
+                if payload[7] & 1: sound_sec["segments"] = sound_sec.get("segments", 0) + 1
+        elif kind == 48:
+            print(f"  sound control at {time.time()-t0:.3f}s: {payload.decode(errors='replace')}")
         elif kind == 32:
             try:
                 d = json.loads(payload)
@@ -851,7 +869,8 @@ while time.time() - t0 < dur:
         # kB: the frames' payload this second (the encoder's output; ×8/1000 for Mbps).
         print(f"t={now-t0:4.1f}s frames={f:3d} kB={kb_sec:6.0f} ticks={per.get('tick',0):3d} cursor={per.get('cursor',0)} "
               f"rtt={rtt:.1f}ms" if rtt is not None else f"t={now-t0:4.1f}s frames={f:3d} kB={kb_sec:6.0f} ticks={per.get('tick',0):3d}")
-        per = {}; kb_sec = 0; last = now
+        if sound_sec: print(f"         sound: {sound_sec.get('msgs',0)} messages, {sound_sec.get('packets',0)} packets, {sound_sec.get('segments',0)} segment starts")
+        per = {}; kb_sec = 0; last = now; sound_sec = {}
 print(f"TOTAL {frames} frames ({keys} key) {kb:.0f} kB in {dur:.0f}s = {frames/dur:.1f} fps; kinds={tot}")
 print(f"settings messages: {settings_msgs}")
 def runs(ks):

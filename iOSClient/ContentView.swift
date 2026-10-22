@@ -837,6 +837,7 @@ enum InputScript {
 /// list; a step is `set K=V[,K=V]` (maxFPS, bitrate, captureScale, prioritizeSpeed, virtualDisplay:
 /// a control's change, through `changeSettings` as the panel sends it), `suggestion` (the link
 /// callout's button: the Mac's suggestion as the panel offers it, or nothing when it offers none) or
+/// `volume V` and `mute on|off` (the sound pill's slider and circle, StreamClient+Sound),
 /// `paste TEXT` (the clipboard's Paste, as the system's Paste control hands TEXT over, through
 /// `sendClipboard`, the receipt and its note included: docs/clipboard-plan.md). The
 /// console says "settings script: …" at each. It runs in the normal app too, under InputScript's
@@ -873,6 +874,15 @@ enum SettingsScript {
             }
             print(when + "suggestion: the callout's button, “\(button.title)”")
             client.changeSettings(button.change)
+        case "volume" where words.count == 2:
+            // The sound pill's slider (StreamClient+Sound), to that level.
+            guard let v = Double(words[1]) else { print(when + "cannot read \(words[1])"); return }
+            print(when + "volume \(v)")
+            client.setSoundVolume(v)
+        case "mute" where words.count == 2:
+            // The sound pill's circle: `mute on` or `mute off`.
+            print(when + "mute \(words[1])")
+            client.setSoundMuted(words[1] == "on")
         case "paste" where words.count >= 2:
             // The Settings group's Paste (or the chip's), as the system's Paste control hands over
             // what it read: the rest of the step is the text (docs/clipboard-plan.md, the receipt).

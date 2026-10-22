@@ -13,6 +13,44 @@ Formerly winstream; the folder still carries the old name.
 
 ## Current step
 
+**The Mac's sound on the device (2026-10-22, branch `dev`, this fork; the plan, its open questions
+with the defaults taken and the results are in `docs/mac-sound-plan.md`).** Gabriel: an audio pill
+beside Touch/Trackpad that opens into a volume slider; the Mac's sound plays only on the device while
+Sill is connected, never on the Mac's speakers; muted is the Mac and the device silent; every control
+is the device's (the Mac has no sound setting). Built fresh; upstream's `upstream/wip/audio` was read,
+not merged.
+- Wire (additive; Sound.swift): `WindowList.sound` 1; kind 47 `sound` (type 1 a JSON `SoundFormat`,
+  type 2 binary packets: epoch, seq, flags with a segment's start, then each packet's length and
+  bytes), kind 48 `soundControl` both ways (`SoundControl {volume, muted, problem, token,
+  answering}`; any kind 48 subscribes, `{}` only that).
+- Mac: `HostSound` (main actor; the tap while a device listens and the Mac is not muted,
+  `.mutedWhenTapped` so the speakers stay silent; the device's volume and mute set the Mac's own,
+  `MacVolume`; reports after every change, the Mac's keys included), `SoundPipeline` + `SoundEncoder`
+  (AAC-ELD 48 kHz, 480 frames, 128 kbps) behind `SoundGate` (pure: silence below −90 dBFS not sent,
+  two packets a message; `Tests/checks/sound`, in CI's mutants matrix). A synthetic host never taps
+  this Mac: a test tone. Info.plist's `NSAudioCaptureUsageDescription`.
+- Device: `SoundPlayer` (decoder, `PlayRing`, AVAudioSourceNode, 40 ms target at home and 120 away,
+  raised at an underrun, drift trimmed), `StreamClient+Sound` (subscription, tokens, the slider at
+  most 20 sends a second; the volume at nothing is muted, and the circle unmutes at the last level
+  heard, `soundLastAudible`), `MacSoundControl` (the pill; DEBUG `-SillSoundOpen 1`,
+  `-SillSettingsScript '<t> volume V; <t> mute on|off'`).
+- The new main screen's files in folders: `iOSClient/Desktop/` (DesktopScreen, AppsTray),
+  `Desktop/QuickControls/` (the row, `QuickControlStyle` with `quickCircle`, `FlipToggle`, which now
+  rolls however its choice changes, an `@AppStorage` change included, so Touch/Trackpad rolls as
+  Retina does; `MorphingPicker`, `MacSoundControl`, `ClipboardControl`, and `QuickPillFocus`: one
+  open control at a time, and a touch anywhere else folds it and goes no further, a catcher over the
+  screen with the open control cut out; DEBUG console `pill: …`), `iOSClient/Sound/` (SoundPlayer,
+  StreamClient+Sound) and `Sources/SillHost/Sound/` (HostSound, MacVolume, SoundEncoder, SoundGate,
+  SoundPipeline).
+- Verified: the builds; `sound` 395 checks and 19 of 19 mutants; a synthetic host's tone to a private
+  iPad simulator, played, muted and unmuted and the volume set from the script, photos of the pill.
+- **Untested, for Gabriel:** Sill.app to the iPad: macOS's System Audio Recording alert at the first
+  tap; the Mac's speakers silent while the iPad listens and playing again when it leaves; the slider
+  moving the Mac's volume (and the Mac's own keys moving the slider); mute silent on both; whether
+  the volume applies before the tap (if the iPad's level ignores the slider, it does not); headphones
+  or AirPlay switched on the Mac mid-stream; away through Tailscale. Known: a tap macOS refused dims
+  the pill until the device reconnects.
+
 **The clipboard both ways (2026-10-14, branch `clipboard` from main at 985a733; issue #64; PR #78;
 the plan, its open questions with the default taken for each, the results and the review's fixes are
 in `docs/clipboard-plan.md`).** Noah: work on the clipboard (after #67/#68, #69, #59, #57, #58), text
@@ -6029,6 +6067,8 @@ device keeps working with Macs from the first public build on, or each says why
   (`RemoteTLS.serverALPNs`: a later generation's `sill/2` only ever goes beside them); the 14-byte
   header; kinds 0–28 and 32 and their payloads (HEVC with ParameterSets; the JSON of Switcher,
   Input, Viewport, HostSettings, Remote, Compatibility, Pointer, MacMenu, Gesture and Clipboard;
+  this fork's kinds 47 and 48, the Mac's sound (Sound.swift), go only to and from a host whose window
+  list says `sound` 1;
   29 to 31 stay free, 29 the audio plan's, 30 and 31 pull request #66's), inside `sill/1` at
   both doors (19 and 20 on their own `sill-pair/1` connection, the next bullet); the ping echo; a
   kind 16 within 2 s of the first window list, one per connection since Sill for Mac 0.5.1 (away

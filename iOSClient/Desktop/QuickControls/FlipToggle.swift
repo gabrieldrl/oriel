@@ -2,7 +2,9 @@ import SwiftUI
 
 /// A quick control that steps through a few choices, one tap at a time: the closed pickers' pill
 /// (QuickControlStyle) showing the current choice's icon and text, which roll up to the next and
-/// down back to the first. Its width follows the choice's text.
+/// down back to the first, however the choice changes (a tap, the Mac, a pointer device connecting):
+/// the face follows `selection` with its own animation, so no caller has to animate it. Its width
+/// follows the choice's text.
 struct FlipToggle<Value: Hashable>: View {
     let options: [Value]
     /// The current choice; nil when it is none of `options`, and a tap then picks the first.
@@ -17,8 +19,17 @@ struct FlipToggle<Value: Hashable>: View {
 
     private var index: Int? { selection.flatMap { options.firstIndex(of: $0) } }
 
+    /// The choice the face shows: `selection`, set inside the roll's animation as it changes.
+    @State private var shown: Value?
     /// A later choice rolls in from below, an earlier one from above.
     @State private var forward = true
+
+    init(options: [Value], selection: Value?, label: @escaping (Value) -> String, icon: @escaping (Value) -> String,
+         accessibilityLabel: String, onPick: @escaping (Value) -> Void) {
+        self.options = options; self.selection = selection; self.label = label; self.icon = icon
+        self.accessibilityLabel = accessibilityLabel; self.onPick = onPick
+        _shown = State(initialValue: selection)
+    }
 
     var body: some View {
         text
@@ -36,13 +47,18 @@ struct FlipToggle<Value: Hashable>: View {
             .accessibilityValue(selection.map(label) ?? "")
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { next() }
+            .onChange(of: selection) { old, new in
+                let from = old.flatMap { options.firstIndex(of: $0) } ?? -1
+                forward = (new.flatMap { options.firstIndex(of: $0) } ?? 0) > from
+                withAnimation(Self.flip) { shown = new }
+            }
     }
 
     private var text: some View {
         ZStack(alignment: .leading) {
-            if let selection {
-                face(selection)
-                    .id(selection)
+            if let shown {
+                face(shown)
+                    .id(shown)
                     .transition(.push(from: forward ? .bottom : .top))
             }
         }
@@ -62,7 +78,7 @@ struct FlipToggle<Value: Hashable>: View {
     private func next() {
         guard !options.isEmpty else { return }
         let to = index.map { ($0 + 1) % options.count } ?? 0
-        forward = to > (index ?? -1)
+        // The row makes room for the new width in the same spring.
         withAnimation(Self.flip) { onPick(options[to]) }
     }
 }

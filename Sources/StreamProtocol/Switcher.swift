@@ -60,12 +60,17 @@ public struct WindowList: Codable {
     /// pull request #66's `Bool` (never released) does not decode here and becomes an Int as it
     /// rebases.
     public var clipboard: Int?
+    /// Whether this host sends its sound (kinds 47 and 48, Sound.swift): 1 is AAC-ELD stereo
+    /// (`SoundControl.generation`). Nil from every host before 2026-10-22, to which a device sends no
+    /// kind 48.
+    public var sound: Int?
 
     public init(macName: String, windows: [WindowInfo], active: StreamSource, launchID: String? = nil,
-                hostVersion: String? = nil, protocol: Int? = nil, gestures: Int? = nil, clipboard: Int? = nil) {
+                hostVersion: String? = nil, protocol: Int? = nil, gestures: Int? = nil, clipboard: Int? = nil,
+                sound: Int? = nil) {
         self.macName = macName; self.windows = windows; self.active = active; self.launchID = launchID
         self.hostVersion = hostVersion; self.protocol = `protocol`; self.gestures = gestures
-        self.clipboard = clipboard
+        self.clipboard = clipboard; self.sound = sound
     }
 }
 

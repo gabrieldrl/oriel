@@ -1,29 +1,13 @@
 import SwiftUI
 
-/// The quick controls' shared look (QuickControls): their height and colours.
-enum QuickControlStyle {
-    static let height: CGFloat = 52
-    /// A closed control's fill, and the open picker's track: no outline at rest, only the open
-    /// picker's current choice is lit.
-    static let fill = Color(white: 0.16)
-    static let font = Font.system(size: 16, weight: .semibold)
-    static let labelPadding: CGFloat = 18
-    /// A control's icon, before its text.
-    static let iconSize: CGFloat = 20
-    static let iconFont = Font.system(size: 17, weight: .semibold)
-    /// The room the icon takes before the closed choice (or the closed text): it draws from
-    /// `iconInset`, and the choice's own padding makes the gap after it.
-    static let iconSlot: CGFloat = 30
-    static let iconInset: CGFloat = 16
-}
-
 /// One choice among a few, as a control that opens in place. Closed, a pill shows its icon and the
 /// current choice. A tap grows the pill across into a track of every choice, the current one lit
 /// where it sits, so what comes after the control in its row moves along. A pick slides the lit
 /// thumb to it, holds there a moment, and the track shrinks back into the pill around the pick. The
 /// icon shows only on the closed pill, beside the choice.
 /// It is one shape throughout, never a fade between two views: one number, how open it is, sets
-/// every frame of the morph (PickerTrack).
+/// every frame of the morph (PickerTrack). Open, it is the screen's open control (QuickPillFocus): a
+/// touch anywhere else closes it on the current choice, and another control opening closes it.
 struct MorphingPicker<Value: Hashable>: View {
     let options: [Value]
     /// The current choice; nil when it is none of `options` (`closedLabel` then says what it is).
@@ -46,6 +30,7 @@ struct MorphingPicker<Value: Hashable>: View {
     @State private var frames: [Int: CGRect] = [:]
     @State private var closedSize: CGSize = .zero
     @State private var settling = false
+    @Environment(\.quickPillFocus) private var focus
 
     init(options: [Value], selection: Value?, label: @escaping (Value) -> String, closedLabel: String = "Custom",
          accessibilityLabel: String, accessibilityLabelFor: @escaping (Value) -> String = { _ in "" },
@@ -97,19 +82,33 @@ struct MorphingPicker<Value: Hashable>: View {
                     onClosedSize: { if closedSize != $0 { closedSize = $0 } },
                     onTap: { pick(options[$0]) })
             .contentShape(Capsule())
-            .onTapGesture { if !open { withAnimation(Self.opening) { open = true } } }
+            .onTapGesture { openUp() }
+            .reportsPillFrame(accessibilityLabel, to: focus, while: open)
             .accessibilityElement(children: open ? .contain : .ignore)
             .accessibilityLabel(accessibilityLabel)
             .accessibilityValue(selection.map(label) ?? closedLabel)
             .accessibilityAddTraits(open ? [] : .isButton)
-            .accessibilityAction { if !open { withAnimation(Self.opening) { open = true } } }
+            .accessibilityAction { openUp() }
         #if DEBUG
             .onAppear {
                 guard let demo else { return }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) { withAnimation(Self.opening) { open = true } }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) { openUp() }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1 + 1.5 * Self.slow) { pick(demo) }
             }
         #endif
+    }
+
+    private func openUp() {
+        guard !open else { return }
+        withAnimation(Self.opening) { open = true }
+        focus?.opened(accessibilityLabel) { close() }
+    }
+
+    /// Back into the pill around the current choice.
+    private func close() {
+        withAnimation(Self.closing) { open = false }
+        settling = false
+        focus?.closed(accessibilityLabel)
     }
 
     /// Slide to the pick, rest, then close. A pick of the current choice only rests and closes.
@@ -118,8 +117,7 @@ struct MorphingPicker<Value: Hashable>: View {
         let moves = option != selection
         if moves { withAnimation(Self.sliding) { onPick(option) } }
         DispatchQueue.main.asyncAfter(deadline: .now() + (moves ? Self.hold + 0.25 * Self.slow : 0.15 * Self.slow)) {
-            withAnimation(Self.closing) { open = false }
-            settling = false
+            if open { close() }
         }
     }
 }

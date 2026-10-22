@@ -20,6 +20,8 @@ struct DesktopScreen: View {
     /// It follows a pointer device (PointerDeviceMonitor) as one connects or the last goes; the toggle
     /// changes it in between. This device's own, never sent.
     @AppStorage("Sill.trackpadInput") private var trackpadInput = false
+    /// The quick control that is open, if any: a touch anywhere else folds it (QuickPillFocus).
+    @StateObject private var pillFocus = QuickPillFocus()
 
     /// The shape until the first frame gives the Mac's own: a 14-inch MacBook Pro's 3024×1964.
     private static let placeholderSize = CGSize(width: 3024, height: 1964)
@@ -44,6 +46,10 @@ struct DesktopScreen: View {
                          previewRadius: panelSize.height * MacDisplayShape.cornerRadiusPerHeight,
                          fullWidth: geo.size.width, bottomInset: geo.safeAreaInsets.bottom)
             }
+            .environment(\.quickPillFocus, pillFocus)
+            .coordinateSpace(.named(QuickPillFocus.space))
+            // While a quick control is open, a touch anywhere else folds it and goes no further.
+            .overlay { pillFocus.catcher }
             // The tab sits on the screen's very edge, over the home indicator's strip.
             .ignoresSafeArea(.container, edges: .bottom)
         }
@@ -65,6 +71,7 @@ struct DesktopScreen: View {
             .onChange(of: trackpadInput, initial: true) { _, on in client.setPointerLayout(portrait: on) }
             // Rotation animates, so let the size settle.
             .onChange(of: panelSize) { _, _ in sendViewport(after: 0.25) }
+            .onChange(of: appsOpen) { _, open in if open { pillFocus.closeOpen() } }
     }
 
     /// The picture, with the quick controls right under it at its leading edge; the two centred

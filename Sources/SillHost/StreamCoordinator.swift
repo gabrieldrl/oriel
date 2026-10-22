@@ -259,6 +259,9 @@ package final class StreamCoordinator {
     /// subscribed, while Share clipboard with devices (`HostConfig.shareClipboard`) is on. Looks at
     /// nothing while nobody subscribes.
     let clipboard: HostClipboard
+    /// The Mac's sound on the devices (kinds 47 and 48, HostSound; docs/mac-sound-plan.md): the tap
+    /// runs only while a device listens and the Mac is not muted.
+    let sound: HostSound
     /// TEST ONLY. `SILL_TEST_MENU_PID=<pid>` on a --synthetic host: the test pattern's menus are that
     /// process's (the gates' fixture, Scripts/menufixture.swift), read and pressed through the same
     /// code, never activated (the Desktop's rule). Nil otherwise; `testMenuLine` is what `start`
@@ -320,6 +323,8 @@ package final class StreamCoordinator {
         launchID = launch
         // A synthetic host shares a pasteboard of its own, never this Mac's clipboard.
         clipboard = HostClipboard(server: server, enabled: config.shareClipboard, launchID: launch, synthetic: synthetic)
+        // A synthetic host plays a test tone, never this Mac's sound.
+        sound = HostSound(server: server, synthetic: synthetic)
         let hook = Self.testMenuHook(synthetic: synthetic)
         testMenuPID = hook.pid
         testMenuLine = hook.line
@@ -401,6 +406,7 @@ package final class StreamCoordinator {
                 if self.flipWait == id { self.flipWait = nil }
                 self.menus.clientLeft(connection)
                 self.clipboard.clientLeft(connection)
+                self.sound.clientLeft(connection)
                 self.releaseKeys(of: id)
                 self.status.update { $0.devices.removeAll { $0.id == id } }
                 // The last device at home left devices away behind: the away quality, at once.
@@ -1029,6 +1035,9 @@ package final class StreamCoordinator {
             // The clipboard (HostClipboard): a subscription, a device's text, or its stop. No `await`:
             // it reads and writes the pasteboard at once, and says nothing per copy.
             clipboard.received(message.payload, from: connection, who: deviceName(connection))
+        case .soundControl:
+            // The Mac's sound (HostSound): a subscription, the device's mute or volume. No `await`.
+            sound.received(message.payload, from: connection, who: deviceName(connection))
         case .pressMenuItem:
             guard let r = Wire.decode(PressMenuItem.self, from: message.payload) else { return }
             // One of the Mac's menu items chosen from a device acts as a click on it would, and may
@@ -1892,6 +1901,7 @@ package final class StreamCoordinator {
         injector.releaseAll()
         server.goodbyeAll(Goodbye(reason: Goodbye.quit), within: 0.1)
         shuttingDown = true
+        sound.stop()
         restoreFits(keeping: nil)
         stage.release()
     }
@@ -1902,6 +1912,7 @@ package final class StreamCoordinator {
     /// happens (no goodbye), as before.
     package func releaseKeysForExit() {
         injector.releaseAll()
+        sound.stop()
         restoreFits(keeping: nil)
     }
 
@@ -2322,7 +2333,8 @@ package final class StreamCoordinator {
         StreamMessage(kind: .windowList, timestamp: Date().timeIntervalSince1970, isKeyframe: false,
                       payload: Wire.encode(WindowList(macName: macName, windows: catalog.infos, active: active, launchID: launchID,
                                                       hostVersion: hostVersion, protocol: SillProtocol.current,
-                                                      gestures: TrackpadGesture.generation, clipboard: clipboard.advertised)))
+                                                      gestures: TrackpadGesture.generation, clipboard: clipboard.advertised,
+                                                      sound: sound.advertised)))
     }
 
     private func broadcastList() { server.broadcast(listMessage()) }

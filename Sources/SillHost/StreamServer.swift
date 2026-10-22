@@ -1344,6 +1344,27 @@ final class StreamServer {
         }
     }
 
+    /// The Mac's sound (kind 47, HostSound): one serialized message to each of `ids`, as a tick is
+    /// sent, outside `inflight` and `pendingBytes`, so the sound never makes the video drop a frame.
+    /// A remote connection whose queue holds more than `remoteHoldCap` is skipped: the sound would
+    /// arrive too late to play, and the device covers the gap. Thread-safe.
+    func sendSound(_ data: Data, to ids: [ObjectIdentifier]) {
+        guard !ids.isEmpty else { return }
+        queue.async { [self] in
+            let now = Date().timeIntervalSince1970
+            for id in ids {
+                guard let client = clients[id], client.connection.state == .ready else { continue }
+                if client.route.isRemote, client.pendingBytes > Self.remoteHoldCap {
+                    Stats.shared.bump("snd.dropped")
+                    continue
+                }
+                client.lastSentAt = now
+                client.connection.send(content: data, completion: .contentProcessed { _ in })
+                Stats.shared.bump("snd.sent")
+            }
+        }
+    }
+
     /// One message to one client (catalog on connect). Thread-safe.
     func send(_ message: StreamMessage, to connection: NWConnection) {
         let data = message.serialized()

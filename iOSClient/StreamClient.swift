@@ -787,6 +787,25 @@ final class StreamClient: ObservableObject {
     /// Mac takes and sends (`WindowList.clipboard`, 1 for text), nil from a Mac before it or with Share
     /// clipboard with devices off. Cleared with the session.
     @Published var hostClipboard: Int?
+    /// The Mac's sound (kinds 47 and 48, StreamClient+Sound, docs/mac-sound-plan.md): what this
+    /// session's Mac sends (`WindowList.sound`), nil from a Mac before it. Cleared with the session.
+    @Published var hostSound: Int?
+    /// The Mac's volume and mute as the pill shows them: the Mac's last report, or this device's
+    /// change while the Mac has not answered it. Kept across sessions until a Mac reports.
+    @Published var soundVolume: Double = 0.5
+    @Published var soundMuted = false
+    /// The last volume above nothing: where the mute's circle unmutes a volume at nothing.
+    var soundLastAudible = 0.5
+    /// Why the Mac sends no sound though unmuted ("failed", "unsupported"); nil while it sends.
+    @Published var soundProblem: String?
+    /// The Mac has reported its volume on this session.
+    @Published var soundKnown = false
+    var soundSubscribed = false
+    /// This device's last change (SoundControl.token), and when one was last sent (systemUptime).
+    var soundToken = 0
+    var soundSentAt: TimeInterval = 0
+    var soundSendWork: DispatchWorkItem?
+    let soundPlayer = SoundPlayer()
     /// Text copied on the Mac that waits for the new screen's clipboard pill (DesktopScreen's
     /// QuickControls) to put it on this device's clipboard; the classic screen writes it at once.
     @Published var macClipboardText: String?
@@ -2379,6 +2398,8 @@ final class StreamClient: ObservableObject {
         menusMoved()
         // The Mac keeps the clipboard's subscription per connection: the new one subscribes too.
         clipboardMoved()
+        // And the sound's.
+        soundMoved()
         if fenced {
             DispatchQueue.main.asyncAfter(deadline: .now() + Self.fenceTimeout) { [weak self] in
                 guard let self, let released = self.link.release(old) else { return }
@@ -3171,6 +3192,8 @@ final class StreamClient: ObservableObject {
         resetMenus()
         // Nor the clipboard's subscription, its chip or its note.
         resetClipboard()
+        // Nor its sound.
+        resetSound()
     }
 
     // MARK: - Client → host
@@ -3636,6 +3659,8 @@ final class StreamClient: ObservableObject {
                 if self.hostGestures != list.gestures { self.hostGestures = list.gestures }
                 // The clipboard: subscribe (or stop) as the Mac's word and this device's switch say.
                 self.hostClipboardChanged(list.clipboard)
+                // The Mac's sound: the first list that says it sends it subscribes.
+                self.hostSoundChanged(list.sound)
                 if !self.sessionListed {
                     self.sessionListed = true
                     #if DEBUG
@@ -3785,6 +3810,16 @@ final class StreamClient: ObservableObject {
             DispatchQueue.main.async {
                 guard self.connection === from else { return }
                 self.receiveClipboard(data)
+            }
+        case .sound:
+            // The Mac's sound (SoundPlayer): decoded and played off the main thread.
+            soundPlayer.receive(data, away: remoteOnQueue)
+        case .soundControl:
+            // The Mac's volume and mute (StreamClient+Sound).
+            let from = connection
+            DispatchQueue.main.async {
+                guard self.connection === from else { return }
+                self.receiveSoundControl(data)
             }
         case .macMenu:
             // The Mac's menus: a top level, or the answer to one of this connection's kind 27s or 25s
