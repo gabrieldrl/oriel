@@ -451,6 +451,10 @@ main() {
     # them, such as a CI runner, would still build); a release must not ship the generic icon.
     [ -f "$app/Contents/Resources/Assets.car" ] && [ -f "$app/Contents/Resources/AppIcon.icns" ] \
         || fail "$app has no icon (Assets.car and AppIcon.icns): make-app.sh's warning above says why"
+    # Without its usage string macOS refuses the sound's tap at once, with no alert, and the device's
+    # sound pill stays dim (docs/mac-sound-plan.md).
+    /usr/libexec/PlistBuddy -c 'Print :NSAudioCaptureUsageDescription' "$app/Contents/Info.plist" > /dev/null 2>&1 \
+        || fail "$app's Info.plist has no NSAudioCaptureUsageDescription: the Mac's sound would never reach a device"
     say "Sill $version ($build) for $(lipo -archs "$app/Contents/MacOS/Sill"). The site says Apple silicon: change that if this ever lists x86_64."
     # The disk image is made only after the app's notarization; its tool and background now, so a
     # problem with either stops the run before anything goes to Apple.
