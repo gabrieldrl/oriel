@@ -186,6 +186,16 @@ struct EncoderSlowState {
         fastest = .infinity
     }
 
+    /// A session this watch did not ask for took over (EncoderSpeedJudge's, with the other speed
+    /// setting): what it knew is about the old one, so it watches the new one from scratch, as at a
+    /// stream's start. Only while it is watching (the encoder makes one new session at a time).
+    mutating func sessionChanged(at now: CFTimeInterval) {
+        guard case .watching = phase else { return }
+        watchingSince = now
+        fastest = .infinity
+        returns.removeAll(keepingCapacity: true)
+    }
+
     /// The new session could not be made: the stream goes on with the one it has, and the next try
     /// is `minSpacing` away.
     mutating func replacementFailed(at now: CFTimeInterval) {

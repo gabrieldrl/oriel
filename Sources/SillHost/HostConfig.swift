@@ -19,7 +19,9 @@ package struct HostConfig: Equatable, Sendable {
     /// device is at home. A device away sets these, never the home pair (`applyingAway`).
     package var awayBitrate: Int
     package var awayCaptureScale: CGFloat
-    /// Apple: trades quality for encode speed; try after the baseline.
+    /// Apple: trades quality for encode speed. On, every hardware session favours speed; off (the
+    /// default), each stream's EncoderSpeedJudge picks it while the encoder falls behind
+    /// (docs/encoder-speed-plan.md).
     package var prioritizeSpeed: Bool
     /// A picked window streams from its own HiDPI virtual display (see VirtualStage). Needs the
     /// AppKit event loop, so the CLI turns it on only with --virtual-display.

@@ -81,6 +81,12 @@ brightness 0, its own keyboard and trackpad stopped by an HID event tap (Sill's 
 `WindowList.curtain`, kind 52. Mac: `Sources/SillHost/Curtain/` (CurtainPolicy pure,
 `Tests/checks/curtain`). Device: StreamClient+Curtain. Untested on a device.
 
+**A simple Settings window and automatic encoding speed (2026-10-23, `dev`).** The Mac's Settings
+is General, Devices and Permissions (`docs/settings-simple-plan.md`). Require pairing and Remote
+Access are always on in Oriel.app. Each stream's EncoderSpeedJudge switches its session to encoding
+speed while it falls behind and tries quality later (`docs/encoder-speed-plan.md`, `Tests/checks/
+encoder-speed`). Untested on a device with real load.
+
 **To do, remind Gabriel: layouts per device.** The new screen is laid out for an iPad held sideways
 only. Still to design (UX work, Gabriel's call): an iPad upright, a phone upright and sideways, and
 the iPhone Duo's poses (the classic StreamScreen and PortraitStreamScreen have each today).

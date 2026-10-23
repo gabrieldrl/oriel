@@ -11,6 +11,12 @@ src_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(root, 'Sources', '
 out = os.path.join(root, '.build', 'checks', 'encoder-slowstate')
 src = open(src_path).read()
 mutants = [
+    ("sessionChanged keeps the old session's fastest frame",
+     "        watchingSince = now\n        fastest = .infinity\n        returns.removeAll(keepingCapacity: true)\n",
+     "        watchingSince = now\n        returns.removeAll(keepingCapacity: true)\n"),
+    ("sessionChanged acts while a replacement is made",
+     "    mutating func sessionChanged(at now: CFTimeInterval) {\n        guard case .watching = phase else { return }\n",
+     "    mutating func sessionChanged(at now: CFTimeInterval) {\n        phase = .watching\n"),
     ("input counted in the window's last second only",
      "            guard Double(inputs(after: now - half, through: now)) >= need,\n                  Double(inputs(after: now - Self.window, through: now - half)) >= need,\n",
      "            guard Double(inputs(after: now - half, through: now)) >= need,\n"),

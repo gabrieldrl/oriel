@@ -44,6 +44,12 @@ import StreamProtocol
 ///   invalidated.
 ///   The mailbox, its frame ids, the watchdog and the capture carry on: a new session never counts
 ///   against a frame's clock, and one that hangs is a hang like any other.
+/// - Encoding speed (docs/encoder-speed-plan.md): a hardware stream whose session falls behind its
+///   capture gets a session that favours speed over quality the same way, and quality again once
+///   speed has had a while with room to spare (`EncoderSpeedJudge`). One new session at a time: the
+///   judge asks only while the slow state is neither making nor judging one, and the slow state is
+///   not told of frames while the judge's session is on its way. `prioritizeSpeed` set means every
+///   session favours speed, with no judge.
 final class HEVCEncoder {
     let width: Int
     let height: Int
@@ -56,6 +62,7 @@ final class HEVCEncoder {
     let serial: Int
     private let fps: Int
     private let bitrate: Int
+    /// Every session favours speed (the setting, or the software encoder): no judge.
     private let prioritizeSpeed: Bool
     /// The session frames go into. It changes only in `submit`, on `encodeQueue`, when a new one
     /// replaces it; read there and in `deinit`.
@@ -98,8 +105,18 @@ final class HEVCEncoder {
     /// the software encoder, or `replacesSlowSessions` off). The launch probe has one, and its one
     /// frame never meets the rule.
     private var slowState: EncoderSlowState?
-    /// A new session, made and prepared, that the next frame handed over goes into.
+    /// A new session, made and prepared, that the next frame handed over goes into: whether it favours
+    /// speed, and whether the speed judge asked for it (else the slow state did).
     private var replacement: VTCompressionSession?
+    private var replacementSpeed = false
+    private var replacementBySpeed = false
+    /// Chooses each hardware stream session's speed setting; nil for a quiet probe, the software
+    /// encoder and `prioritizeSpeed` (EncoderSpeedJudge).
+    private var speedJudge: EncoderSpeedJudge?
+    /// The current session favours speed.
+    private var speedNow: Bool
+    /// The slow state asked for a new session and has not judged it yet: the speed judge waits.
+    private var slowBusy = false
 
     private let encodeQueue = DispatchQueue(label: "sill.encode", qos: .userInteractive)
     /// The watchdog must not share `encodeQueue`: when VideoToolbox hangs, it hangs *inside*
@@ -123,8 +140,10 @@ final class HEVCEncoder {
         return n != 0
     }()
 
+    /// `startFast`: a hardware stream's first session favours speed, which the stream before it
+    /// ended on (StreamCoordinator); its judge then tries quality later, as after any switch.
     init(width: Int, height: Int, fps: Int, bitrate: Int, prioritizeSpeed: Bool, software: Bool = false,
-         quiet: Bool = false) throws {
+         quiet: Bool = false, startFast: Bool = false) throws {
         self.width = width
         self.height = height
         self.software = software
@@ -132,10 +151,16 @@ final class HEVCEncoder {
         self.fps = fps
         self.bitrate = bitrate
         self.prioritizeSpeed = prioritizeSpeed
+        let judged = !software && !quiet && !prioritizeSpeed
+        speedNow = prioritizeSpeed || software || (judged && startFast)
         Self.serialLock.lock(); Self.lastSerial += 1; serial = Self.lastSerial; Self.serialLock.unlock()
-        session = try Self.makeSession(width: width, height: height, fps: fps, bitrate: bitrate, prioritizeSpeed: prioritizeSpeed,
+        session = try Self.makeSession(width: width, height: height, fps: fps, bitrate: bitrate, prioritizeSpeed: speedNow,
                                        software: software)
         if !software, !quiet, Self.replacingSlowSessions { slowState = EncoderSlowState(now: CACurrentMediaTime()) }
+        if judged { speedJudge = EncoderSpeedJudge(fps: fps, now: CACurrentMediaTime(), startFast: startFast) }
+        if judged, startFast {
+            print("Encoder (hardware HEVC \(width)×\(height)): starting on encoding speed, as the last stream ended.")
+        }
 
         let t = DispatchSource.makeTimerSource(queue: watchdogQueue)
         t.schedule(deadline: .now() + 0.5, repeating: 0.5, leeway: .milliseconds(100))
@@ -144,8 +169,8 @@ final class HEVCEncoder {
         watchdog = t
     }
 
-    /// A session with this encoder's settings, ready for its first frame: the stream's first, and
-    /// each one that replaces a session settled in the slow state.
+    /// A session with this encoder's settings and this speed setting, ready for its first frame: the
+    /// stream's first, and each one that replaces another (the slow state, the speed judge).
     private static func makeSession(width: Int, height: Int, fps: Int, bitrate: Int, prioritizeSpeed: Bool,
                                     software: Bool) throws -> VTCompressionSession {
         var s: VTCompressionSession?
@@ -179,6 +204,10 @@ final class HEVCEncoder {
     /// The watchdog gave up on this session. The owner checks this after installing an encoder,
     /// because a hang report that arrived mid-switch was ignored (see StreamCoordinator).
     var isDead: Bool { lock.lock(); defer { lock.unlock() }; return mailbox.dead }
+
+    /// The judge has this stream on encoding speed (never for `prioritizeSpeed` or the software
+    /// encoder): the next stream starts there (StreamCoordinator).
+    var runsFast: Bool { lock.lock(); defer { lock.unlock() }; return speedJudge != nil && speedNow }
 
     /// Give up on this session quietly: no watchdog report, no `enc.hung`. A probe calls this when
     /// its frame has not come back in time, since the owner already knows. True when that frame
@@ -283,7 +312,7 @@ final class HEVCEncoder {
     func encode(_ pixelBuffer: CVPixelBuffer, pts: CMTime) {
         lock.lock()
         let now = CACurrentMediaTime()
-        if !mailbox.dead { slowState?.captured(at: now) }
+        if !mailbox.dead { slowState?.captured(at: now); speedJudge?.captured(at: now) }
         let admission = admitLocked(pixelBuffer, pts: pts, fromCapture: true, now: now)
         lock.unlock()
         count(admission)
@@ -339,8 +368,11 @@ final class HEVCEncoder {
             retired = session
             session = next
             self.session = next
-            slowState?.swapped(at: now)
+            speedNow = replacementSpeed
+            if replacementBySpeed { slowState?.sessionChanged(at: now) } else { slowState?.swapped(at: now) }
+            speedJudge?.swapped(at: now)
         }
+        let quality = !speedNow && !software
         lock.unlock()
         guard let handOver else { return }   // a frame queued just before the watchdog gave up
         if let retired {
@@ -363,6 +395,7 @@ final class HEVCEncoder {
         let pts = handOver.pts
 
         if testHoldEachFrame > 0 { Thread.sleep(forTimeInterval: testHoldEachFrame) }
+        if quality, !quiet, let hold = TestSlowQuality.hold { Thread.sleep(forTimeInterval: hold) }
         if id == TestHang.frame, !quiet, !software, TestHang.take() {
             // TEST ONLY (SILL_TEST_ENCODER_HANG): this frame waits here, then goes in late and comes
             // back, as frames did in a busy engine on 2026-09-24. The watchdog fires meanwhile.
@@ -413,16 +446,27 @@ final class HEVCEncoder {
     private func frameReturned(_ id: Int, bytes: Int?) -> Bool {
         lock.lock()
         let now = CACurrentMediaTime()
-        // The slow state is judged on frames that came back encoded, timed from their hand-over.
+        // The slow state and the speed judge are told of frames that came back encoded, timed from
+        // their hand-over. The slow state is not while the judge's session is on its way, and the judge
+        // acts only while the slow state has none on its way or in judgement.
         var event: EncoderSlowState.Event?
+        var speedEvent: EncoderSpeedJudge.Event?
         if let bytes, !mailbox.dead, let inside = mailbox.inside, inside.id == id, inside.handed {
-            event = slowState?.returned(turnaround: now - inside.since, bytes: bytes, at: now)
+            let turnaround = now - inside.since
+            if speedJudge?.pending == nil { event = slowState?.returned(turnaround: turnaround, bytes: bytes, at: now) }
+            switch event {
+            case .replace: slowBusy = true
+            case .judged: slowBusy = false
+            case nil: break
+            }
+            speedEvent = speedJudge?.returned(turnaround: turnaround, at: now, mayAct: event == nil && !slowBusy)
         }
         let outcome = mailbox.returned(id, now: now)
         // Queued before the lock is released, like every frame let in (`admitLocked`).
         if case .next(let (pb, pts), let next) = outcome { encodeQueue.async { [weak self] in self?.submit(pb, pts: pts, id: next) } }
         lock.unlock()
         if let event { slowStateSays(event) }
+        if let speedEvent { speedJudgeSays(speedEvent) }
         switch outcome {
         case .late: return false
         case .duplicate, .freed, .next: return true
@@ -451,22 +495,44 @@ final class HEVCEncoder {
     /// how the last one went.
     private func slowStateSays(_ event: EncoderSlowState.Event) {
         switch event {
-        case .replace: makeReplacement()
+        case .replace:
+            lock.lock(); let speed = speedNow; lock.unlock()
+            makeReplacement(speed: speed, bySpeed: false)
         case .judged(let report): print(Self.describe(report, session: "hardware HEVC \(width)×\(height)"))
         }
     }
 
-    /// A new session with the stream's settings, made on a queue of its own while the old one goes
-    /// on (making one takes tens of ms, which must count against no frame's clock); `submit` hands
-    /// the next frame to it. One that cannot be made leaves the stream on the old one.
-    private func makeReplacement() {
-        let (w, h, fps, bitrate, speed) = (width, height, fps, bitrate, prioritizeSpeed)
+    /// What the speed judge asks for, outside the lock: a session with the other setting, and its line.
+    private func speedJudgeSays(_ event: EncoderSpeedJudge.Event) {
+        print("Encoder (hardware HEVC \(width)×\(height)): " + EncoderSpeedJudge.describe(event, fps: fps))
+        switch event {
+        case .toSpeed: makeReplacement(speed: true, bySpeed: true)
+        case .noFaster, .retry: makeReplacement(speed: false, bySpeed: true)
+        case .kept: break
+        }
+    }
+
+    /// A new session with the stream's settings and `speed`, made on a queue of its own while the old
+    /// one goes on (making one takes tens of ms, which must count against no frame's clock); `submit`
+    /// hands the next frame to it. One that cannot be made leaves the stream on the old one.
+    private func makeReplacement(speed: Bool, bySpeed: Bool) {
+        let (w, h, fps, bitrate) = (width, height, fps, bitrate)
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let made = try? HEVCEncoder.makeSession(width: w, height: h, fps: fps, bitrate: bitrate, prioritizeSpeed: speed, software: false)
             guard let self else { if let made { HEVCEncoder.retire(made) }; return }
             self.lock.lock()
             let taken = made != nil && !self.mailbox.dead
-            if taken { self.replacement = made } else { self.slowState?.replacementFailed(at: CACurrentMediaTime()) }
+            let now = CACurrentMediaTime()
+            if taken {
+                self.replacement = made
+                self.replacementSpeed = speed
+                self.replacementBySpeed = bySpeed
+            } else if bySpeed {
+                self.speedJudge?.replacementFailed(at: now)
+            } else {
+                self.slowState?.replacementFailed(at: now)
+                self.slowBusy = false
+            }
             self.lock.unlock()
             if !taken, let made { HEVCEncoder.retire(made) }
         }
@@ -541,6 +607,18 @@ final class HEVCEncoder {
     }
 
     enum EncoderError: Error { case create(OSStatus) }
+
+    /// TEST ONLY. `SILL_TEST_SLOW_QUALITY=<ms>`: every frame of a hardware stream session that does not
+    /// favour speed waits that long on `encodeQueue` before it goes in, as in a busy engine, so the
+    /// speed judge switches it to speed, tries quality again and comes back (docs/encoder-speed-plan.md).
+    /// Probes (quiet) never wait. Read once, said once; nothing changes without the variable.
+    private enum TestSlowQuality {
+        static let hold: TimeInterval? = {
+            guard let value = ProcessInfo.processInfo.environment["SILL_TEST_SLOW_QUALITY"], let ms = Double(value), ms > 0 else { return nil }
+            print("TEST: every frame of a quality hardware session waits \(value) ms before it goes in (SILL_TEST_SLOW_QUALITY)")
+            return ms / 1000
+        }()
+    }
 
     /// TEST ONLY. `SILL_TEST_ENCODER_HANG=N`: the first N hardware stream sessions of this process
     /// each hold their 90th frame on `encodeQueue` for 3 s before handing it to VideoToolbox (later

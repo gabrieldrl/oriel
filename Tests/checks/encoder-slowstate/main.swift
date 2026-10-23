@@ -220,6 +220,34 @@ do {
     expect(tick(t + 1).isEmpty, "a swap or failure while not making changed something")
 }
 
+// sessionChanged: a session the watch did not ask for (EncoderSpeedJudge's) is watched from scratch.
+// One that never ran fast is never replaced, however fast the session before it ran; once it runs a
+// fast frame, slow frames replace it as at a stream's start. Ignored while a replacement is made.
+scenarioName = "session changed"
+do {
+    var w = W(now: 0)
+    var t = 0.0
+    var events: [W.Event] = []
+    func run(until end: Double, turnaround: Double) {
+        while t < end {
+            t += 1.0 / 57
+            w.captured(at: t)
+            if let e = w.returned(turnaround: turnaround, bytes: 1, at: t) { events.append(e) }
+        }
+    }
+    run(until: 1, turnaround: 0.009)
+    w.sessionChanged(at: t)
+    run(until: 6, turnaround: 0.029)
+    expect(events.isEmpty, "\(events.count) events from a new session that never ran fast (the old one's fast frames counted)")
+    _ = w.returned(turnaround: 0.009, bytes: 1, at: t)
+    run(until: t + 0.5, turnaround: 0.029)
+    expect(events.count == 1 && isReplace(events.first), "a new session that ran fast, then slow: \(events.count) events, not one replace")
+    w.sessionChanged(at: t)   // making: ignored
+    w.swapped(at: t + 0.01)
+    run(until: t + 2.5, turnaround: 0.029)
+    expect(events.count == 2 && report(events.last) != nil, "a change while making stopped the new session's verdict: \(events.count) events")
+}
+
 // MARK: - Part two: streams in virtual time
 
 /// The glue around the watch: capture at scripted times, one frame inside, a one-slot mailbox (the

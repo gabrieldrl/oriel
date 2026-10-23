@@ -257,7 +257,7 @@ struct HostSettingsPanel: View {
                     }
                     .rowFrame()
                 }
-                Footnote(text: "Lower latency when \(mac) is busy, at a softer picture.")
+                Footnote(text: "Always faster encoding, at a softer picture. Off, \(mac) switches by itself while it falls behind.")
                 Rows {
                     let unavailable = !state.virtualDisplayAvailable && !shown.virtualDisplay
                     Toggle(isOn: binding(shown.virtualDisplay) { HostSettingsChange(virtualDisplay: $0) }) {

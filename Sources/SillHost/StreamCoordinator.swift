@@ -38,6 +38,11 @@ package final class StreamCoordinator {
     private var scale: CGFloat { config.effective(away: awayRunning).captureScale }
     private var bitrate: Int { config.effective(away: awayRunning).bitrate }
     private var prioritizeSpeed: Bool { config.prioritizeSpeed }
+    /// When the last hardware stream's encoder ended, and whether it was on encoding speed then
+    /// (EncoderSpeedJudge): a stream started within `speedCarry` of one that ended on speed starts on
+    /// it, rather than falling behind again for the judge's 3 s (a window switch, say).
+    private var lastSpeed: (fast: Bool, at: CFTimeInterval)?
+    private static let speedCarry: CFTimeInterval = 60
 
     let server: StreamServer
     let catalog = WindowCatalog()
@@ -1309,6 +1314,7 @@ package final class StreamCoordinator {
             }
         }
         releaseKeysOfDevicesThatLeft()
+        if let e = encoder, !e.software { lastSpeed = (e.runsFast, CACurrentMediaTime()) }
         encoder = nil                  // deinit invalidates the VT session
         server.resetForNewStream()          // every client waits for the next parameter sets + keyframe
         // New settings take effect here, between pipelines, before the rate, the scale and the
@@ -1532,8 +1538,9 @@ package final class StreamCoordinator {
     /// `title` and `kind` describe the stream in the app's menu.
     private func startPipeline(source: StreamSource, filter: SCContentFilter?, sourceRect: CGRect?, width: Int, height: Int, describe: String,
                                title: String, kind: HostStatusSnapshot.Stream.Kind) async throws {
+        let startFast = lastSpeed.map { $0.fast && CACurrentMediaTime() - $0.at < Self.speedCarry } ?? false
         let enc = try HEVCEncoder(width: width, height: height, fps: fps, bitrate: streamBitrate, prioritizeSpeed: prioritizeSpeed,
-                                  software: useSoftwareEncoder)
+                                  software: useSoftwareEncoder, startFast: startFast)
         enc.onHung = { [weak self, weak enc] in
             Task { @MainActor in
                 guard let enc else { return }
