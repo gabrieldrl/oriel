@@ -335,9 +335,9 @@ What that means in practice:
   re-install every 7 days. A free team has no App Store / TestFlight and no Developer ID, so
   `Scripts/release.sh` and `Scripts/release-ios.sh` won't work until you join the paid Apple
   Developer Program.
-- **The update check needs a public repo.** Sill.app reads
-  `api.github.com/repos/gabrieldrl/sill/releases/latest` without signing in, which a private repo
-  answers with 404. The check stays quiet until the repo is public and has a release.
+- **The update check needs a release.** Sill.app reads
+  `api.github.com/repos/gabrieldrl/sill/releases/latest` without signing in (the repo is public).
+  The check stays quiet until the repo has a release.
 - **The Mac app installs to `~/Applications`, beside the official one.** The official Sill.app is in
   `/Applications` on this Mac, so the dev loop is
   `SILL_INSTALL_DIR=~/Applications Scripts/make-app.sh --install --open`. It quits only this
