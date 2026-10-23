@@ -24,7 +24,8 @@ Where the detail is:
 **The Mac's sound on the device (2026-10-22, branch `dev`; `docs/mac-sound-plan.md` has the plan,
 its open questions with the defaults taken, and the results).** An audio pill beside Touch/Trackpad
 opens into a volume slider. While Sill is connected the Mac's sound plays only on the device, never
-on the Mac's speakers; muted is the Mac and the device silent; every control is the device's. Built
+on the Mac's speakers, unless the pill's Play on Mac (`onMac`, `sound` 2) leaves it there; muted is
+the Mac and the device silent; every control is the device's. Built
 fresh; upstream's `upstream/wip/audio` was read, not merged.
 - Wire (additive, Sound.swift): `WindowList.sound` 1; kind 47 `sound` (a JSON `SoundFormat`, then
   binary packets), kind 48 `soundControl` both ways.

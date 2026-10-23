@@ -139,6 +139,22 @@ host's clock.
 4. The iPad: decoder, player, the client glue, the pill.
 5. Live: a synthetic host's tone to the simulator; then Sill.app to the iPad.
 
+## Play on Mac (Gabriel, 2026-10-22)
+
+- Open, the pill shows where the sound plays after the slider: this device (`ipad.landscape`,
+  `iphone`) while it plays here, and a Mac (`laptopcomputer`), lit black on white, once a tap
+  leaves the sound on the Mac's own speakers. Meanwhile the pill's circle shows a laptop in
+  place of the speaker. The slider and the mute still set the Mac's
+  volume and mute. Kept per Mac on the device (`Sill.soundOnMac.<macID>`) and sent with the
+  subscription.
+- Wire (additive): `SoundControl.onMac`, sent only to a host whose window list says `sound` 2
+  (`SoundControl.playsOnMac`). Sill.app now says 2. The host answers `onMac` in that device's
+  reports.
+- Host: a device with `onMac` keeps its subscription but gets no packets. While no device takes
+  the sound, there is no tap and the Mac's speakers play.
+- Against the synthetic host: on and off each get one answer, the tone stops and starts again.
+  Untested on the iPad with the real tap.
+
 ## Results (2026-10-22)
 
 - `swift build -c release`, only the CaptureProbe warning; the iOS app Debug for the simulator, only

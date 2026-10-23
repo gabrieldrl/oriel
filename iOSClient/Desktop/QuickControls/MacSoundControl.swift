@@ -7,7 +7,10 @@ import SwiftUI
 /// volume, a small speaker at one end and a loud one at the other; a drag anywhere on it sets the
 /// Mac's volume, all the way down mutes, and up again unmutes. It folds back after 3 s untouched, or
 /// at a touch anywhere else (QuickPillFocus). Dimmed while the Mac has no sound to give (a Mac before
-/// it, or macOS refused).
+/// it, or macOS refused). Open, after the slider, Play on Mac (a Mac whose list says `sound` 2): where
+/// the sound plays, this device while it plays here and a Mac, lit, while it plays on the Mac's own
+/// speakers; meanwhile the circle shows a laptop in place of the speaker, and the slider and mute
+/// still set the Mac's.
 struct MacSoundControl: View {
     @ObservedObject var client: StreamClient
     @Environment(\.quickPillFocus) private var focus
@@ -21,9 +24,12 @@ struct MacSoundControl: View {
     private var available: Bool { client.hostSendsSound && client.soundProblem == nil }
     private var silent: Bool { client.soundSilent }
     private var volume: Double { client.soundVolume }
+    private var onMac: Bool { client.soundOnMac }
+    private var canPlayOnMac: Bool { client.hostPlaysOnMac }
 
     private var symbol: String {
         if silent { return "speaker.slash.fill" }
+        if onMac { return "laptopcomputer" }
         switch volume {
         case ..<0.34: return "speaker.wave.1.fill"
         case ..<0.67: return "speaker.wave.2.fill"
@@ -39,16 +45,24 @@ struct MacSoundControl: View {
                 .clipShape(Capsule())
                 .opacity(open ? 1 : 0)
                 .allowsHitTesting(open)
+            if canPlayOnMac {
+                plug
+                    .frame(width: open ? QuickControlStyle.height : 0, height: QuickControlStyle.height)
+                    .clipShape(Circle())
+                    .opacity(open ? 1 : 0)
+                    .allowsHitTesting(open)
+            }
         }
         .reportsPillFrame(Self.id, to: focus, while: open)
         .opacity(available ? 1 : 0.4)
         .animation(Self.morph, value: open)
         .animation(.spring(duration: 0.3, bounce: 0.1), value: silent)
+        .animation(.spring(duration: 0.3, bounce: 0.1), value: onMac)
         .onChange(of: available) { if !available { close() } }
         .onDisappear { close() }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Self.id)
-        .accessibilityValue(silent ? "Muted" : "\(Int((volume * 100).rounded())) percent")
+        .accessibilityValue((silent ? "Muted" : "\(Int((volume * 100).rounded())) percent") + (onMac ? ", playing on the Mac" : ""))
         .accessibilityHint(available ? "" : client.soundProblem == nil ? "This Mac does not send its sound" : "The Mac could not share its sound")
         .accessibilityAdjustableAction { direction in
             guard available else { return }
@@ -59,6 +73,7 @@ struct MacSoundControl: View {
             }
         }
         .accessibilityAction(named: silent ? "Unmute" : "Mute") { if available { client.toggleSoundMute() } }
+        .accessibilityAction(named: onMac ? "Play Here" : "Play on Mac") { if available, canPlayOnMac { client.setSoundOnMac(!onMac) } }
         #if DEBUG
         // `-SillSoundOpen 1`: opens by itself, and stays, for photographs.
         .onAppear { if UserDefaults.standard.bool(forKey: "SillSoundOpen") { openUp() } }
@@ -90,6 +105,19 @@ struct MacSoundControl: View {
             if open { client.toggleSoundMute() } else { openUp() }
             armFold()
         }
+    }
+
+    /// Play on Mac: where the sound plays, this device or the Mac (black on white).
+    private var plug: some View {
+        Image(systemName: onMac ? "laptopcomputer" : UIDevice.current.userInterfaceIdiom == .pad ? "ipad.landscape" : "iphone")
+            .contentTransition(.symbolEffect(.replace))
+            .font(QuickControlStyle.iconFont)
+            .foregroundStyle(onMac ? Color.black : Color.white)
+            .quickCircle(onMac ? Color.white : QuickControlStyle.fill)
+            .onTapGesture {
+                client.setSoundOnMac(!onMac)
+                armFold()
+            }
     }
 
     /// The track, white up to the volume; its speakers dark over the white and light over the track.

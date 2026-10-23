@@ -812,6 +812,8 @@ final class StreamClient: ObservableObject {
     @Published var soundProblem: String?
     /// The Mac has reported its volume on this session.
     @Published var soundKnown = false
+    /// The Mac's sound plays on its own speakers, not here (`SoundControl.onMac`); kept per Mac.
+    @Published var soundOnMac = false
     var soundSubscribed = false
     /// This device's last change (SoundControl.token), and when one was last sent (systemUptime).
     var soundToken = 0

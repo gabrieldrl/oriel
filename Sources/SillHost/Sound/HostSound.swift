@@ -13,6 +13,8 @@ import StreamProtocol
 ///   the Mac's speakers stay silent (SystemAudioTap). Muted (a device's mute, or the Mac's own),
 ///   the tap goes and nothing is sent: nothing plays anywhere. The last device leaving takes the tap
 ///   with it, and the Mac plays again at the volume and mute last set.
+/// - A device's `onMac` keeps its subscription (the volume, the mute, the reports) but sends it no
+///   sound; while no device takes the sound, there is no tap and the Mac's speakers play it.
 /// - A device's `volume` sets the Mac's output volume, which the device applies to what it plays (the
 ///   tap hears the processes before it).
 /// - A synthetic host never taps this Mac: a test tone (TestTone), and a volume and mute of its own.
@@ -21,7 +23,7 @@ import StreamProtocol
 @MainActor
 final class HostSound {
     /// The window lists' `sound`.
-    var advertised: Int? { SoundControl.generation }
+    var advertised: Int? { SoundControl.playsOnMac }
 
     private let server: StreamServer
     private let synthetic: Bool
@@ -32,6 +34,8 @@ final class HostSound {
         let connection: NWConnection
         let who: String
         var answering: Int?
+        /// It wants the sound on the Mac's speakers, not its own.
+        var onMac = false
     }
     private var subscribers: [ObjectIdentifier: Subscriber] = [:]
     /// The connections the pipeline sends to, read on its queue.
@@ -68,6 +72,15 @@ final class HostSound {
         let id = ObjectIdentifier(connection)
         if subscribers[id] == nil { subscribe(connection, who: who) }
         if let token = control.token { subscribers[id]?.answering = token }
+        if let onMac = control.onMac, onMac != subscribers[id]?.onMac {
+            subscribers[id]?.onMac = onMac
+            print(onMac ? "Sound: \(who) lets this Mac play its own sound." : "Sound: \(who) plays this Mac's sound again.")
+            listeners.withLock { list in
+                list.removeAll { $0 == id }
+                if !onMac { list.append(id) }
+            }
+            if !onMac { pipeline.markSegment() }
+        }
         let before = state
         if let muted = control.muted, muted != state.muted {
             print("Sound: \(muted ? "muted" : "unmuted") from \(who).")
@@ -111,7 +124,7 @@ final class HostSound {
     // MARK: The capture
 
     private func updateCapture() {
-        let want = !subscribers.isEmpty && !state.muted
+        let want = subscribers.values.contains { !$0.onMac } && !state.muted
         guard want != capturing else { return }
         if want { startCapture() } else { stopCapture() }
     }
@@ -136,7 +149,7 @@ final class HostSound {
                 let t = try SystemAudioTap(pipeline: pipeline, outputUID: mac?.deviceUID)
                 tap = t
                 let kHz = (t.sampleRate / 1000).formatted(.number.precision(.fractionLength(0...1)))
-                let n = subscribers.count
+                let n = subscribers.values.filter { !$0.onMac }.count
                 print("Sound: this Mac's sound goes to \(n) device\(n == 1 ? "" : "s") at \(kHz) kHz; its own speakers are silent meanwhile.")
             } catch {
                 problem = "failed"
@@ -154,8 +167,8 @@ final class HostSound {
         tone?.stop(); tone = nil
         if #available(macOS 14.2, *), let t = tap as? SystemAudioTap {
             t.stop()
-            print(subscribers.isEmpty ? "Sound: no device listens; this Mac's speakers play again."
-                                      : "Sound: muted; nothing plays.")
+            print(!subscribers.values.contains { !$0.onMac } ? "Sound: no device listens; this Mac's speakers play again."
+                                                             : "Sound: muted; nothing plays.")
         }
         tap = nil
         pipeline.stop()
@@ -180,7 +193,7 @@ final class HostSound {
         let messages: [(NWConnection, StreamMessage)] = ids.compactMap { id in
             guard let sub = subscribers[id] else { return nil }
             let control = SoundControl(volume: (s.volume * 1000).rounded() / 1000, muted: s.muted,
-                                       problem: problem, answering: sub.answering)
+                                       problem: problem, answering: sub.answering, onMac: sub.onMac ? true : nil)
             return (sub.connection, StreamMessage(kind: .soundControl, timestamp: Date().timeIntervalSince1970,
                                                   isKeyframe: false, payload: Wire.encode(control)))
         }

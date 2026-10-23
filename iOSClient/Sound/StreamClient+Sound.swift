@@ -12,6 +12,8 @@ import StreamProtocol
 //   change carries a token; a report answering an older one than this device's last is the Mac's
 //   state from before that change, so the pill keeps what the person set until it is answered.
 // - The slider sends at most 20 changes a second, the newest at the end of a drag.
+// - Play on Mac (a Mac whose list says `sound` 2): the sound stays on the Mac's speakers, the pill
+//   still its volume and mute. Kept per Mac, and sent with the subscription.
 //
 // Everything here is main thread.
 extension StreamClient {
@@ -24,12 +26,18 @@ extension StreamClient {
     /// What the pill shows as muted: the Mac muted, or its volume at nothing (the Mac's own keys).
     var soundSilent: Bool { soundMuted || soundVolume < Self.soundFloor }
 
+    /// The Mac can play its sound on its own speakers while this device is connected.
+    var hostPlaysOnMac: Bool { (hostSound ?? 0) >= SoundControl.playsOnMac }
+
     /// Each window list's `sound`: the first that says so subscribes.
     func hostSoundChanged(_ value: Int?) {
         if hostSound != value { hostSound = value }
         guard hostSendsSound, !soundSubscribed else { return }
         soundSubscribed = true
-        send(.soundControl, payload: Wire.encode(SoundControl()))
+        let onMac = hostPlaysOnMac && (session?.macID.map(Self.soundOnMacKept) ?? false)
+        if soundOnMac != onMac { soundOnMac = onMac }
+        applySound()
+        send(.soundControl, payload: Wire.encode(SoundControl(onMac: onMac ? true : nil)))
         #if DEBUG
         print("sound: subscribed")
         #endif
@@ -64,8 +72,22 @@ extension StreamClient {
             if soundVolume >= Self.soundFloor { soundLastAudible = soundVolume }
         }
         if let muted = report.muted, muted != soundMuted { soundMuted = muted }
+        if hostPlaysOnMac, (report.onMac ?? false) != soundOnMac { soundOnMac = report.onMac ?? false }
         applySound()
     }
+
+    /// The pill's Play on Mac: the sound on the Mac's speakers, or back here.
+    func setSoundOnMac(_ on: Bool) {
+        guard hostPlaysOnMac else { return }
+        soundOnMac = on
+        if let macID = session?.macID { Self.keepSoundOnMac(on, macID) }
+        applySound()
+        sendSound(SoundControl(onMac: on))
+    }
+
+    private static func soundOnMacKey(_ macID: String) -> String { "Sill.soundOnMac.\(macID)" }
+    static func soundOnMacKept(_ macID: String) -> Bool { UserDefaults.standard.bool(forKey: soundOnMacKey(macID)) }
+    static func keepSoundOnMac(_ on: Bool, _ macID: String) { UserDefaults.standard.set(on, forKey: soundOnMacKey(macID)) }
 
     /// The slider: shown and played at once, sent at most 20 times a second. At nothing it mutes, and
     /// above it a muted Mac unmutes: then the level and the mute go at once, in one message, so the
@@ -120,7 +142,7 @@ extension StreamClient {
     /// The player follows what the pill shows.
     private func applySound() {
         soundPlayer.setVolume(soundVolume)
-        soundPlayer.setAllowed(!soundMuted)
-        if soundMuted { soundPlayer.reset() }
+        soundPlayer.setAllowed(!soundMuted && !soundOnMac)
+        if soundMuted || soundOnMac { soundPlayer.reset() }
     }
 }
