@@ -51,6 +51,11 @@ struct StatusPresentation: Equatable {
     var away = false
     /// The status menu's card: each connected device's name ("G iPad"), empty with none.
     var connectedDevices: [String] = []
+    /// Under each of `connectedDevices`, in its order: nil while it runs this Mac's Oriel, else which
+    /// one to update (VersionMatch.macLine).
+    var versionNotes: [String?] = []
+    /// A connected device runs a newer Oriel than this Mac: the menu offers the update.
+    var updateThisMac = false
 }
 
 /// Whether Sill holds its two permissions, as last read.
@@ -107,11 +112,16 @@ enum StatusText {
                                    action: .showDevices))
         }
 
+        // A device on another Oriel than this Mac's (VersionMatch): the card says which to update.
+        let verdicts = s.devices.map { VersionMatch.judge(mac: s.hostVersion, device: $0.appVersion) }
+        let updateThisMac = verdicts.contains(.updateMac)
+
         // The attention glyph means "Oriel needs you". The test pattern needs no permission. A device
-        // waiting to pair and a closed home door need the user too; an older device is only news.
+        // waiting to pair, a closed home door and a device newer than this Mac need the user too; an
+        // older device is only news (the device says so itself).
         let glyph: StatusGlyph.State
         if startupError != nil || isFailed(s.network) || remotePortTaken != nil || request != nil || homeDoorClosed
-            || (!s.synthetic && !(permissions.screenRecording && permissions.accessibility)) {
+            || updateThisMac || (!s.synthetic && !(permissions.screenRecording && permissions.accessibility)) {
             glyph = .attention
         } else if s.stream != nil {
             glyph = .streaming
@@ -135,7 +145,9 @@ enum StatusText {
                                   tooltip: "Oriel — \(connection)", accessibilityLabel: "Oriel, \(connection)",
                                   advertisedName: name, remoteAccessNote: remoteAccessNote(s.remote),
                                   canPair: s.remote.map { $0.identityProblem == nil } ?? false, away: s.away,
-                                  connectedDevices: devices)
+                                  connectedDevices: devices,
+                                  versionNotes: s.devices.map { VersionMatch.macLine(mac: s.hostVersion, device: $0.appVersion) },
+                                  updateThisMac: updateThisMac)
     }
 
     /// "iPad Wants to Pair", for 5 minutes after a device's ask (the host ends it sooner: when the

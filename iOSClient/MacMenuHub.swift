@@ -16,7 +16,7 @@ import UIKit
 /// they can change what the bar shows. UIKit rebuilds lazily (measured: at the next key event or
 /// focus change), so the bar can hold an older top level for a while; each of its menus then asks by
 /// the title it was built with (MacMenuState rule 11), and one the current top level lacks asks for
-/// another rebuild. Only an iPad on iPadOS 26 or later has the bar; anywhere else nothing is
+/// another rebuild. Only an iPad has the bar; anywhere else nothing is
 /// rebuilt, and the Menus button is the way in.
 final class MacMenuHub {
     static let shared = MacMenuHub()
@@ -68,12 +68,8 @@ final class MacMenuHub {
         rebuild()
     }
 
-    /// Whether this device has the iPadOS 26 menu bar the Mac's menus are inserted in.
-    static var hasMenuBar: Bool {
-        guard UIDevice.current.userInterfaceIdiom == .pad else { return false }
-        if #available(iOS 26.0, *) { return true }
-        return false
-    }
+    /// Whether this device has the iPad's menu bar the Mac's menus are inserted in.
+    static var hasMenuBar: Bool { UIDevice.current.userInterfaceIdiom == .pad }
 
     private func rebuild() {
         guard Self.hasMenuBar else { return }

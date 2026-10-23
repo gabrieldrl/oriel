@@ -359,7 +359,7 @@ package final class StreamCoordinator {
         displays.onRemade = { [weak self] id in Task { @MainActor in await self?.displayRemade(id) } }
         curtain.onCovered = { [weak self] in Task { @MainActor in await self?.curtainCovered() } }
         stage.onLost = { [weak self] in Task { @MainActor in await self?.stageLost() } }
-        status.update { $0.synthetic = synthetic; $0.virtualDisplayOn = config.virtualDisplay }
+        status.update { $0.synthetic = synthetic; $0.virtualDisplayOn = config.virtualDisplay; $0.hostVersion = hostVersion }
         // Every change of the snapshot re-publishes the devices' settings state (deduplicated, so
         // the once-a-second stats send nothing). One before `server.start()` reaches nobody, and
         // every device gets a fresh state in `sendCatalog`, so early calls are harmless.
@@ -515,15 +515,17 @@ package final class StreamCoordinator {
         }
         // A device's hello names it before its first stats (a second later): the card shows
         // "iPad (iPad14,1)" from the first moment instead of an address. Its stats replace it, as
-        // they always did; a remote device keeps its paired name meanwhile.
+        // they always did; a remote device keeps its paired name meanwhile. Its version stays, for
+        // the card to say when it is not this Mac's (VersionMatch).
         server.onClientHello = { [weak self] connection, hello in
             let id = ObjectIdentifier(connection)
             let name = SafeText.label(hello.device ?? "")
-            guard !name.isEmpty else { return }
+            let version = hello.appVersion.map { SafeText.label($0) }.flatMap { $0.isEmpty ? nil : $0 }
             Task { @MainActor in
                 self?.status.update {
-                    guard let i = $0.devices.firstIndex(where: { $0.id == id }), $0.devices[i].name == nil else { return }
-                    $0.devices[i].name = name
+                    guard let i = $0.devices.firstIndex(where: { $0.id == id }) else { return }
+                    $0.devices[i].appVersion = version
+                    if !name.isEmpty, $0.devices[i].name == nil { $0.devices[i].name = name }
                 }
             }
         }

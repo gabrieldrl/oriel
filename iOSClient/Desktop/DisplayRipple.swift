@@ -56,12 +56,7 @@ private struct RippleRing: View {
     let width: CGFloat
 
     var body: some View {
-        let ring = Ring(radius: radius, width: width)
-        if #available(iOS 26.0, *) {
-            Color.clear.glassEffect(.clear, in: ring)
-        } else {
-            ring.fill(Color.white.opacity(0.18))
-        }
+        Color.clear.glassEffect(.clear, in: Ring(radius: radius, width: width))
     }
 }
 

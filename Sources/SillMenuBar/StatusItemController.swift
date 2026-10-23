@@ -53,6 +53,11 @@ enum MenuBuilder {
         [
             MenuEntry(kind: .card, title: StatusCard.header(p.connectedDevices)),
             .separator,
+        ] + (p.updateThisMac ? [
+            // A device runs a newer Oriel than this Mac (VersionMatch): the latest release's page.
+            MenuEntry(kind: .item, title: "Update Oriel on This Mac…", attention: true, action: .openUpdate(UpdatePolicy.latestPage)),
+            .separator,
+        ] : []) + [
             MenuEntry(kind: .item, title: "Settings…", key: ",", action: .showSettings),
             .separator,
             MenuEntry(kind: .item, title: "Quit Oriel", key: "q", action: .quit),
@@ -75,7 +80,10 @@ enum MenuBuilder {
                 out += indent + "────────\n"
             case .card:
                 out += indent + "[card] \(e.title)\n"
-                for name in card?.connectedDevices ?? [] { out += indent + "       · \(name)\n" }
+                for (i, name) in (card?.connectedDevices ?? []).enumerated() {
+                    out += indent + "       · \(name)\n"
+                    if let notes = card?.versionNotes, i < notes.count, let note = notes[i] { out += indent + "         ⚠ \(note)\n" }
+                }
             case .item:
                 let mark = e.attention ? "⚠ " : (e.checked ? "✓ " : "  ")
                 var line = indent + mark + e.title
@@ -172,7 +180,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             menuItem.state = e.checked ? NSControl.StateValue.on : .off
             menuItem.isEnabled = e.enabled
             if let subtitle = e.subtitle {
-                if #available(macOS 14.4, *) { menuItem.subtitle = subtitle } else { menuItem.toolTip = subtitle }
+                menuItem.subtitle = subtitle
             }
             if e.attention { menuItem.image = Self.attentionImage }
             if !e.children.isEmpty {

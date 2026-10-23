@@ -214,7 +214,7 @@ private struct AddressRow: View {
     }
 }
 
-/// Liquid Glass on iOS 26, a dark material before it. Lit: white, as an open control's choice is.
+/// Liquid Glass. Lit: white, as an open control's choice is.
 /// The home screen's card overlays use it too.
 struct InfoGlass<S: Shape>: View {
     let shape: S
@@ -223,10 +223,8 @@ struct InfoGlass<S: Shape>: View {
     var body: some View {
         if lit {
             shape.fill(Color.white)
-        } else if #available(iOS 26.0, *) {
-            Color.clear.glassEffect(.regular, in: shape)
         } else {
-            shape.fill(.ultraThinMaterial).environment(\.colorScheme, .dark)
+            Color.clear.glassEffect(.regular, in: shape)
         }
     }
 }

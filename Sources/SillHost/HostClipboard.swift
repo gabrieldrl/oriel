@@ -339,15 +339,11 @@ final class HostClipboard {
     }
 }
 
-/// macOS's paste privacy for this Mac's clipboard (ClipboardPolicy.MacAccess; macOS 15.4 and later),
-/// for HostClipboard's looks and Sill.app's Settings › General. `access` reads NSPasteboard.general's
+/// macOS's paste privacy for this Mac's clipboard (ClipboardPolicy.MacAccess), for HostClipboard's looks and Sill.app's Settings › General. `access` reads NSPasteboard.general's
 /// `accessBehavior` alone, which never brings macOS's alert and reads nothing of the clipboard.
 package enum MacClipboard {
     package static func access() -> ClipboardPolicy.MacAccess {
-        if #available(macOS 15.4, *) {
-            return ClipboardPolicy.macAccess(raw: NSPasteboard.general.accessBehavior.rawValue)
-        }
-        return ClipboardPolicy.macAccess(raw: nil)
+        ClipboardPolicy.macAccess(raw: NSPasteboard.general.accessBehavior.rawValue)
     }
 
     /// Settings › General's Allow in System Settings while macOS has not asked about Sill yet

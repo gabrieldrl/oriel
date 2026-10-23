@@ -25,14 +25,23 @@ struct StatusCard: View {
                 Text(Self.header(devices))
                     .font(.headline)
             }
-            ForEach(Array(devices.enumerated()), id: \.offset) { _, name in
-                HStack(spacing: 8) {
+            ForEach(Array(devices.enumerated()), id: \.offset) { i, name in
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Image(systemName: name.localizedCaseInsensitiveContains("iphone") ? "iphone" : "ipad")
                         .foregroundStyle(.secondary)
                         .frame(width: 16)
-                    Text(name)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(name)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        // It runs another Oriel than this Mac (VersionMatch): which one to update.
+                        if i < presentation.versionNotes.count, let note = presentation.versionNotes[i] {
+                            Label(note, systemImage: "exclamationmark.triangle.fill")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                                .lineLimit(1)
+                        }
+                    }
                 }
             }
         }

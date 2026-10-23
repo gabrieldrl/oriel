@@ -220,9 +220,8 @@ final class TestTone: @unchecked Sendable {
 /// The Mac's sound: a Core Audio process tap of every process but Sill, muted while it is read
 /// (`CATapMutedWhenTapped`: the Mac's speakers stay silent while Sill reads it, and play again the
 /// moment it stops, also if Sill hangs or is killed), in a private aggregate device whose IO proc
-/// pushes each buffer into the pipeline. macOS 14.2 and later; macOS asks once for System Audio
-/// Recording ("Oriel would like to record…"), and while it is refused the tap hears silence.
-@available(macOS 14.2, *)
+/// pushes each buffer into the pipeline. macOS asks once for System Audio Recording ("Oriel would
+/// like to record…"), and while it is refused the tap hears silence.
 final class SystemAudioTap {
     struct Failure: Error, CustomStringConvertible {
         let status: OSStatus

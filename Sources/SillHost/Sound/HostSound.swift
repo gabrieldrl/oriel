@@ -144,7 +144,7 @@ final class HostSound {
                 problem = "failed"
                 print("Sound: the test tone could not start: \(error).")
             }
-        } else if #available(macOS 14.2, *) {
+        } else {
             do {
                 let t = try SystemAudioTap(pipeline: pipeline, outputUID: mac?.deviceUID)
                 tap = t
@@ -155,9 +155,6 @@ final class HostSound {
                 problem = "failed"
                 print("Sound: macOS did not let Oriel hear this Mac's sound: \(error). The Mac's speakers play as usual.")
             }
-        } else {
-            problem = "unsupported"
-            print("Sound: sending this Mac's sound needs macOS 14.2 or later.")
         }
         if problem != before { sendState(to: Array(subscribers.keys)) }
     }
@@ -165,7 +162,7 @@ final class HostSound {
     private func stopCapture() {
         capturing = false
         tone?.stop(); tone = nil
-        if #available(macOS 14.2, *), let t = tap as? SystemAudioTap {
+        if let t = tap as? SystemAudioTap {
             t.stop()
             print(!subscribers.values.contains { !$0.onMac } ? "Sound: no device listens; this Mac's speakers play again."
                                                              : "Sound: muted; nothing plays.")

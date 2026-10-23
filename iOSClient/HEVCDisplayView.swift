@@ -265,10 +265,9 @@ final class HEVCDisplayView: UIView {
     }
 
     /// The frame on screen now (the home screen's last look at a Mac, MacDesktops); nil with none
-    /// shown, and before iOS 17.4.
+    /// shown.
     func displayedFrame() -> CVPixelBuffer? {
-        guard #available(iOS 17.4, *) else { return nil }
-        return displayLayer.sampleBufferRenderer.displayedPixelBuffer()
+        displayLayer.sampleBufferRenderer.displayedPixelBuffer()
     }
 
     /// Session over: drop the picture and forget the format so the next Mac starts clean.

@@ -83,8 +83,8 @@ stage=.build/Oriel.app.partial      # assembled aside, so a failed run never lea
 rm -rf "$stage"
 mkdir -p "$stage/Contents/MacOS" "$stage/Contents/Resources"
 # The executable, with the SDK it was compiled against recorded in it. SwiftPM links without
-# SDKROOT, so the linker records the deployment target (14.0) as the SDK, and macOS 26 and later
-# then draw the whole app in the look of a pre-26 app (Settings' sections, buttons, pop-ups and
+# SDKROOT, so the linker records the deployment target (27.0) as the SDK, and macOS then draws the
+# whole app in the look of an older SDK's app (Settings' sections, buttons, pop-ups and
 # segmented controls). vtool writes the copy with the build version an Xcode build would have:
 # minos from the binary, sdk from the SDK in use. The signature this breaks is replaced below.
 minos="$(xcrun vtool -show-build "$bin/SillMenuBar" | awk '$1 == "minos" && !found { print $2; found = 1 }')"
@@ -99,7 +99,7 @@ printf 'APPL????' > "$stage/Contents/PkgInfo"
 # full-bleed icon itself when it comes from an asset catalog, but shows a legacy .icns shrunk
 # inside a grey tile (seen on macOS 27). So Quick Look renders the SVG (design/README.md's own
 # tool), the render becomes the one layer of an Icon Composer document, and actool, the compiler
-# Xcode uses, turns that into Assets.car (macOS 26+) plus an AppIcon.icns masked for macOS 14–15.
+# Xcode uses, turns that into Assets.car.
 # A layered Packaging/AppIcon.icon made in Icon Composer (Oriel's bay window, which the iOS app
 # uses too) wins when it exists. Cached in .build/icon until the SVG, that document or this script changes.
 icon_out="$PWD/.build/icon"   # absolute: actool resolves relative paths in its helper's directory, not ours
@@ -123,7 +123,7 @@ if [ ! -f "$icon_out/compiled/Assets.car" ] || [ design/AppIcon.svg -nt "$icon_o
 JSON
     fi
     if [ -f "$doc/icon.json" ] && { [ "$doc" = "$PWD/Packaging/AppIcon.icon" ] || [ -f "$doc/Assets/Sill.png" ]; }; then
-        xcrun actool --compile "$icon_out/compiled" --platform macosx --minimum-deployment-target 14.0 \
+        xcrun actool --compile "$icon_out/compiled" --platform macosx --minimum-deployment-target 27.0 \
             --app-icon AppIcon --output-partial-info-plist "$icon_out/partial.plist" "$doc" >/dev/null \
             || echo "warning: actool could not compile the icon; Oriel.app gets the generic icon" >&2
     else

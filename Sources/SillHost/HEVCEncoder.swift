@@ -169,7 +169,7 @@ final class HEVCEncoder {
         set(kVTCompressionPropertyKey_ExpectedFrameRate, fps as CFNumber)
         set(kVTCompressionPropertyKey_AverageBitRate, bitrate as CFNumber)
         set(kVTCompressionPropertyKey_DataRateLimits, [bitrate / 8, 1] as CFArray)
-        if prioritizeSpeed || software, #available(macOS 14.0, *) {
+        if prioritizeSpeed || software {
             set(kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality, kCFBooleanTrue)
         }
         VTCompressionSessionPrepareToEncodeFrames(session)

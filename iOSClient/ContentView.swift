@@ -296,6 +296,9 @@ struct ContentView: View {
 ///   `hidden` (the Mac has it, off the stream: none) or `pencil@0.50,0.50` (this device's Pencil:
 ///   none, unless `-SillPencilPointer 1`, Q2's flip, draws it in every layout). Ignored with
 ///   `-SillLive 1`, whose session shows the real thing.
+/// * `-SillMockHostVersion <v>` — the mock Mac's Oriel, as its window list would give it
+///   (`hostVersion`): with `-SillHelloVersion <v>` for this device's, the stream screen's version
+///   notice (VersionMatch). Ignored with `-SillLive 1`.
 /// * `-SillInputScript '<t> <step>; …'` — with `-SillLive 1` only: input for the simulator gates,
 ///   which have no finger (`InputScript`): `t` is seconds since the session's first window list, and
 ///   a step is `down`, `pad DX,DY`, `lift` or `click` on the portrait pad, `tap X,Y` on the stream

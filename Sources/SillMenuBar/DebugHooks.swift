@@ -672,6 +672,11 @@ enum DebugHooks {
         test.stream = HostStatusSnapshot.Stream(kind: .testPattern, title: "Test Pattern", width: 3024, height: 1898, fps: 60,
                                                 mbps: 15, onVirtualDisplay: false, softwareEncoder: false)
         test.encodedFPS = 60
+        // Another Oriel on each device (VersionMatch): the iPad older than this Mac, the iPhone newer.
+        var versions = two
+        versions.hostVersion = "0.2.0"
+        versions.devices[0].appVersion = "0.1.0"
+        versions.devices[1].appVersion = "0.3.0"
         var waiting = HostStatusSnapshot()
         waiting.network = .waiting("POSIXErrorCode(rawValue: 50): Network is down")
         var failed = HostStatusSnapshot()
@@ -683,6 +688,7 @@ enum DebugHooks {
             Sample(name: "streaming", snapshot: streaming),
             Sample(name: "still-window", snapshot: still),
             Sample(name: "two-devices", snapshot: two),
+            Sample(name: "versions-differ", snapshot: versions),
             Sample(name: "software-encoder", snapshot: software),
             Sample(name: "software-encoder-stuck", snapshot: stuck),
             Sample(name: "virtual-display-fallback", snapshot: fallback),

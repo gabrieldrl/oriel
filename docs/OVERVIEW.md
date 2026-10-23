@@ -150,7 +150,7 @@ up, and a session moves back to the home path by itself when it can.
 
 **Toolchain.** Xcode 27 for the Mac side; **Xcode 27.1** (or a later 27) for the
 iOS app, because it uses the iOS 27.1 SDK for the Duo's hinge. Deployment targets
-are **macOS 14+** and **iOS 17+**. Select Xcode as the developer directory and
+are **macOS 27+** and **iOS 27+**. Select Xcode as the developer directory and
 accept its license; with only Command Line Tools, add `--build-system native`.
 
 Day-to-day commands:

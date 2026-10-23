@@ -144,16 +144,11 @@ public enum RemoteTLS {
         return leaf
     }
 
-    /// The `copy_` form where it exists: the `get_` one is deprecated from macOS 15.5 and iOS 18.5,
-    /// and this package still runs on macOS 14 and iOS 17.
+    /// The `copy_` form: the `get_` one is deprecated from macOS 15.5 and iOS 18.5.
     static func negotiatedALPN(_ metadata: sec_protocol_metadata_t) -> String? {
-        if #available(macOS 15.5, iOS 18.5, watchOS 11.5, tvOS 18.5, *) {
-            guard let p = sec_protocol_metadata_copy_negotiated_protocol(metadata) else { return nil }
-            defer { free(UnsafeMutableRawPointer(mutating: p)) }
-            return String(cString: p)
-        } else {
-            return sec_protocol_metadata_get_negotiated_protocol(metadata).map { String(cString: $0) }
-        }
+        guard let p = sec_protocol_metadata_copy_negotiated_protocol(metadata) else { return nil }
+        defer { free(UnsafeMutableRawPointer(mutating: p)) }
+        return String(cString: p)
     }
 
     /// The OSStatus inside a TLS error (-9808 bad certificate, -9825 the peer refused ours, -9829

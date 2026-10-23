@@ -10,7 +10,9 @@ default and kept per Mac on the device.
   It shows `eye` while off and `eye.slash` on a white pill while on. It turns orange when the Mac
   refused (no Accessibility for Sill), and its accessibility label is "Mac's Screen Off".
 - **On the Mac**, while it is on:
-  - every one of its own displays is black (not Sill's virtual displays);
+  - every one of its own displays is black (not Sill's virtual displays), with Oriel's bay window
+    large in the middle in Liquid Glass over a dim glow of the icon's blue, and no text
+    (CurtainMark; Gabriel, 2026-10-23);
   - the built-in display's brightness is 0;
   - its own keyboard, trackpad, mouse and system keys (brightness, volume, media) do nothing.
   - The device's picture is the Mac as before. What the device types, clicks and scrolls still
@@ -77,7 +79,12 @@ default and kept per Mac on the device.
   one answer with the host's line; a device that leaves with it on takes it down.
 - Built: the iOS app (installed on the iPad) and Sill.app.
 
+- The mark (2026-10-23): rendered in a 900×560 preview window. Over plain black the glass read as a
+  flat grey, so a dim radial glow of the icon's blue sits behind it for the glass to bend.
+
 ## Untested on a device (for Gabriel)
+
+- The mark on the built-in display at brightness 0 (likely barely visible) and on an external one.
 
 - The pill on the iPad:
   - the Mac goes black at brightness 0;

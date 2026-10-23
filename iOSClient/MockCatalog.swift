@@ -65,6 +65,8 @@ enum MockCatalog {
         client.connected = true
         client.status = "Connected to Mac mini"
         client.macName = "Mac mini"
+        // `-SillMockHostVersion 0.2.0`: the Mac's Oriel, for the version notice (VersionMatch).
+        client.hostVersion = UserDefaults.standard.string(forKey: "SillMockHostVersion")
         client.windows = mockWindows
         client.active = active
         client.apps = mockApps

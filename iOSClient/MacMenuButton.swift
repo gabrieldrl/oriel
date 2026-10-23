@@ -6,9 +6,8 @@ import UIKit
 /// (`MacMenuState.hasMenus`): in the landscape bar and an iPad's portrait window bar right after the
 /// thumbnails, where the bar holds it and still a whole thumbnail (`fits`; a narrower window, a
 /// Slide Over, leaves it out), and on a phone held upright at the end of the thumbnails' row
-/// (`PhonePortraitLayout.menus`). The iPad's own menu bar shows the same menus on iPadOS 26
-/// (SillAppDelegate); this is the way in everywhere else, on iPhone, on the Duo's outer display,
-/// before iPadOS 26, and with the bar hidden.
+/// (`PhonePortraitLayout.menus`). The iPad's own menu bar shows the same menus (SillAppDelegate);
+/// this is the way in everywhere else, on iPhone, on the Duo's outer display, and with the bar hidden.
 ///
 /// The look is the bar's own BarButton, only drawn; the touch, the menu and VoiceOver belong to a
 /// clear UIKit button over it (`MacMenuTrigger`). UIKit rather than SwiftUI's `Menu`, which has no
@@ -174,7 +173,6 @@ final class MacMenuTriggerButton: UIButton {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak client] in
                 guard let client else { return }
                 guard let button = Self.current, let window = button.window, client.menus.version != nil else { open(after: 0.25); return }
-                guard #available(iOS 17.4, *) else { print("menus: harness: -SillMenusOpen needs iOS 17.4"); return }
                 // What a finger on the button's centre would reach: this button, unless something
                 // drawn over it takes the touch (the harness cannot tap; this is the hit test a tap runs).
                 let centre = button.convert(CGPoint(x: button.bounds.midX, y: button.bounds.midY), to: window)

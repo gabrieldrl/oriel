@@ -41,8 +41,8 @@ Sill has layouts of its own.
 
 ## Requirements
 
-- A Mac with Apple silicon, on macOS 14 or later.
-- An iPhone or iPad with iOS 17 or iPadOS 17 or later.
+- A Mac with Apple silicon, on macOS 27 or later.
+- An iPhone or iPad with iOS 27 or iPadOS 27 or later.
 - On your Mac, Sill asks for Screen Recording, to show your windows, and
   Accessibility, to click, scroll and type for you and to move and size the
   window it shows. On macOS 15 or later, also allow Local Network. On your

@@ -39,6 +39,9 @@ struct DesktopScreen: View {
     @State private var shown = false
     /// Disconnect was tapped: the ripple runs out, then the session ends. Nothing takes a touch meanwhile.
     @State private var leaving = false
+    /// The version notice this session's tap put away (VersionNotice): it stays away until it says
+    /// something else, or the next session.
+    @State private var dismissedNotice: String?
 
     /// The shape until the first frame gives the Mac's own: a 14-inch MacBook Pro's 3024×1964.
     private static let placeholderSize = CGSize(width: 3024, height: 1964)
@@ -118,6 +121,16 @@ struct DesktopScreen: View {
                         .opacity(1 - ripple)
                         .accessibilityAddTraits(.isHeader)
                 }
+                // The Mac and this device run different Oriels (VersionMatch): which one to update, at
+                // the picture's top until a tap puts it away.
+                .overlay(alignment: .top) {
+                    if let notice = versionNotice, notice != dismissedNotice {
+                        VersionNotice(text: notice) { withAnimation(.easeOut(duration: 0.2)) { dismissedNotice = notice } }
+                            .padding(12)
+                            .opacity(1 - ripple)
+                            .transition(.opacity)
+                    }
+                }
                 // The info button just above the picture's top-right corner, its panel on the corner.
                 .overlay(alignment: .topTrailing) {
                     InfoButton(open: infoOpen) { withAnimation(.spring(duration: 0.35, bounce: 0.12)) { infoOpen.toggle() } }
@@ -162,6 +175,13 @@ struct DesktopScreen: View {
         // Room above the picture for the info button.
         .padding(.top, InfoButton.size + Self.infoGap - 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// "Update Oriel on this iPad: Mac mini has 0.2.", or on the Mac, once this session's window list
+    /// gives the Mac's version; nil while both run the same or either does not say.
+    private var versionNotice: String? {
+        VersionMatch.deviceNotice(mac: client.hostVersion, device: StreamClient.appVersion,
+                                  macName: client.macName, deviceWord: StreamClient.deviceWord)
     }
 
     /// The most room the picture has on this screen, in points: the screen less the margins, the room
@@ -214,6 +234,36 @@ struct DesktopScreen: View {
             client.sendViewport(Viewport(width: Double(panelSize.width), height: Double(panelSize.height), scale: nil,
                                          fps: StreamClient.wantedFPS(remote: client.awayCapsFrameRate)))
         }
+    }
+}
+
+/// Over the picture's top: which side to update when the Mac and this device run different Oriels
+/// (VersionMatch). A tap puts it away for the session.
+private struct VersionNotice: View {
+    let text: String
+    let dismiss: () -> Void
+
+    var body: some View {
+        Button(action: dismiss) {
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.down.circle.fill")
+                    .foregroundStyle(.orange)
+                Text(text)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                Image(systemName: "xmark")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+            .font(.system(size: 14, weight: .medium))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
+            .background(InfoGlass(shape: Capsule(), lit: false))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(text)
+        .accessibilityHint("Hides this notice")
     }
 }
 

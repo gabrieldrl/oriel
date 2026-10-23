@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import SwiftUI
 import Network
 import StreamProtocol
 
@@ -12,7 +13,8 @@ import StreamProtocol
 ///   trackpad, mouse and system keys; every event Sill posts carries `CurtainPolicy.marker` and goes
 ///   through. A tap needs Accessibility: without it nothing goes up and the device hears why.
 /// - A black window over each of the Mac's own displays (not Sill's virtual ones), above everything,
-///   that clicks pass through. Sill's own windows are in no capture, so the devices see the Mac as before.
+///   that clicks pass through, with Oriel's mark in glass in its middle (CurtainMark). Sill's own
+///   windows are in no capture, so the devices see the Mac as before.
 /// - The built-in display's brightness at 0 (DisplayServices), set again every few seconds against
 ///   automatic brightness, and put back as it was when it comes down.
 ///
@@ -136,6 +138,7 @@ final class MacCurtain {
             w.isOpaque = true
             w.hasShadow = false
             w.ignoresMouseEvents = true
+            w.contentView = NSHostingView(rootView: CurtainMark())
             w.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
             w.setFrame(screen.frame, display: true)
             w.orderFrontRegardless()

@@ -53,13 +53,16 @@ package struct HostStatusSnapshot: Equatable {
         /// Its link while it does not keep up (LinkJudge, docs/remote-bundle-plan.md §6); nil while it
         /// does. The card names it.
         package var link: LinkStatus?
+        /// The Oriel it runs, from its hello (`Hello.appVersion`), cleaned; nil until the hello, and
+        /// from a device that sends none. The card says when it is not this Mac's (VersionMatch).
+        package var appVersion: String?
 
         package init(id: ObjectIdentifier, endpoint: String, name: String? = nil, pairedName: String? = nil, fps: Int? = nil,
                      frameAgeMs: Int? = nil, rttMs: Int? = nil, route: ClientLink.Route? = nil, remoteRoute: String? = nil,
-                     link: LinkStatus? = nil) {
+                     link: LinkStatus? = nil, appVersion: String? = nil) {
             self.id = id; self.endpoint = endpoint; self.name = name; self.pairedName = pairedName
             self.fps = fps; self.frameAgeMs = frameAgeMs; self.rttMs = rttMs
-            self.route = route; self.remoteRoute = remoteRoute; self.link = link
+            self.route = route; self.remoteRoute = remoteRoute; self.link = link; self.appVersion = appVersion
         }
     }
 
@@ -136,6 +139,9 @@ package struct HostStatusSnapshot: Equatable {
     /// connected device is away, so the away quality is the target. The menu's Quality subtitle
     /// and the Streaming pane say so.
     package var away = false
+    /// The Oriel this Mac runs, as its window lists give it (`WindowList.hostVersion`): nil from
+    /// SillHost. Each device's own is beside it (`Device.appVersion`).
+    package var hostVersion: String?
 
     /// Devices connected through the remote door: while any is, the app keeps the Mac from idle
     /// sleep (it could not be woken from away).

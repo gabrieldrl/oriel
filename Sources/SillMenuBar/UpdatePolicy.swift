@@ -13,6 +13,8 @@ import StreamProtocol
 enum UpdatePolicy {
     /// GitHub's latest published release of Sill (drafts and prereleases are never listed there).
     static let feed = URL(string: "https://api.github.com/repos/gabrieldrl/sill/releases/latest")!
+    /// The latest release's page, for "Update Oriel on This Mac…" (a device runs a newer Oriel).
+    static let latestPage = URL(string: "https://github.com/gabrieldrl/sill/releases/latest")!
     /// Where a redirect may lead (a renamed repository answers 301 to its new address there).
     static func redirectAllowed(_ url: URL) -> Bool { url.scheme == "https" && url.host == "api.github.com" }
 

@@ -5,17 +5,17 @@ import UIKit
 /// the Mac's menus in the iPad's menu bar (docs/menu-bar-plan.md §7.4). SwiftUI keeps its own handling
 /// of scenes and of `oriel://` links (ContentView's `onOpenURL`).
 ///
-/// Nothing is inserted on an iPhone, before iPadOS 26 (there the main menu only feeds the ⌘ list of
-/// key commands, and the Mac's menus have none), while the app has more than one window (MacMenuHub:
+/// Nothing is inserted on an iPhone (there the main menu only feeds the ⌘ list of key commands, and
+/// the Mac's menus have none), while the app has more than one window (MacMenuHub:
 /// nothing says which window's session the bar's choices would reach), or when the window's session
 /// has no menus.
 final class SillAppDelegate: UIResponder, UIApplicationDelegate {
     override func buildMenu(with builder: UIMenuBuilder) {
         super.buildMenu(with: builder)
         guard builder.system == .main else { return }
-        guard MacMenuHub.hasMenuBar, #available(iOS 26.0, *) else {
+        guard MacMenuHub.hasMenuBar else {
             #if DEBUG
-            print("menubar: built: nothing inserted (not an iPad on iPadOS 26)")
+            print("menubar: built: nothing inserted (not an iPad)")
             #endif
             return
         }
@@ -32,7 +32,6 @@ final class SillAppDelegate: UIResponder, UIApplicationDelegate {
 /// second insertion would be a duplicate, which throws, or a conflict with the root, which drops
 /// the whole insertion). The Mac's menus are never told apart or merged by title: the Mac's Window
 /// and the iPad's stay two menus.
-@available(iOS 26.0, *)
 enum MacMenuBar {
     enum Layout: String {
         /// One menu per Mac menu, in the Mac's order, right after the iPad's View (the HIG's place

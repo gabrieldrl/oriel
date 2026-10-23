@@ -786,9 +786,9 @@ final class StreamClient: ObservableObject {
     }
     @Published var notice: Notice?
     /// The Mac's version and protocol from this session's window lists (`WindowList.hostVersion`,
-    /// `protocol`): nil from SillHost and from Macs before 2026-09-25. Shown nowhere yet; kept so a
-    /// later device can tell a Mac from the first public build from what it needs (§14). Cleared
-    /// with the session.
+    /// `protocol`): nil from SillHost and from Macs before 2026-09-25. The stream screen says when it
+    /// is not this device's (VersionMatch), and a later device can tell a Mac from the first public
+    /// build from what it needs (§14). Cleared with the session.
     @Published var hostVersion: String?
     @Published var hostProtocol: Int?
     /// Which trackpad gestures this session's Mac takes (`WindowList.gestures`): 1 for kind 28's
@@ -1798,15 +1798,21 @@ final class StreamClient: ObservableObject {
         return DeviceTLS.refusing(peerToPeer: false, queue: queue)
     }
 
-    /// This device's hello (kind 23): its version, build, protocol and name, built once. DEBUG:
-    /// `-SillHelloVersion <v>` replaces the version, for a host's device floor under test.
-    private static let helloPayload: Data = {
+    /// The Oriel this device runs (CFBundleShortVersionString), as its hello says it and as the stream
+    /// screen compares it with the Mac's (VersionMatch). DEBUG: `-SillHelloVersion <v>` replaces it,
+    /// for a host's device floor under test and for the version notice.
+    static let appVersion: String? = {
         var version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         #if DEBUG
         if let v = UserDefaults.standard.string(forKey: "SillHelloVersion"), !v.isEmpty { version = v }
         #endif
+        return version
+    }()
+
+    /// This device's hello (kind 23): its version, build, protocol and name, built once.
+    private static let helloPayload: Data = {
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
-        return Wire.encode(Hello(appVersion: version, build: build, protocol: SillProtocol.current, device: ClientStatsReporter.deviceName))
+        return Wire.encode(Hello(appVersion: appVersion, build: build, protocol: SillProtocol.current, device: ClientStatsReporter.deviceName))
     }()
 
     /// The hello, the first thing on every session connection, written straight to `c` before
