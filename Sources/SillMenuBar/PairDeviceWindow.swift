@@ -145,7 +145,7 @@ struct PairDeviceView: View {
             if offer.byDevice { return .waiting(triesLeft: triesLeft, wrongFrom: wrongFrom) }
             switch status.listener {
             case .portInUse(let p): return .doorDown("Can’t pair while port \(p) is in use.")
-            case .failed: return .doorDown("Can’t pair: remote access couldn’t start. Sill tries again every 30 seconds.")
+            case .failed: return .doorDown("Can’t pair: remote access couldn’t start. Oriel tries again every 30 seconds.")
             case .off, .listening: return .waiting(triesLeft: triesLeft, wrongFrom: wrongFrom)
             }
         case .paired(let name): return .paired(name)
@@ -182,7 +182,7 @@ struct PairDeviceView: View {
                         .font(.headline)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Text("In Sill on your iPhone or iPad, tap this Mac, or tap Add a Mac… when you’re away, then point it at this code.")
+                Text("In Oriel on your iPhone or iPad, tap this Mac, or tap Add a Mac… when you’re away, then point it at this code.")
                     .fixedSize(horizontal: false, vertical: true)
             }
             QRCodeView(text: offer.url, spent: isSpent)
@@ -457,7 +457,7 @@ struct CableNoticeView: View {
                 Text("It paired by itself over the USB cable, and can connect over Wi\u{2011}Fi and nearby from now on too.")
                     .fixedSize(horizontal: false, vertical: true)
                 if let removeProblem {
-                    Warning("\(name) is still paired: Sill couldn’t update the keychain (\(withoutFullStop(removeProblem))). Try again.")
+                    Warning("\(name) is still paired: Oriel couldn’t update the keychain (\(withoutFullStop(removeProblem))). Try again.")
                 }
             }
             HStack {

@@ -300,7 +300,7 @@ struct HostSettingsPanel: View {
                 }
                 awayFromHome
             } else if olderMac {
-                Label("Update Sill on \(mac) to change these from here.", systemImage: "arrow.down.circle")
+                Label("Update Oriel on \(mac) to change these from here.", systemImage: "arrow.down.circle")
                     .font(.body)
                     .foregroundStyle(Palette.text)
                     .fixedSize(horizontal: false, vertical: true)
@@ -418,7 +418,7 @@ struct HostSettingsPanel: View {
                 case .connected:
                     if let r = remoteRoute { Footnote(text: "Connected \(r.phrase).") }
                 case .reaches:
-                    Footnote(text: "Away from home, Sill reaches \(mac) \(Self.reach(info)).")
+                    Footnote(text: "Away from home, Oriel reaches \(mac) \(Self.reach(info)).")
                 case .turnOnRemoteAccess:
                     Footnote(text: Self.turnOnRemoteAccess(mac))
                 }
@@ -443,7 +443,7 @@ struct HostSettingsPanel: View {
 
     /// With Remote Access off on the Mac: how to reach it away from home.
     static func turnOnRemoteAccess(_ mac: String) -> String {
-        "To reach \(mac) away from home, turn on Remote Access in Sill’s Settings on the Mac."
+        "To reach \(mac) away from home, turn on Remote Access in Oriel’s Settings on the Mac."
     }
 
     // MARK: This device
@@ -510,7 +510,7 @@ struct HostSettingsPanel: View {
         }
         // Only why the switch does nothing; what the gestures do is in the rows above.
         if gesturesOn, !macTakesGestures {
-            Footnote(text: "Update Sill on \(mac) to use these.", warning: true)
+            Footnote(text: "Update Oriel on \(mac) to use these.", warning: true)
         } else {
             GroupGap()
         }

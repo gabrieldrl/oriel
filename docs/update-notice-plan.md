@@ -190,8 +190,8 @@ public struct Hello: Codable, Sendable {
 /// door); an additive change never raises it. When it rises, the host's floor rises too (§4.6).
 public enum SillProtocol { public static let current = 1 }
 // Settled at the merge with home-pairing (2026-09-27): home pairing ships before 1.0, so protocol 1
-// is 1.0's TLS home door with ALPN `sill/1`, and pairing on the home door is no longer an example of
-// what raises it; a later generation raises it and adds an ALPN (`sill/2`) beside `sill/1`, which
+// is 1.0's TLS home door with ALPN `oriel/1`, and pairing on the home door is no longer an example of
+// what raises it; a later generation raises it and adds an ALPN (`oriel/2`) beside `oriel/1`, which
 // every host offers for good (Compatibility.swift, RemoteTLS.serverALPNs, §4.6 rule 3).
 
 /// A version as tags, bundles and the wire write it: "v0.4.0", "0.4.0", "0.4", "1.2.3-beta.1".
@@ -444,10 +444,10 @@ correctly. Then, in that host's own step:
    every iOS the refused versions ran on (17.0 today), or the host's release notes say which
    devices it leaves behind.
 3. **With the protocol.** A requirement older peers cannot skip raises `SillProtocol.current` in the
-   same step. A later session ALPN (`sill/2`) then goes beside `sill/1` and `sill-pair/1`, which
+   same step. A later session ALPN (`oriel/2`) then goes beside `oriel/1` and `oriel-pair/1`, which
    every host offers for good (`RemoteTLS.serverALPNs`): a 1.0 device speaks only those, and hears
-   kind 22 "update" only inside a `sill/1` session, so the host completes its `sill/1` handshake
-   and reads its hello through the gate before refusing it. Without `sill/1` the device sees a
+   kind 22 "update" only inside a `oriel/1` session, so the host completes its `oriel/1` handshake
+   and reads its hello through the gate before refusing it. Without `oriel/1` the device sees a
    failed handshake (-9838) and redials every few seconds, for ever.
 4. **Words that stand alone.** The message is the host's (§4.1): a device from 2026-09-25 on shows it
    as it is and cannot learn new words. One or two sentences, at most 200 characters, naming the
@@ -1145,7 +1145,7 @@ Commit messages end with the session's attribution lines.
 >   floor is the TLS home door with pairing, and no 1.0 device speaks plain TCP to Sill.app. The
 >   hello goes first inside TLS at both doors, through `serve`'s gate: whichever of this branch and
 >   `home-pairing` lands second puts the gate in home-pairing's `Door`, one place for both doors,
->   and settles `SillProtocol` against home pairing's ALPN (`sill/1`; a later generation `sill/2`):
+>   and settles `SillProtocol` against home pairing's ALPN (`oriel/1`; a later generation `oriel/2`):
 >   if 1.0's TLS home door is protocol 1, pairing on the home door leaves the examples of what
 >   raises it (Compatibility.swift, the plan's §3.2 and §4.6). Builds from before home pairing,
 >   this one included, dial plain TCP and say hello in plaintext: at the TLS door they get a failed
@@ -1153,7 +1153,7 @@ Commit messages end with the session's attribution lines.
 >   are that old, so no plaintext path or sniffer answers them.
 
 (Since the merge of main into `home-pairing`, 2026-09-27: the last bullet says what that merge
-settled, the gate in `Door` and protocol 1 with ALPN `sill/1`.)
+settled, the gate in `Door` and protocol 1 with ALPN `oriel/1`.)
 
 **CLAUDE.md, elsewhere:**
 - the current step: both features, the defaults taken, what was verified;
@@ -1229,9 +1229,9 @@ settled, the gate in `Door` and protocol 1 with ALPN `sill/1`.)
     1.0 ships it (TLS)"; after 1.0, the home door would have kept a plaintext path that reads the
     hello and answers kind 22 "update" (a first byte of 0x16 is a TLS handshake record; a device
     never sends kind 22). Left for the merge with `home-pairing`: whether 1.0's TLS home door is
-    `SillProtocol` 1 with ALPN `sill/1`; if it is, pairing on the home door leaves the examples of
+    `SillProtocol` 1 with ALPN `oriel/1`; if it is, pairing on the home door leaves the examples of
     what raises the protocol (Compatibility.swift, §3.2, §4.6 rule 1), and a later generation raises
-    both it and the ALPN (`sill/2`). **Settled at that merge (2026-09-27, d11aa60 on
+    both it and the ALPN (`oriel/2`). **Settled at that merge (2026-09-27, d11aa60 on
     `home-pairing`):** it is; the gate runs in `Door`, one place for both TLS doors, and what
     changed while it held a session is judged again by `DoorPolicy.afterGate`
     (docs/home-pairing-plan.md, Results, "The merge with main").
@@ -1456,7 +1456,7 @@ Sill.app had no device from 19:47 to the end), and the runs that stream were gua
   tear-down forgets the viewport and a pending re-send (`forgetViewport`). A stand-in with the real
   SessionLink.swift, connect(to:)'s order and a listener that logs kinds: the hello first in 5 of 5
   each for a send right after start, after a hop to the network queue, and 200 ms into a Bonjour
-  dial still resolving (a `_silltest._tcp` service registered 0.7 s in; ready at 1.65 s); the old
+  dial still resolving (a `_orieltest._tcp` service registered 0.7 s in; ready at 1.65 s); the old
   order put the hello second in all three (5, 5 and 1 runs); a source check (the hello before
   `connection = c` and `start`, none at `.ready`). The simulator against fakehost.py: the stage's
   thirteen checks, and "hello: sent" now with "Connecting…"; S2 and S3 against real hosts pass.
@@ -1647,7 +1647,7 @@ privacy sentence the Remote Access cut missed, and docs the merge left stale. Fi
 - **The floor's docs** (aa017e7). §13 quoted the floor as first written, with the plain-TCP home
   door kept: it is now CLAUDE.md's section line for line. Open question 14 is in the past tense,
   with one thing left for the merge with `home-pairing`: whether 1.0's TLS home door is
-  `SillProtocol` 1 with ALPN `sill/1`. §14's home-pairing bullet leads with its superseded note,
+  `SillProtocol` 1 with ALPN `oriel/1`. §14's home-pairing bullet leads with its superseded note,
   and the floor says which devices receive a notice at the TLS home door (home pairing's and
   later). The pointer plan's §3.1 says kinds 0–23 are untouched, and its step 1 names the note on
   23 (the hello) and 24, 25 and 27 (the menu bar's).

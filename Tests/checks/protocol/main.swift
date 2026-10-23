@@ -112,8 +112,8 @@ addr("host:", .failure(.port))
 addr(":7455", .failure(.malformed))
 addr("http://1.2.3.4", .failure(.port))
 // pairing links are handed to PairLink
-addr("sillgdl://pair?v=1", .failure(.pairingLink))
-addr("SILLGDL://PAIR?v=1", .failure(.pairingLink))
+addr("oriel://pair?v=1", .failure(.pairingLink))
+addr("ORIEL://PAIR?v=1", .failure(.pairingLink))
 check("ParsedAddress.text: [v6]:port", ParsedAddress(host: "fd7a::1", port: 7455, kind: .ipv6).text == "[fd7a::1]:7455")
 check("ParsedAddress.text: v4 without port", ParsedAddress(host: "100.1.2.3", port: nil, kind: .ipv4).text == "100.1.2.3")
 check("ParsedAddress.text round-trips through the parser",
@@ -167,16 +167,16 @@ let t0 = CFAbsoluteTimeGetCurrent()
 let K = PairingProof.codeKey(code: "482913557208", macFingerprint: fpMac)!
 let pbkdfMs = (CFAbsoluteTimeGetCurrent() - t0) * 1000
 check("vector code K (PBKDF2 600,000 rounds in \(Int(pbkdfMs)) ms)",
-      K.withUnsafeBytes { hex(Data($0)) } == "e9baf879a1cc4ac8b21554df480b6c1621671319107c91e7cb05d154f649d31d")
+      K.withUnsafeBytes { hex(Data($0)) } == "f775b8b703bd677f8874cf01f4cf11deb72ce2c35ca5ba8ac1174b497699eb57")
 let codeD = PairingProof.deviceProof(key: K, deviceFingerprint: fpDev, macFingerprint: fpMac)
 let codeM = PairingProof.macProof(key: K, macFingerprint: fpMac, deviceFingerprint: fpDev)
-check("vector code proof_D", Base64URL.encode(codeD) == "dk7PZj4vHsAxj--1u9Vg7ehSn8a1tWc0RCG46YpFVO8")
-check("vector code proof_M", Base64URL.encode(codeM) == "6BmGWC9XT8J8OY8phhq9bASgoSnoWpRxBeqZtvRrWmk")
+check("vector code proof_D", Base64URL.encode(codeD) == "pjapXmJWacEbXoNSba2kkTPZiTnNR616ntM978wOiPs")
+check("vector code proof_M", Base64URL.encode(codeM) == "eWbOSzaKA5iBuQbV_zPZ5S38OK4U6rzDEEu0Xlh62ig")
 let qr = PairingProof.qrKey(secret: Data(repeating: 0x22, count: 16))
 let qrD = PairingProof.deviceProof(key: qr, deviceFingerprint: fpDev, macFingerprint: fpMac)
 let qrM = PairingProof.macProof(key: qr, macFingerprint: fpMac, deviceFingerprint: fpDev)
-check("vector qr proof_D", Base64URL.encode(qrD) == "AyZAJqNTU5nSKEaHx6RZOf0K5dOeygR_8JSrCV_gNOo")
-check("vector qr proof_M", Base64URL.encode(qrM) == "XAX-uZPsq_Ax8fvI_sV7Ex0a-ROi19rI-FW-ykPh9TE")
+check("vector qr proof_D", Base64URL.encode(qrD) == "wEKyqYpWmaENNP2YpscNSZIReO67vfpX0kqNRZ8r3i4")
+check("vector qr proof_M", Base64URL.encode(qrM) == "JCm4itv7B29iKOJJbbHIkG_s96DJJJD7JtnL_NfEJx8")
 check("the labels differ: proof_D ≠ proof_M under one key", qrD != qrM && codeD != codeM)
 check("swapped fingerprints change proof_D",
       PairingProof.deviceProof(key: qr, deviceFingerprint: fpMac, macFingerprint: fpDev) != qrD)
@@ -238,18 +238,18 @@ check("base64url: refuses non-canonical trailing bits", Base64URL.decode("AB") =
 
 let rk = Data(repeating: 0x11, count: 32)
 let vectorTag = RecognitionTag.make(recognitionKey: rk, nonce: unhex("a1a2a3a4a5a6"))
-check("tag vector: key 0x11×32, p a1a2a3a4a5a6 → oaKjpKWmL4V47Ctm (\(vectorTag ?? "nil"))", vectorTag == "oaKjpKWmL4V47Ctm")
-check("tag vector matches its key", RecognitionTag.matches("oaKjpKWmL4V47Ctm", recognitionKey: rk))
+check("tag vector: key 0x11×32, p a1a2a3a4a5a6 → oaKjpKWm0KqtgXom (\(vectorTag ?? "nil"))", vectorTag == "oaKjpKWm0KqtgXom")
+check("tag vector matches its key", RecognitionTag.matches("oaKjpKWm0KqtgXom", recognitionKey: rk))
 var wrong = 0
 for _ in 0..<10_000 {
     var k = [UInt8](repeating: 0, count: 32); _ = SecRandomCopyBytes(kSecRandomDefault, 32, &k)
-    if RecognitionTag.matches("oaKjpKWmL4V47Ctm", recognitionKey: Data(k)) { wrong += 1 }
+    if RecognitionTag.matches("oaKjpKWm0KqtgXom", recognitionKey: Data(k)) { wrong += 1 }
 }
 check("tag: 10,000 wrong keys never match (\(wrong))", wrong == 0)
 let fresh = (0..<100).compactMap { _ in RecognitionTag.make(recognitionKey: rk) }
 check("tag: 100 fresh tags, all 16 characters, all different, all matching", Set(fresh).count == 100 && fresh.allSatisfy { $0.count == 16 && RecognitionTag.matches($0, recognitionKey: rk) })
-check("tag: malformed input never matches", !RecognitionTag.matches("", recognitionKey: rk) && !RecognitionTag.matches("oaKjpKWmL4V47Ct", recognitionKey: rk)
-      && !RecognitionTag.matches("oaKjpKWmL4V47Ctn", recognitionKey: rk) && !RecognitionTag.matches("oaKjpKWmL4V47Ctm=", recognitionKey: rk))
+check("tag: malformed input never matches", !RecognitionTag.matches("", recognitionKey: rk) && !RecognitionTag.matches("oaKjpKWm0KqtgXo", recognitionKey: rk)
+      && !RecognitionTag.matches("oaKjpKWm0KqtgXon", recognitionKey: rk) && !RecognitionTag.matches("oaKjpKWm0KqtgXom=", recognitionKey: rk))
 
 // MARK: - SafeText
 
@@ -292,7 +292,7 @@ func linkWith(_ transform: (inout [(String, String)]) -> Void) -> String {
     var items: [(String, String)] = [("v", "1"), ("m", MacID.make(fingerprint: macFP)), ("k", Base64URL.encode(macFP)),
                                      ("s", Base64URL.encode(secret)), ("n", "Mac mini"), ("p", "7455"), ("a", "100.101.102.103")]
     transform(&items)
-    return "sillgdl://pair?" + items.map { "\($0.0)=\($0.1.addingPercentEncoding(withAllowedCharacters: .alphanumerics.union(CharacterSet(charactersIn: "-._~:")))!)" }.joined(separator: "&")
+    return "oriel://pair?" + items.map { "\($0.0)=\($0.1.addingPercentEncoding(withAllowedCharacters: .alphanumerics.union(CharacterSet(charactersIn: "-._~:")))!)" }.joined(separator: "&")
 }
 func refused(_ name: String, _ text: String, _ want: PairLink.Failure) {
     let r = PairLink.parse(text)
@@ -315,7 +315,7 @@ refused("p=65536", linkWith { $0[5].1 = "65536" }, .field("p"))
 refused("an address the parser refuses (1.2.3)", linkWith { $0.append(("a", "1.2.3")) }, .address("1.2.3"))
 refused("a zone", linkWith { $0.append(("a", "fe80::1%en0")) }, .address("fe80::1%en0"))
 refused("http scheme", "http://pair?v=1", .notALink)
-refused("another host", linkWith { _ in }.replacingOccurrences(of: "sillgdl://pair", with: "sillgdl://evil"), .notALink)
+refused("another host", linkWith { _ in }.replacingOccurrences(of: "oriel://pair", with: "oriel://evil"), .notALink)
 if case .success(let l) = PairLink.parse(linkWith { $0.append(("x", "ignored")); $0.append(("zz", "")) }) {
     check("PairLink: unknown parameters ignored", l.addresses.count == 1)
 } else { check("PairLink: unknown parameters ignored", false) }
@@ -377,7 +377,7 @@ let pr = PairResult(ok: false, reason: PairResult.code, triesLeft: 4)
 check("kind 20 JSON leaves out nil fields", String(data: Wire.encode(pr), encoding: .utf8) == #"{"ok":false,"reason":"code","triesLeft":4}"#
       || (Wire.decode(PairResult.self, from: Wire.encode(pr))?.triesLeft == 4 && !String(data: Wire.encode(pr), encoding: .utf8)!.contains("proof")))
 check("kind 19 decodes the plan's example",
-      Wire.decode(PairRequest.self, from: Data(#"{"v":1,"method":"qr","proof":"AyZAJqNTU5nSKEaHx6RZOf0K5dOeygR_8JSrCV_gNOo","name":"iPad","model":"iPad14,1"}"#.utf8))?.model == "iPad14,1")
+      Wire.decode(PairRequest.self, from: Data(#"{"v":1,"method":"qr","proof":"wEKyqYpWmaENNP2YpscNSZIReO67vfpX0kqNRZ8r3i4","name":"iPad","model":"iPad14,1"}"#.utf8))?.model == "iPad14,1")
 check("kind 22 decodes an unknown reason as a string", Wire.decode(Goodbye.self, from: Data(#"{"reason":"later","x":1}"#.utf8))?.reason == "later")
 
 // MARK: - RemoteTLS, live on loopback: the shared builder on both ends
@@ -440,28 +440,28 @@ func handshake(_ client: RemoteIdentity, alpn: String, pin: Data, paired: Set<Da
     return (ready, echo, serverALPN, serverPeer, clientPeer, box)
 }
 var r = handshake(dev, alpn: RemoteTLS.sessionALPN, pin: mac.fingerprint, paired: [dev.fingerprint], pairingOpen: false)
-check("TLS: a paired key on sill/1 — ready, echo, both ALPNs sill/1, both peers pinned",
-      r.clientReady && r.echo && r.serverALPN == "sill/1" && r.serverPeer == dev.fingerprint && r.clientPeer == mac.fingerprint)
-check("TLS: the server's verify block saw the ALPN (\(r.box.serverALPNSeen))", r.box.serverALPNSeen == ["sill/1"])
+check("TLS: a paired key on oriel/1 — ready, echo, both ALPNs oriel/1, both peers pinned",
+      r.clientReady && r.echo && r.serverALPN == "oriel/1" && r.serverPeer == dev.fingerprint && r.clientPeer == mac.fingerprint)
+check("TLS: the server's verify block saw the ALPN (\(r.box.serverALPNSeen))", r.box.serverALPNSeen == ["oriel/1"])
 r = handshake(stranger, alpn: RemoteTLS.sessionALPN, pin: mac.fingerprint, paired: [dev.fingerprint], pairingOpen: true)
-check("TLS: an unpaired key on sill/1 while pairing is open — refused in the handshake (\(r.box.lines.joined(separator: "; ")))",
+check("TLS: an unpaired key on oriel/1 while pairing is open — refused in the handshake (\(r.box.lines.joined(separator: "; ")))",
       !r.echo && r.box.lines.contains { $0.contains("-9825") })
 r = handshake(stranger, alpn: RemoteTLS.pairingALPN, pin: mac.fingerprint, paired: [dev.fingerprint], pairingOpen: true)
-check("TLS: an unpaired key on sill-pair/1 while pairing is open — admitted (ALPN \(r.serverALPN ?? "nil"))", r.echo && r.serverALPN == "sill-pair/1")
+check("TLS: an unpaired key on oriel-pair/1 while pairing is open — admitted (ALPN \(r.serverALPN ?? "nil"))", r.echo && r.serverALPN == "oriel-pair/1")
 r = handshake(stranger, alpn: RemoteTLS.pairingALPN, pin: mac.fingerprint, paired: [dev.fingerprint], pairingOpen: false)
-check("TLS: sill-pair/1 with no pairing window — refused (\(r.box.lines.joined(separator: "; ")))", !r.echo)
+check("TLS: oriel-pair/1 with no pairing window — refused (\(r.box.lines.joined(separator: "; ")))", !r.echo)
 r = handshake(dev, alpn: RemoteTLS.sessionALPN, pin: stranger.fingerprint, paired: [dev.fingerprint], pairingOpen: false)
 check("TLS: the client's pin does not match — waiting -9808, never ready (\(r.box.lines.joined(separator: "; ")))",
       !r.clientReady && r.box.lines.contains { $0.contains("-9808") })
-r = handshake(dev, alpn: "sill/2", pin: mac.fingerprint, paired: [dev.fingerprint], pairingOpen: false)
+r = handshake(dev, alpn: "oriel/2", pin: mac.fingerprint, paired: [dev.fingerprint], pairingOpen: false)
 check("TLS: an ALPN the host does not offer — refused (\(r.box.lines.joined(separator: "; ")))", !r.clientReady && !r.echo)
-// The floor (CLAUDE.md): a host offers sill/1 and sill-pair/1 for good, and a later generation only
+// The floor (CLAUDE.md): a host offers oriel/1 and oriel-pair/1 for good, and a later generation only
 // ever adds to them. A 1.0 device offers exactly one of the two and hears kind 22 "update" only
-// inside a sill/1 session: a host without sill/1 would leave it a failed handshake (-9838, as the
-// sill/2 case above shows from the other side) and a redial for ever.
-check("floor: every host offers sill/1 and sill-pair/1 (\(RemoteTLS.serverALPNs))",
-      RemoteTLS.serverALPNs.contains("sill/1") && RemoteTLS.serverALPNs.contains("sill-pair/1"))
-check("floor: the two names never change", RemoteTLS.sessionALPN == "sill/1" && RemoteTLS.pairingALPN == "sill-pair/1")
+// inside a oriel/1 session: a host without oriel/1 would leave it a failed handshake (-9838, as the
+// oriel/2 case above shows from the other side) and a redial for ever.
+check("floor: every host offers oriel/1 and oriel-pair/1 (\(RemoteTLS.serverALPNs))",
+      RemoteTLS.serverALPNs.contains("oriel/1") && RemoteTLS.serverALPNs.contains("oriel-pair/1"))
+check("floor: the two names never change", RemoteTLS.sessionALPN == "oriel/1" && RemoteTLS.pairingALPN == "oriel-pair/1")
 
 print(fails == 0 ? "ALL PASS (\(passes) checks)" : "\(fails) FAILED of \(passes + fails)")
 exit(Int32(min(fails, 100)))

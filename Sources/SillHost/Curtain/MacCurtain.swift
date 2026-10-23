@@ -70,7 +70,7 @@ final class MacCurtain {
         if !wanting.isEmpty, !isUp {
             raise()
             if isUp { print("Curtain: \(who ?? "a device") turned the Mac's screen off; its own keyboard and trackpad do nothing.") }
-            else { print("Curtain: \(who ?? "a device") asked for the Mac's screen off, but Sill may not control this Mac (Accessibility).") }
+            else { print("Curtain: \(who ?? "a device") asked for the Mac's screen off, but Oriel may not control this Mac (Accessibility).") }
         } else if wanting.isEmpty, isUp {
             lower()
             print("Curtain: the Mac's screen is back, with its keyboard and trackpad.")
@@ -197,7 +197,7 @@ private final class CurtainTap {
             ready.signal()
             CFRunLoopRun()
         }
-        thread.name = "Sill curtain tap"
+        thread.name = "Oriel curtain tap"
         thread.qualityOfService = .userInteractive
         thread.start()
         ready.wait()

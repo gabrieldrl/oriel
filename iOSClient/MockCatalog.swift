@@ -218,7 +218,7 @@ enum MockCatalog {
                             fetchDelay: 0.2, refusesChoices: false)
         case .noaccess:
             return MacMenus(topLevel: MacMenu(version: 3, app: "Code", bundleID: vscode, menus: [],
-                                              note: "Allow Accessibility for Sill on the Mac (System Settings › Privacy & Security › Accessibility)."),
+                                              note: "Allow Accessibility for Oriel on the Mac (System Settings › Privacy & Security › Accessibility)."),
                             tree: [:], fetchDelay: 0.2, refusesChoices: false)
         case .none:
             return MacMenus(topLevel: MacMenu(version: 3, menus: []), tree: [:], fetchDelay: 0.2, refusesChoices: false)
@@ -500,7 +500,7 @@ enum MockCatalog {
         case remotedial    // "Connecting to Mac mini remotely…"
         case remotefail    // a remote dial's failure, -SillRemoteFailure vpnoff|timeout|timeoutip|refused|dns|wrongmac|revoked|notsill|gaveup|quit|removed|remoteoff
         case camera        // Add a Mac with the camera refused
-        case externalpair  // an outside sillgdl://pair link waiting for its confirmation
+        case externalpair  // an outside oriel://pair link waiting for its confirmation
         // Pairing at home (docs/home-pairing-plan.md §7.3–7.9). Each row's word is DiscoveryPolicy.rowWord's.
         case homerows        // a saved Wi-Fi row, Not paired, an unpaired Wired (the cable), a Wired row through a USB Ethernet adapter (Not paired), an open door's (Not paired), Update Sill, long names
         case homeasking      // a tap on a Not paired row: "Pairing with Mac mini…", the row lit
@@ -508,10 +508,10 @@ enum MockCatalog {
         case homecode        // the home card's typed path, empty
         case homecodeerror   // the typed path after a wrong code: "That code didn’t work… 4 tries left."
         case homelocked      // the Mac is locked (a Wired row over the cable): "Unlock Mac mini, then tap it again."
-        case homeopenonmac   // the Mac showed no code by itself: "…choose Pair iPhone or iPad… in the Sill menu…"
+        case homeopenonmac   // the Mac showed no code by itself: "…choose Pair iPhone or iPad… in the Oriel menu…"
         case homerevoked     // the Mac removed this device: its row reads Not paired
         case homecabledone   // paired over the cable, the session on its way: "Paired with Mac mini over the cable."
-        case homeolder       // a tap on an Update Sill row: "Mac mini runs an older Sill…"
+        case homeolder       // a tap on an Update Sill row: "Mac mini runs an older Oriel…"
         case pairingrequired // Require pairing turned on while this device was connected without pairing
         case asleep          // the automatic reconnect's dials of a listed row not answered: "Mac mini isn’t answering. It may be asleep…" (issue #69)
     }
@@ -545,7 +545,7 @@ enum MockCatalog {
         /// A row as `recomputeMacs` makes it: Direct only for a Direct row. No wired interface: the
         /// mock never dials.
         func mac(_ name: String, _ method: DiscoveryPolicy.Method?) -> FoundMac {
-            FoundMac(name: name, endpoint: .service(name: name, type: "_sillgdl._tcp", domain: "local.", interface: nil),
+            FoundMac(name: name, endpoint: .service(name: name, type: "_oriel._tcp", domain: "local.", interface: nil),
                      route: method == .direct ? .direct : .network, method: method)
         }
         func remote(_ name: String, _ id: String) -> FoundMac { FoundMac(name: name, endpoint: nil, route: .remote, macID: id) }
@@ -559,7 +559,7 @@ enum MockCatalog {
                   saved: Bool = false, revoked: Bool = false, homeTLS: Bool = false, cable: Bool = false) -> FoundMac {
             let word = DiscoveryPolicy.rowWord(door: door, saved: saved, revoked: revoked, homeTLS: homeTLS,
                                                debug: StreamClient.debugBuild, method: method, cable: cable)
-            return FoundMac(name: name, endpoint: .service(name: name, type: "_sillgdl._tcp", domain: "local.", interface: nil),
+            return FoundMac(name: name, endpoint: .service(name: name, type: "_oriel._tcp", domain: "local.", interface: nil),
                             route: method == .direct ? .direct : .network, macID: saved ? "HOMEPAIRING\(name.count)" : nil,
                             method: method, door: door, homeWord: word)
         }
@@ -602,7 +602,7 @@ enum MockCatalog {
             // the notice beside them. The message is the host's (DeviceGate's), for this device.
             client.macs = [mac("Mac mini", .wifi)]
             let goodbye = c == .update
-                ? Goodbye(reason: Goodbye.update, message: "Update Sill on your \(StreamClient.deviceWord) to keep using Mac mini. It needs version 1.2 or later.",
+                ? Goodbye(reason: Goodbye.update, message: "Update Oriel on your \(StreamClient.deviceWord) to keep using Mac mini. It needs version 1.2 or later.",
                           minimumVersion: "1.2", reconnect: false)
                 // A reason this build does not know ("pairingRequired" is pairing at home's own now).
                 : Goodbye(reason: "pairAgain",
@@ -629,7 +629,7 @@ enum MockCatalog {
         case .externalpair:
             client.pendingLink = mockLink
         case .homerows:
-            // The long names check that "Not paired" and "Update Sill" never truncate or wrap: the
+            // The long names check that "Not paired" and "Update Oriel" never truncate or wrap: the
             // title does.
             client.macs = [home("Mac mini", .wifi, saved: true, homeTLS: true),
                            home("Studio", .wifi),

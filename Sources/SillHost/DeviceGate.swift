@@ -58,10 +58,10 @@ package enum DeviceGate {
                 minimumVersion: floor.description, reconnect: false)
     }
 
-    /// "Update Sill on your iPad to keep using Mac mini. It needs version 1.2 or later." The Mac by
+    /// "Update Oriel on your iPad to keep using Mac mini. It needs version 1.2 or later." The Mac by
     /// its name: on the device's connect screen "this Mac" would read as the device itself.
     package static func message(_ hello: Hello?, floor: SillVersion, macName: String) -> String {
-        "Update Sill on your \(deviceWord(hello)) to keep using \(macName). It needs version \(floor) or later."
+        "Update Oriel on your \(deviceWord(hello)) to keep using \(macName). It needs version \(floor) or later."
     }
 
     /// "iPhone" or "iPad" from the start of the hello's cleaned name, else "device".
@@ -72,17 +72,17 @@ package enum DeviceGate {
         return "device"
     }
 
-    /// "Refused iPad (iPad14,1) (Sill 1.0): needs 1.2 or later." The device's cleaned name, else
-    /// its endpoint; "an older Sill" when it sent no hello (or one that does not decode), "no
+    /// "Refused iPad (iPad14,1) (Oriel 1.0): needs 1.2 or later." The device's cleaned name, else
+    /// its endpoint; "an older Oriel" when it sent no hello (or one that does not decode), "no
     /// version" for a hello without one.
     package static func refusedLine(_ hello: Hello?, endpoint: String, floor: SillVersion) -> String {
         let name = SafeText.label(hello?.device ?? "")
         let what: String
         if let hello {
             let v = SafeText.label(hello.appVersion ?? "", limit: 32)
-            what = v.isEmpty ? "no version" : "Sill \(v)"
+            what = v.isEmpty ? "no version" : "Oriel \(v)"
         } else {
-            what = "an older Sill"
+            what = "an older Oriel"
         }
         return "Refused \(name.isEmpty ? endpoint : name) (\(what)): needs \(floor) or later."
     }
@@ -92,7 +92,7 @@ package enum DeviceGate {
         "Refused \(n) more connection\(n == 1 ? "" : "s") from \(source) in the last minute: too old for this Mac (needs \(floor) or later)."
     }
 
-    /// "Client hello: iPad (iPad14,1), Sill 1.0 (42), protocol 1 (192.168.1.23:52344)": the cleaned
+    /// "Client hello: iPad (iPad14,1), Oriel 1.0 (42), protocol 1 (192.168.1.23:52344)": the cleaned
     /// name, else the endpoint; the version and build as sent (cleaned), or "no version"; the
     /// protocol when sent; the endpoint in parentheses when a name came first.
     package static func helloLine(_ hello: Hello, endpoint: String) -> String {
@@ -100,7 +100,7 @@ package enum DeviceGate {
         let v = SafeText.label(hello.appVersion ?? "", limit: 32)
         let build = SafeText.label(hello.build ?? "", limit: 32)
         var line = "Client hello: \(name.isEmpty ? endpoint : name), "
-        line += v.isEmpty ? "no version" : "Sill \(v)" + (build.isEmpty ? "" : " (\(build))")
+        line += v.isEmpty ? "no version" : "Oriel \(v)" + (build.isEmpty ? "" : " (\(build))")
         if let p = hello.protocol { line += ", protocol \(p)" }
         if !name.isEmpty { line += " (\(endpoint))" }
         return line

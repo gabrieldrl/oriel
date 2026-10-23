@@ -94,7 +94,7 @@ var w = PairingWindow()
 check("closed before opening", w.tryProof(method: "qr", proof: qrD, fpDevice: fpDev, fpMac: fpMac, source: "a", now: 0) == .closed(.none))
 w.open(secret: secret, code: "482913557208", now: 100, requestedBy: nil)
 if case .accept(let m) = w.tryProof(method: "qr", proof: qrD, fpDevice: fpDev, fpMac: fpMac, source: "a", now: 101) {
-    check("QR: accepted, proof_M is the vector", Base64URL.encode(m) == "XAX-uZPsq_Ax8fvI_sV7Ex0a-ROi19rI-FW-ykPh9TE")
+    check("QR: accepted, proof_M is the vector", Base64URL.encode(m) == "JCm4itv7B29iKOJJbbHIkG_s96DJJJD7JtnL_NfEJx8")
 } else { check("QR: accepted", false) }
 check("single use: closed(used) afterwards", w.tryProof(method: "qr", proof: qrD, fpDevice: fpDev, fpMac: fpMac, source: "b", now: 102) == .closed(.used))
 w.open(secret: secret, code: "482913557208", now: 200, requestedBy: "iPad")
@@ -123,7 +123,7 @@ w.setCodeKey(K, code: "000000000000")
 check("K for another code is ignored", w.tryProof(method: "code", proof: codeD, fpDevice: fpDev, fpMac: fpMac, source: "a", now: 800.1) == .busy(retryAfter: 1))
 w.setCodeKey(K, code: "482913557208")
 if case .accept(let m) = w.tryProof(method: "code", proof: codeD, fpDevice: fpDev, fpMac: fpMac, source: "a", now: 800.2) {
-    check("typed code: accepted once K is ready, proof_M is the vector", Base64URL.encode(m) == "6BmGWC9XT8J8OY8phhq9bASgoSnoWpRxBeqZtvRrWmk")
+    check("typed code: accepted once K is ready, proof_M is the vector", Base64URL.encode(m) == "eWbOSzaKA5iBuQbV_zPZ5S38OK4U6rzDEEu0Xlh62ig")
 } else { check("typed code accepted", false) }
 w.open(secret: secret, code: "482913557208", now: 900, requestedBy: nil)
 check("an unknown method is a wrong proof", w.tryProof(method: "icloud", proof: qrD, fpDevice: fpDev, fpMac: fpMac, source: "a", now: 900) == .reject(triesLeft: 4))

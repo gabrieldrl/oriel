@@ -44,7 +44,7 @@ struct FoundMac: Identifiable, Hashable {
     /// the automatic reconnect do follows from it (DiscoveryPolicy.homeDial). `.plain` for a Remote row.
     let door: DiscoveryPolicy.HomeDoor
     /// The row's word, and VoiceOver's label and hint for it (DiscoveryPolicy.rowWord): how the Mac is
-    /// reachable, as before, or "Not paired", "Wired" for an unpaired Mac over the cable, "Update Sill".
+    /// reachable, as before, or "Not paired", "Wired" for an unpaired Mac over the cable, "Update Oriel".
     let homeWord: DiscoveryPolicy.RowWord
 
     init(name: String, endpoint: NWEndpoint?, route: Route, macID: String? = nil, savedByName: String? = nil,
@@ -64,7 +64,7 @@ struct FoundMac: Identifiable, Hashable {
     /// (DiscoveryPolicy.rows lists a name once), Mac IDs among Remote rows.
     var id: String { route == .remote ? "remote:\(macID ?? name)" : "\(route.rawValue):\(name)" }
     /// The word at the end of its row: "Remote" for a saved Mac dialed away from home, else its home
-    /// word (`homeWord`): how its Mac is reachable (`method`), "Not paired" or "Update Sill", or nil.
+    /// word (`homeWord`): how its Mac is reachable (`method`), "Not paired" or "Update Oriel", or nil.
     var word: String? { route == .remote ? "Remote" : homeWord.word }
 }
 
@@ -189,7 +189,7 @@ final class StreamClient: ObservableObject {
             #endif
         }
     }
-    /// A sillgdl://pair link from outside the app (Camera, Messages, simctl openurl): never acted on
+    /// A oriel://pair link from outside the app (Camera, Messages, simctl openurl): never acted on
     /// until the person confirms it.
     @Published var pendingLink: PairLink?
 
@@ -225,7 +225,7 @@ final class StreamClient: ObservableObject {
     /// access (updateDiscovery); any other status (a disconnect, a failure) stays as it was set.
     static let lookingOnNetwork = "Looking for Macs on this network"
     static let lookingNearby = "Looking for Macs on this network and nearby"
-    static let allowLocalNetwork = "To find your Mac, allow Local Network for Sill in Settings."
+    static let allowLocalNetwork = "To find your Mac, allow Local Network for Oriel in Settings."
 
     // Switcher catalog, as the host sends it. Published on main.
     @Published var macName = ""
@@ -472,14 +472,14 @@ final class StreamClient: ObservableObject {
     // Discovery (main thread). Two browsers: the network one always runs and never uses
     // peer-to-peer; the nearby one runs only when DiscoveryPolicy says, never while connected.
     // Both read the TXT record, whose `r` tag names a saved Mac whatever its Bonjour name.
-    /// `_sillgdl._tcp`. DEBUG `-SillServiceType _silltest._tcp`: the browsers look for that type
+    /// `_oriel._tcp`. DEBUG `-SillServiceType _orieltest._tcp`: the browsers look for that type
     /// instead, so a test host registered with SILL_TEST_SERVICE_TYPE shows as a real row with its
     /// TXT record, and no real Mac is listed (the Debug build's Info.plist declares it).
     static var serviceType: String {
         #if DEBUG
         if let type = UserDefaults.standard.string(forKey: "SillServiceType"), !type.isEmpty { return type }
         #endif
-        return "_sillgdl._tcp"
+        return "_oriel._tcp"
     }
     private var networkBrowser: NWBrowser?
     private var nearbyBrowser: NWBrowser?
@@ -593,7 +593,7 @@ final class StreamClient: ObservableObject {
     /// The home viewport the move sends first on its connection: this session's last, at this
     /// device's full rate (no cap away from home), taken as the move starts.
     private var homeMoveViewport: Viewport?
-    /// How the move's connections speak to the home door: TLS `sill/1` pinned to the saved Mac's key
+    /// How the move's connections speak to the home door: TLS `oriel/1` pinned to the saved Mac's key
     /// (DiscoveryPolicy.moveHomeTrust), the session's trust once it is home; and the row it went to,
     /// the session's row afterwards (a pin that fails later, docs/home-pairing-plan.md §7.6).
     private var homeMoveTrust: DiscoveryPolicy.HomeTrust?
@@ -1219,7 +1219,7 @@ final class StreamClient: ObservableObject {
     /// reconnect still finds it by the Bonjour name last used with it). Then a Remote row for each
     /// saved Mac neither browser lists, once the network has had its 3 s. Each row also carries its
     /// home door, from its TXT record's `p`, and the word that follows from it and from what this
-    /// device knows of that Mac (DiscoveryPolicy.rowWord: "Not paired", "Update Sill"…); a saved Mac
+    /// device knows of that Mac (DiscoveryPolicy.rowWord: "Not paired", "Update Oriel"…); a saved Mac
     /// seen with `p` is remembered as one whose door speaks TLS (`homeTLS`, docs/home-pairing-plan.md
     /// §7.3). Main thread.
     func recomputeMacs() {
@@ -1256,7 +1256,7 @@ final class StreamClient: ObservableObject {
         sightings = DiscoveryPolicy.sightings(sightings, listed: Set(network.map(\.name)), now: now)
         paths = DiscoveryPolicy.pathSightings(paths, network: network.map { ($0.name, $0.policy) }, now: now)
         // A saved Mac seen with `p` has a door that speaks TLS: remembered first, so a row of it
-        // without `p` (a replayed tag, or an older Sill.app put back) reads "Update Sill" at once.
+        // without `p` (a replayed tag, or an older Sill.app put back) reads "Update Oriel" at once.
         let listed = rows.compactMap { row in (row.direct ? nearby : network).first { $0.name == row.name } }
         let seenTLS = Set(listed.filter { $0.door != .plain }.compactMap { SavedMacs.recognize(tag: $0.tag, in: savedMacs) })
         if let marked = SavedMacs.seenOverTLS(seenTLS, in: savedMacs) {
@@ -1823,7 +1823,7 @@ final class StreamClient: ObservableObject {
         c.send(content: message.serialized(), completion: .contentProcessed { _ in })
         #if DEBUG
         if let hello = Wire.decode(Hello.self, from: Self.helloPayload) {
-            print("hello: sent Sill \(hello.appVersion ?? "?") (\(hello.build ?? "?")), protocol \(hello.protocol ?? 0)")
+            print("hello: sent Oriel \(hello.appVersion ?? "?") (\(hello.build ?? "?")), protocol \(hello.protocol ?? 0)")
         }
         #endif
     }
@@ -2232,7 +2232,7 @@ final class StreamClient: ObservableObject {
         guard let move = moving, move.connection === c else { c.cancel(); return }   // given up meanwhile
         guard c.state == .ready else { c.cancel(); return }                          // its moveEnded follows
         guard DiscoveryPolicy.sameHost(sessionHost, host) else {
-            refuseHomeMove(c, why: "\(hostName) on the network is another launch of Sill, or another Mac")
+            refuseHomeMove(c, why: "\(hostName) on the network is another launch of Oriel, or another Mac")
             return
         }
         probeMove(c, kept: kept, untilMacInfo: true, listed: .some(host))
@@ -2261,7 +2261,7 @@ final class StreamClient: ObservableObject {
             // and a kind 18 captured before this session are not enough either way.
             let why: String?
             if !DiscoveryPolicy.sameHost(sessionHost, host) {
-                why = "\(hostName) on the network is another launch of Sill, or another Mac"
+                why = "\(hostName) on the network is another launch of Oriel, or another Mac"
             } else if !homeInfoChecks(macInfo) {
                 why = "the home door's kind 18 is not this Mac's, or older than this session's"
             } else {
@@ -2285,7 +2285,7 @@ final class StreamClient: ObservableObject {
                 // launch that went, and the reconnect joins the new one when that connection ends.
                 // Or another Mac of this name on the cable: a move up does not try that listing of
                 // the cable again (DiscoveryPolicy's `refusedCable`).
-                print("path: move refused: \(hostName) there is another Mac, or another launch of Sill")
+                print("path: move refused: \(hostName) there is another Mac, or another launch of Oriel")
                 if move.kind == .toCable, !sessionDead { refusedCable = upListing }
             }
             c.cancel()   // moveEnded, from .cancelled
@@ -3661,7 +3661,7 @@ final class StreamClient: ObservableObject {
             connectionLost(c, error: error)
         case .tooBig(let header):
             // Nothing a Sill host sends is bigger (docs/remote-access-plan.md §3.7): closed, and on
-            // a remote dial that is "not Sill".
+            // a remote dial that is "not Oriel".
             print("closing: the host announced a \(header.payloadLength)-byte message (kind \(header.kind.rawValue))")
             connectionLost(c, end: .notSill)
             c.cancel()
@@ -3727,7 +3727,7 @@ final class StreamClient: ObservableObject {
                     switch (list.hostVersion, list.protocol) {
                     case (nil, nil): print("host: no version (a Mac from before 2026-09-25)")
                     case (nil, let p?): print("host: no version, protocol \(p)")
-                    case (let v?, let p): print("host: Sill \(v), protocol \(p.map(String.init) ?? "?")")
+                    case (let v?, let p): print("host: Oriel \(v), protocol \(p.map(String.init) ?? "?")")
                     }
                     #endif
                     self.moveToNetworkIfListed()

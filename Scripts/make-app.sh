@@ -1,9 +1,9 @@
 #!/bin/bash
-# Builds Sill.app, the menu bar Mac host, from this SwiftPM package.
+# Builds Oriel.app, the menu bar Mac host, from this SwiftPM package.
 #
-#   Scripts/make-app.sh                    .build/Sill.app, signed with your Apple Development identity
+#   Scripts/make-app.sh                    .build/Oriel.app, signed with your Apple Development identity
 #   SILL_UNIVERSAL=1 Scripts/make-app.sh   …for Apple silicon and Intel Macs (arm64 and x86_64; #62)
-#   Scripts/make-app.sh --install          …then replace /Applications/Sill.app (a running copy quits first)
+#   Scripts/make-app.sh --install          …then replace /Applications/Oriel.app (a running copy quits first)
 #   Scripts/make-app.sh --install --open   …and launch it: Noah's one command after any change
 #   SILL_SIGN_IDENTITY='Developer ID Application: … (JF8R4AVC2H)' Scripts/make-app.sh --release
 #                                          (M6; refused unless HEAD carries the tag v‹version› and
@@ -40,7 +40,7 @@ if [ "$release" = 1 ] && [ -z "${SILL_SIGN_IDENTITY:-}" ]; then
     exit 2
 fi
 # A release is built only from the commit its tag names: the tag is "v" + Packaging/Info.plist's
-# CFBundleShortVersionString (v0.4.0 for 0.4.0), and every Sill.app's update check compares the
+# CFBundleShortVersionString (v0.4.0 for 0.4.0), and every Oriel.app's update check compares the
 # latest release's tag on GitHub with the version it runs (Sources/SillMenuBar/UpdatePolicy.swift).
 # A rehearsal (release.sh --dry-run, which sets SILL_RELEASE_DRY_RUN=1) builds any commit and only
 # warns: its zip is never notarized, so it is never published.
@@ -59,7 +59,7 @@ fi
 
 bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' Packaging/Info.plist)"
 
-# SILL_UNIVERSAL=1: one Sill.app for Apple silicon and Intel Macs (#62), one build per architecture
+# SILL_UNIVERSAL=1: one Oriel.app for Apple silicon and Intel Macs (#62), one build per architecture
 # joined with lipo. Not one `swift build --arch arm64 --arch x86_64`: that needs Xcode's XCBuild, and
 # the Command Line Tools alone must still build this. Each architecture has its own scratch path: in
 # one shared .build, every switch of triple costs a relink (16 s measured), so no rebuild stays at
@@ -78,8 +78,8 @@ else
     swift build -c release --product SillMenuBar
     bin="$(swift build -c release --product SillMenuBar --show-bin-path)"
 fi
-app=.build/Sill.app
-stage=.build/Sill.app.partial      # assembled aside, so a failed run never leaves half a bundle
+app=.build/Oriel.app
+stage=.build/Oriel.app.partial      # assembled aside, so a failed run never leaves half a bundle
 rm -rf "$stage"
 mkdir -p "$stage/Contents/MacOS" "$stage/Contents/Resources"
 # The executable, with the SDK it was compiled against recorded in it. SwiftPM links without
@@ -89,7 +89,7 @@ mkdir -p "$stage/Contents/MacOS" "$stage/Contents/Resources"
 # minos from the binary, sdk from the SDK in use. The signature this breaks is replaced below.
 minos="$(xcrun vtool -show-build "$bin/SillMenuBar" | awk '$1 == "minos" && !found { print $2; found = 1 }')"
 xcrun vtool -set-build-version macos "${minos:?vtool reported no deployment target for $bin/SillMenuBar}" \
-    "$(xcrun --sdk macosx --show-sdk-version)" -output "$stage/Contents/MacOS/Sill" "$bin/SillMenuBar"
+    "$(xcrun --sdk macosx --show-sdk-version)" -output "$stage/Contents/MacOS/Oriel" "$bin/SillMenuBar"
 cp Packaging/Info.plist "$stage/Contents/Info.plist"
 build_number="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $build_number" "$stage/Contents/Info.plist"
@@ -100,8 +100,8 @@ printf 'APPL????' > "$stage/Contents/PkgInfo"
 # inside a grey tile (seen on macOS 27). So Quick Look renders the SVG (design/README.md's own
 # tool), the render becomes the one layer of an Icon Composer document, and actool, the compiler
 # Xcode uses, turns that into Assets.car (macOS 26+) plus an AppIcon.icns masked for macOS 14–15.
-# A layered Packaging/AppIcon.icon made in Icon Composer (the SVG's four groups) wins when it
-# exists. Cached in .build/icon until the SVG, that document or this script changes.
+# A layered Packaging/AppIcon.icon made in Icon Composer (Oriel's bay window, which the iOS app
+# uses too) wins when it exists. Cached in .build/icon until the SVG, that document or this script changes.
 icon_out="$PWD/.build/icon"   # absolute: actool resolves relative paths in its helper's directory, not ours
 if [ ! -f "$icon_out/compiled/Assets.car" ] || [ design/AppIcon.svg -nt "$icon_out/compiled/Assets.car" ] \
    || [ "$0" -nt "$icon_out/compiled/Assets.car" ] \
@@ -125,9 +125,9 @@ JSON
     if [ -f "$doc/icon.json" ] && { [ "$doc" = "$PWD/Packaging/AppIcon.icon" ] || [ -f "$doc/Assets/Sill.png" ]; }; then
         xcrun actool --compile "$icon_out/compiled" --platform macosx --minimum-deployment-target 14.0 \
             --app-icon AppIcon --output-partial-info-plist "$icon_out/partial.plist" "$doc" >/dev/null \
-            || echo "warning: actool could not compile the icon; Sill.app gets the generic icon" >&2
+            || echo "warning: actool could not compile the icon; Oriel.app gets the generic icon" >&2
     else
-        echo "warning: Quick Look did not render design/AppIcon.svg; Sill.app gets the generic icon" >&2
+        echo "warning: Quick Look did not render design/AppIcon.svg; Oriel.app gets the generic icon" >&2
     fi
 fi
 cp "$icon_out"/compiled/* "$stage/Contents/Resources/" 2>/dev/null || true
@@ -149,7 +149,7 @@ if [ "$release" = 1 ]; then
     #
     # The identity items' keychain (docs/keychain-plan.md): with a Developer ID provisioning profile
     # that authorises the access group, embed it and sign with Packaging/SillRelease.entitlements, so
-    # Sill.app keeps its key and trust list in the data-protection keychain, which no other process
+    # Oriel.app keeps its key and trust list in the data-protection keychain, which no other process
     # can pre-create or read. Without the profile, sign without those entitlements: they are
     # profile-restricted, so a build that carried them without a matching profile would pass codesign
     # yet be killed by AMFI at launch. The profile-free build is a valid, notarizable Developer ID
@@ -313,7 +313,9 @@ echo "Built $app, version $(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVers
 echo "  identity keychain: ${keychain_note:-login keychain}"
 codesign -d -r- "$app" 2>&1 | sed -n 's/^# *designated => /  designated requirement: /p; s/^designated => /  designated requirement: /p'
 
-dest="${SILL_INSTALL_DIR:-/Applications}/Sill.app"
+dest="${SILL_INSTALL_DIR:-/Applications}/Oriel.app"
+# This fork's app before it was Oriel: replaced like a copy at $dest, but only with this bundle ID.
+former="${SILL_INSTALL_DIR:-/Applications}/Sill.app"
 if [ "$install" = 1 ]; then
     # An iPad build of the iOS client installed on this Mac would also be a Sill.app: never replace
     # anything that is not this app.
@@ -327,11 +329,11 @@ if [ "$install" = 1 ]; then
     # Quit a running copy of this app first. SIGTERM goes through HostShutdown, which puts a staged
     # window back. The pattern matches Mac bundles only: the iOS Simulator's Sill.app is flat, and
     # `pkill -x Sill` would kill it too. Only this bundle ID: the official Sill.app (another bundle
-    # ID) may be running beside this fork's and is left alone.
+    # ID) may be running beside this fork's and is left alone. Both names: this fork's former Sill.app.
     this_app_pids() {
         # LaunchServices' bundle ID, not the bundle's Info.plist: a translocated copy's bundle is
         # gone once the .build copy it came from is rebuilt.
-        for pid in $(pgrep -f 'Sill\.app/Contents/MacOS/Sill' || true); do
+        for pid in $(pgrep -f '(Oriel|Sill)\.app/Contents/MacOS/(Oriel|Sill)' || true); do
             if lsappinfo info -only bundleid "$pid" 2>/dev/null | grep -qF "\"$bundle_id\""; then echo "$pid"; fi
         done
     }
@@ -342,7 +344,12 @@ if [ "$install" = 1 ]; then
     fi
     rm -rf "$dest"
     ditto "$app" "$dest"
-    # One registered Sill: LaunchServices (the login item, `open -b`, Spotlight) must not pick the
+    if [ -d "$former" ] && [ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$former/Contents/Info.plist" 2>/dev/null || true)" = "$bundle_id" ]; then
+        /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$former" 2>/dev/null || true
+        rm -rf "$former"
+        echo "Removed $former (this app before it was Oriel)"
+    fi
+    # One registered Oriel: LaunchServices (the login item, `open -b`, Spotlight) must not pick the
     # copy in .build.
     /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$PWD/$app" 2>/dev/null || true
     echo "Installed $dest"

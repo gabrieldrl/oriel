@@ -12,7 +12,7 @@ final class AppModel {
     let settings: HostSettings
     let permissions: PermissionsModel
     let loginItem = LoginItemModel()
-    /// The update check (GitHub's releases feed): the menu's "Sill 0.4 Is Available…" and Settings ›
+    /// The update check (GitHub's releases feed): the menu's "Oriel 0.4 Is Available…" and Settings ›
     /// General's section. Started once the host has started, or could not.
     let updates: UpdateChecker
     /// `--synthetic`: the Desktop streams a test pattern and the host stays off Bonjour, exactly
@@ -122,11 +122,11 @@ final class AppModel {
                 }
                 await c.start(preselect: nil, promptForPermissions: false)
                 Stats.shared.startPrinting()
-                print("Sill \(Self.version) (\(Self.build)) running from \(Bundle.main.bundlePath); log file \(HostLog.shared.fileURL?.path ?? "none")")
+                print("Oriel \(Self.version) (\(Self.build)) running from \(Bundle.main.bundlePath); log file \(HostLog.shared.fileURL?.path ?? "none")")
                 onboardIfNeeded()
             } catch {
                 startupError = "\(error)"
-                print("Sill couldn’t start: \(error)")
+                print("Oriel couldn’t start: \(error)")
             }
             // Never before the host is up, and also when it could not start: a newer Sill may be the fix.
             startUpdates()
@@ -178,7 +178,7 @@ final class AppModel {
         let choice = IdentityStorePlan.choose(bundled: Self.bundled, synthetic: synthetic,
                                               entitledAccessGroup: Self.entitledKeychainAccessGroup(), testRemoteDir: dir)
         if dir != nil, case .testDirectory = choice {} else if dir != nil {
-            print("SILL_TEST_REMOTE_DIR ignored: only a test host takes it (one that does not advertise and is not Sill.app itself).")
+            print("SILL_TEST_REMOTE_DIR ignored: only a test host takes it (one that does not advertise and is not Oriel.app itself).")
         }
         switch choice {
         case .dataProtection(let group):
@@ -225,7 +225,7 @@ final class AppModel {
         let defaults = UserDefaults.standard
         guard defaults.object(forKey: "requirePairing") != nil else { return stored }
         if Self.bundled {
-            print("requirePairing ignored: Sill.app keeps Require pairing with its paired devices, never in its defaults or arguments; change it in Settings › Devices.")
+            print("requirePairing ignored: Oriel.app keeps Require pairing with its paired devices, never in its defaults or arguments; change it in Settings › Devices.")
             return stored
         }
         let wanted = defaults.bool(forKey: "requirePairing")
@@ -389,10 +389,10 @@ final class AppModel {
         switch want {
         case .remote:
             napActivity = ProcessInfo.processInfo.beginActivity(options: [.userInitiated, .latencyCritical],
-                                                                reason: "Sill is serving a device connected from away")
+                                                                reason: "Oriel is serving a device connected from away")
         case .connected:
             napActivity = ProcessInfo.processInfo.beginActivity(options: [.userInitiatedAllowingIdleSystemSleep, .latencyCritical],
-                                                                reason: "Sill is serving a connected device")
+                                                                reason: "Oriel is serving a connected device")
         case .none:
             break
         }

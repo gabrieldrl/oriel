@@ -108,7 +108,7 @@ struct HomeScreen: View {
                 .fixedSize(horizontal: false, vertical: true)
             // A Mac that no longer serves this version said so: where to get the new one.
             if let notice = client.notice, notice.storeLink, notice.text == client.status, let url = SillLinks.appStore {
-                Link("Update Sill in the App Store", destination: url)
+                Link("Update Oriel in the App Store", destination: url)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Palette.accent)
             }
@@ -270,7 +270,7 @@ struct HomeScreen: View {
     }
 
     /// The line under a card's name and its dot: online and how, offline, still checking, or what
-    /// a tap on it nearby does first ("Not paired", "Update Sill").
+    /// a tap on it nearby does first ("Not paired", "Update Oriel").
     private struct CardState {
         var text: String
         var dot: Color

@@ -862,7 +862,7 @@ check(texts(words(.settings, L, device: "iPhone")).last == "Hold your iPhone upr
       && words(.settings, L, device: "iPhone").rows.last?.symbol == "iphone", "the upright row on iPhone")
 check(texts(words(.settings, P)) == Array(texts(settingsL).prefix(2)), "no upright row when upright")
 let laptopFirst = words(.laptop, P, first: true)
-check(laptopFirst.title == "Keys and Trackpad" && laptopFirst.subtitle == "Upright, Sill adds keys and a trackpad.", "laptop as a run's first card")
+check(laptopFirst.title == "Keys and Trackpad" && laptopFirst.subtitle == "Upright, Oriel adds keys and a trackpad.", "laptop as a run's first card")
 check(words(.laptop, P, first: false).subtitle == nil, "laptop's subtitle only as a run's first")
 // The iPhone Duo open: its keys and trackpad come with the device on its side (the laptop pose, open
 // flat upright), so the words say so where an iPhone's and the Duo's cover's say upright.
@@ -870,7 +870,7 @@ let duoSettings = words(.settings, L, device: "iPhone", onItsSide: true)
 check(texts(duoSettings).last == "Turn your iPhone on its side for a trackpad and keys." && duoSettings.rows.last?.symbol == "iphone"
       && duoSettings.rows.last?.spans.first == TourSpan(text: "Turn your iPhone on its side", strong: true), "the Duo's inner display sideways")
 check(texts(duoSettings).prefix(2) == texts(words(.settings, L, device: "iPhone")).prefix(2), "the Duo: the other rows as before")
-check(words(.laptop, P, device: "iPhone", first: true, onItsSide: true).subtitle == "On its side, Sill adds keys and a trackpad.", "the Duo's laptop card")
+check(words(.laptop, P, device: "iPhone", first: true, onItsSide: true).subtitle == "On its side, Oriel adds keys and a trackpad.", "the Duo's laptop card")
 check(words(.laptop, P, device: "iPhone", first: false, onItsSide: true).subtitle == nil, "…only as a run's first")
 check(texts(words(.laptop, P, device: "iPhone", onItsSide: true)) == texts(words(.laptop, P, device: "iPhone")), "the Duo's laptop rows as before")
 for t in [TourTopic.touch, .bar] {
@@ -897,7 +897,7 @@ let laptopPhone = words(.laptop, F, device: "iPhone", first: true)
 check(texts(laptopPhone) == ["cmd, opt, ctrl and shift stay on for the next key or trackpad click: tap cmd, then C, to copy.",
                              "Tap with two fingers on the trackpad to right-click.",
                              "Touch and hold the trackpad, then drag, to move a window or select text."], "a phone's laptop card: no keyboard key: \(texts(laptopPhone))")
-check(laptopPhone.hint == "Under the windows: the row of keys, then the trackpad." && laptopPhone.subtitle == "Upright, Sill adds keys and a trackpad.",
+check(laptopPhone.hint == "Under the windows: the row of keys, then the trackpad." && laptopPhone.subtitle == "Upright, Oriel adds keys and a trackpad.",
       "a phone's laptop hint and subtitle")
 check(words(.laptop, F, device: "iPhone", voiceOver: true, first: true).rows.map(\.spoken)
       == ["Command, Option, Control and Shift stay on for the next key: Command, then C, copies."], "a phone's laptop card under VoiceOver")
@@ -1031,8 +1031,8 @@ check(TourPolicy.spokenTitle(laptopFirst, index: 0, count: 1) == "Keys and Track
 check(TourPolicy.skipTitle == "Skip" && TourPolicy.nextTitle == "Next" && TourPolicy.doneTitle == "Done", "the buttons")
 check(TourPolicy.skipHint == "Ends the tour. Take the Tour in Settings shows it again.", "Skip's hint")
 check(TourPolicy.takeTourTitle == "Take the Tour", "the Settings row")
-check(TourPolicy.takeTourFootnote(device: "iPad") == "A short tour of Sill’s controls on this iPad.", "its footnote")
-check(TourPolicy.takeTourHint(device: "iPhone") == "Shows how to use Sill on this iPhone.", "its hint")
+check(TourPolicy.takeTourFootnote(device: "iPad") == "A short tour of Oriel’s controls on this iPad.", "its footnote")
+check(TourPolicy.takeTourHint(device: "iPhone") == "Shows how to use Oriel on this iPhone.", "its hint")
 
 print("\(checks) checks, \(failures) failed")
 exit(failures == 0 ? 0 : 1)

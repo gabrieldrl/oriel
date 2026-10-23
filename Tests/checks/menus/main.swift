@@ -417,7 +417,7 @@ check(R.changed.note(app: "Code") == "The menus changed. Open the menu again.", 
 check(R.disabled.note(app: "Code") == "It isn’t available right now.", "note: disabled")
 check(R.gone.note(app: "Code") == "Code is no longer open.", "note: gone")
 check(R.notAnswering.note(app: "Blender") == "Blender isn’t responding.", "note: not answering")
-check(R.notTrusted.note(app: "Code") == "Allow Accessibility for Sill on the Mac (System Settings › Privacy & Security › Accessibility).", "note: no Accessibility")
+check(R.notTrusted.note(app: "Code") == "Allow Accessibility for Oriel on the Mac (System Settings › Privacy & Security › Accessibility).", "note: no Accessibility")
 check(R.tooMany.note(app: "Code") == "Too many requests. Open the menu again.", "note: too many")
 check(R.failed("failure").note(app: "Code") == "It isn’t available right now.", "note: another AX error")
 check(R.late(4.62).note(app: "Code") == "Too many requests. Open the menu again." && R.late(4.62).logReason(app: "Code") == "it waited 4.6 s behind other requests",

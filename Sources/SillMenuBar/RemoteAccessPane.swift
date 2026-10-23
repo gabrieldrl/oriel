@@ -52,10 +52,10 @@ struct RemoteAccessPane: View {
                 if let problem = status.identityProblem {
                     // The system's messages end with a full stop of their own.
                     let reason = problem.hasSuffix(".") ? String(problem.dropLast()) : problem
-                    Warning("Remote access isn’t available: Sill couldn’t use the keychain (\(reason)).")
+                    Warning("Remote access isn’t available: Oriel couldn’t use the keychain (\(reason)).")
                 }
             } footer: {
-                Footnote("Lets the iPhone and iPad you pair connect to this Mac from other networks, through a VPN such as Tailscale. Your devices learn each address this Mac has, Tailscale’s included, while they’re connected. Sill turns away every device you haven’t paired, and encrypts everything the paired ones send and receive. Turned off, this Mac gives your devices none of its VPN addresses.")
+                Footnote("Lets the iPhone and iPad you pair connect to this Mac from other networks, through a VPN such as Tailscale. Your devices learn each address this Mac has, Tailscale’s included, while they’re connected. Oriel turns away every device you haven’t paired, and encrypts everything the paired ones send and receive. Turned off, this Mac gives your devices none of its VPN addresses.")
             }
             if on { addresses }
             pairedDevices
@@ -64,7 +64,7 @@ struct RemoteAccessPane: View {
                     Button("Open Energy Settings…") { Self.openEnergySettings() }
                 } label: {
                     Text("Sleep")
-                    Text("This Mac can’t be reached while it’s asleep. While a device is connected from away, Sill keeps it from going to sleep by itself.")
+                    Text("This Mac can’t be reached while it’s asleep. While a device is connected from away, Oriel keeps it from going to sleep by itself.")
                 }
             }
         }
@@ -80,10 +80,10 @@ struct RemoteAccessPane: View {
                 LabeledContent {
                     Button("Change…") { startEditingPort() }
                 } label: {
-                    Warning("Port \(p) is in use by another app, so devices can’t reach this Mac remotely. Sill tries again every 30 seconds.")
+                    Warning("Port \(p) is in use by another app, so devices can’t reach this Mac remotely. Oriel tries again every 30 seconds.")
                 }
             case .failed(let error):
-                Warning("Remote access couldn’t start (\(error)). Sill tries again every 30 seconds.")
+                Warning("Remote access couldn’t start (\(error)). Oriel tries again every 30 seconds.")
             case .off, .listening:
                 EmptyView()
             }

@@ -17,14 +17,14 @@ import Foundation
 /// skip (24, 25 and 27, the Mac's menus: MacMenu.swift; 26, the Mac's pointer: Pointer.swift; 28,
 /// the trackpad gesture: Gesture.swift; 32, the clipboard: Clipboard.swift, sent only to a peer that
 /// said it takes it), and the JSON rules of HostSettings.swift, inside TLS 1.3
-/// with both keys pinned at both doors, whose session protocol is the ALPN `sill/1`
+/// with both keys pinned at both doors, whose session protocol is the ALPN `oriel/1`
 /// (RemoteTLS.sessionALPN): the home door pairs as the remote door does, as the first public builds
 /// ship it (docs/home-pairing-plan.md; the plain home door is development builds' and the CLI's).
 /// Raised only by a change an older peer cannot skip (a new transport, a kind or rule it cannot
-/// skip); an additive change never raises it. When it rises, a later session ALPN (`sill/2`) goes
-/// beside `sill/1` and `sill-pair/1`, which every host offers for good (RemoteTLS.serverALPNs), and
+/// skip); an additive change never raises it. When it rises, a later session ALPN (`oriel/2`) goes
+/// beside `oriel/1` and `oriel-pair/1`, which every host offers for good (RemoteTLS.serverALPNs), and
 /// the host's device floor rises with it (DeviceGate, docs/update-notice-plan.md §4.6): a device
-/// from the first public build speaks only `sill/1`, and hears kind 22 "update" only inside it, so a
+/// from the first public build speaks only `oriel/1`, and hears kind 22 "update" only inside it, so a
 /// host that no longer serves it still completes that handshake, reads its hello through the gate
 /// and refuses it with "update".
 public enum SillProtocol {

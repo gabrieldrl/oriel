@@ -3,7 +3,7 @@ import UIKit
 /// The app delegate SwiftUI gives `SillApp` (`@UIApplicationDelegateAdaptor`): it implements nothing
 /// but `buildMenu(with:)`, which SwiftUI's own delegate calls for each build of a menu system, to put
 /// the Mac's menus in the iPad's menu bar (docs/menu-bar-plan.md §7.4). SwiftUI keeps its own handling
-/// of scenes and of `sillgdl://` links (ContentView's `onOpenURL`).
+/// of scenes and of `oriel://` links (ContentView's `onOpenURL`).
 ///
 /// Nothing is inserted on an iPhone, before iPadOS 26 (there the main menu only feeds the ⌘ list of
 /// key commands, and the Mac's menus have none), while the app has more than one window (MacMenuHub:

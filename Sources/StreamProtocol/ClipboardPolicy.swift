@@ -395,16 +395,16 @@ public enum ClipboardPolicy {
         public static func macAccessWarning(_ access: MacAccess) -> String? {
             switch access {
             case .allowed: return nil
-            case .notAsked, .asks: return "macOS asks before Sill reads the clipboard, so what you copy here stays on this Mac."
-            case .denied: return "macOS doesn’t let Sill read the clipboard, so what you copy here stays on this Mac."
+            case .notAsked, .asks: return "macOS asks before Oriel reads the clipboard, so what you copy here stays on this Mac."
+            case .denied: return "macOS doesn’t let Oriel read the clipboard, so what you copy here stays on this Mac."
             }
         }
         /// …what to do about it, beside `macAccessButton`.
         public static func macAccessHint(_ access: MacAccess) -> String? {
             switch access {
             case .allowed: return nil
-            case .notAsked: return "Click Allow in System Settings: macOS asks about Sill once, then Privacy & Security opens, where you set Sill to Allow under Paste from Other Apps. Text a device sends with Paste still arrives."
-            case .asks, .denied: return "Set Sill to Allow under Paste from Other Apps in Privacy & Security. Text a device sends with Paste still arrives."
+            case .notAsked: return "Click Allow in System Settings: macOS asks about Oriel once, then Privacy & Security opens, where you set Oriel to Allow under Paste from Other Apps. Text a device sends with Paste still arrives."
+            case .asks, .denied: return "Set Oriel to Allow under Paste from Other Apps in Privacy & Security. Text a device sends with Paste still arrives."
             }
         }
         public static let macAccessButton = "Allow in System Settings…"
@@ -412,11 +412,11 @@ public enum ClipboardPolicy {
         public static func macAccessLine(_ access: MacAccess) -> String {
             switch access {
             case .allowed:
-                return "Clipboard: macOS lets Sill read the clipboard again; what is copied on this Mac from now on goes to devices."
+                return "Clipboard: macOS lets Oriel read the clipboard again; what is copied on this Mac from now on goes to devices."
             case .notAsked, .asks:
-                return "Clipboard: macOS asks before Sill reads the clipboard, so what is copied on this Mac stays here. To send it, allow Sill under Paste from Other Apps in System Settings › Privacy & Security (Sill’s Settings › General has the way there)."
+                return "Clipboard: macOS asks before Oriel reads the clipboard, so what is copied on this Mac stays here. To send it, allow Oriel under Paste from Other Apps in System Settings › Privacy & Security (Oriel’s Settings › General has the way there)."
             case .denied:
-                return "Clipboard: macOS does not let Sill read the clipboard, so what is copied on this Mac stays here. To send it, allow Sill under Paste from Other Apps in System Settings › Privacy & Security."
+                return "Clipboard: macOS does not let Oriel read the clipboard, so what is copied on this Mac stays here. To send it, allow Oriel under Paste from Other Apps in System Settings › Privacy & Security."
             }
         }
 

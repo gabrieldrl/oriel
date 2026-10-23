@@ -98,7 +98,7 @@ check("goodbyes: remoteOff and busy", R.classify(.goodbye("remoteOff"), candidat
 check("names: not found; a .ts.net name that does not resolve is the VPN off",
       R.classify(.dns(-65554), candidate: nameC, usedTunnel: nil) == .nameNotFound && R.classify(.dns(-65538), candidate: tsName, usedTunnel: nil) == .vpnOff)
 check("Local Network on a LAN address", R.classify(.dns(-65570), candidate: lanC, usedTunnel: false) == .localNetwork)
-check("not Sill", R.classify(.tls(-9836), candidate: netC, usedTunnel: nil) == .notSill && R.classify(.notSill, candidate: netC, usedTunnel: nil) == .notSill
+check("not Oriel", R.classify(.tls(-9836), candidate: netC, usedTunnel: nil) == .notSill && R.classify(.notSill, candidate: netC, usedTunnel: nil) == .notSill
       && R.classify(.tls(-9810), candidate: vpnC, usedTunnel: true) == .notSill)
 check("silence: didn't answer; on a VPN address with no tunnel in the path, the VPN is off here",
       R.classify(.timeout, candidate: netC, usedTunnel: false) == .noAnswer && R.classify(.posix(ETIMEDOUT), candidate: vpnC, usedTunnel: false) == .vpnOff

@@ -261,7 +261,7 @@ final class ExtendedDisplays {
             do {
                 // Named as it is now; a later renumbering reaches macOS when it is made again.
                 let name = self.live[id]?.name ?? "Display"
-                let d = try VirtualDisplay(name: "Sill \(name)", widthPt: s.width, heightPt: s.height,
+                let d = try VirtualDisplay(name: "Oriel \(name)", widthPt: s.width, heightPt: s.height,
                                            scale: s.scale ?? 2, refreshHz: 60, vendorID: DisplayPolicy.vendorID,
                                            productID: DisplayPolicy.productID, serialNum: id)
                 d.onTerminated = { [weak self] in Task { @MainActor in self?.terminated(id) } }

@@ -28,7 +28,7 @@ import StreamProtocol
 package final class RemoteAccess {
     /// What the Mac shows to pair a device: the QR link, the typed code, until when, and why.
     package struct PairingOffer: Sendable {
-        /// sillgdl://pair?v=1&… (PairLink).
+        /// oriel://pair?v=1&… (PairLink).
         package let url: String
         /// 12 digits; `groupedCode` shows them as "4829 1355 7208".
         package let code: String

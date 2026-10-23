@@ -12,7 +12,7 @@ subscription, no servers. Read `docs/BRIEF.md` before doing product-level work.
 
 **This checkout is gabrieldrl's private fork** (origin gabrieldrl/sill, upstream Saffsanity/sill).
 Start with `docs/OVERVIEW.md`: the short version of this file, and the fork's own identifiers
-(bundle IDs `com.gabrieldrl.sill[.mac]`, team JF8R4AVC2H, Bonjour `_sillgdl._tcp`), which replace
+(bundle IDs `com.gabrieldrl.sill[.mac]`, team JF8R4AVC2H, Bonjour `_oriel._tcp`), which replace
 the `me.saffer.sill` / `_sill._tcp` values quoted below.
 
 Formerly winstream; the folder still carries the old name.
@@ -443,7 +443,7 @@ support page and the docs; no wire change, nothing on the Mac.
   TLS stand-in that never sends a window list: dials at +0, 7.2, 17.2, 37.3, 67.4 s; main's build
   dialled about every 6 s).
 - Verified (the plan's Results): on a private simulator against `SillHost --synthetic --pairing` as a
-  `_silltest._tcp` row, the host stopped for 20 s: main's build dialled at +0 and +6.3 s after the
+  `_orieltest._tcp` row, the host stopped for 20 s: main's build dialled at +0 and +6.3 s after the
   loss and then nothing for the minute after the host came back; this branch dialled at +0, 5.3, 15.3
   and 35.3 s and the session came back without a tap. Stopped for 300 s: 12 dials at the rule's times,
   the quiet line at +20.5 s, "Stopped trying…" at +281.8 s and no dial after it; back from the
@@ -937,7 +937,7 @@ against a loopback synthetic host set up again, 50 s of "Connecting…"). Device
 - Checks: `home-device` 182 and 124 of 124 mutants, `home-model` 62 and 21 of 21 (the mutants whose
   lines moved follow them, in remote-rules too).
 - Verified on a private simulator ("Sill stalepair", deleted after) against `SillHost --synthetic
-  --pairing --remote` on loopback (software encoder, `SILL_TEST_SERVICE_TYPE=_silltest._tcp`, the
+  --pairing --remote` on loopback (software encoder, `SILL_TEST_SERVICE_TYPE=_orieltest._tcp`, the
   identity in `SILL_TEST_REMOTE_DIR`): paired at the home door, then a second host with a fresh
   identity and the saved record's Bonjour name set to its name (`-SillTapRow`). Before: "Connecting
   to…" for 50 s, nothing on the host. After: the row "Not paired", a tap asks, the host's pairing
@@ -1226,8 +1226,8 @@ something easy to do but still secure, similar to how Tailscale is being
 paired. Wired should still pair automatically." He also decided it ships
 before 1.0 (the Compatibility floor below).
 - The Mac: Sill.app's home door, the Bonjour port, speaks the remote door's
-  TLS 1.3 with both keys pinned (the same identities, the ALPNs `sill/1` and
-  `sill-pair/1`, the trust list and the pairing window), and so does
+  TLS 1.3 with both keys pinned (the same identities, the ALPNs `oriel/1` and
+  `oriel-pair/1`, the trust list and the pairing window), and so does
   `SillHost --pairing`; admission is one `Door` behind both listeners, its
   rules `DoorPolicy`'s. An unpaired device's tap sends one "pair me" request
   (kind 19 `ask`). Over the USB cable to an iPhone or iPad, while the Mac is
@@ -1270,7 +1270,7 @@ before 1.0 (the Compatibility floor below).
   Sill.app at home.
 - Merged with main three times, not rebased. d11aa60 (cf05a78, PRs #16 to
   #28): the device gate in `Door` for both TLS doors, the hello first inside
-  TLS, `DoorPolicy.afterGate`, `SillProtocol` 1 as this door's `sill/1`, the
+  TLS, `DoorPolicy.afterGate`, `SillProtocol` 1 as this door's `oriel/1`, the
   pure checks into `Tests/checks` and CI. 691b93e (2b38179, PRs #29 to #33):
   the tick keeps both rules (a kind 26 stands in for a device's tick; a TLS
   client skips one right after a send, and one on the cable gets none); main's
@@ -1291,15 +1291,15 @@ before 1.0 (the Compatibility floor below).
   (`synthetic`: `isTestHost` since this branch also leaves out Sill.app's own
   executable, which would have posted a chord in test pattern mode); the
   Settings panel ends with Away from home, This iPad's gestures, then Take the
-  Tour; the floor names kinds 0–28 inside `sill/1`; `Scripts/pacing` builds
+  Tour; the floor names kinds 0–28 inside `oriel/1`; `Scripts/pacing` builds
   against the merged StreamServer (its host set has the Door's files, and
   main.swift calls `serve` either way, `PACING_SERVE_BEFORE_HOME_PAIRING` for
   an older base); the checks' lists united (33, 32 with mutants).
 - Review fixes (2026-09-27, ae2e228 to 1d95c6d, one commit per theme; the
   plan's Results, "The review fixes"). Three lenses confirmed 13 findings; a
   fourth, pairing's security, was read again from the code (one more). The
-  floor: a host offers `sill/1` and `sill-pair/1` for good and refuses a 1.0
-  device inside `sill/1` with "update"; it freezes the TXT keys, the pairing
+  floor: a host offers `oriel/1` and `oriel-pair/1` for good and refuses a 1.0
+  device inside `oriel/1` with "update"; it freezes the TXT keys, the pairing
   exchange, kind 19's `v` and kind 20's reasons, with an optional `message`
   for a reason a device does not know. The Mac: an expiry and a device's own
   Cancel (kind 19 "cancel") quiet nobody; "‹device› Wants to Pair" ends when
@@ -1312,7 +1312,7 @@ before 1.0 (the Compatibility floor below).
   paired"; kind 18 names the session's Mac only when the connection's own
   key signed it, and "removed" revokes only from a session pinned to that
   Mac; the reconnect ends at a door that now asks devices to pair; Pair This
-  iPad… asks on its own `sill-pair/1` connection and says what the Mac
+  iPad… asks on its own `oriel-pair/1` connection and says what the Mac
   answered; "Paired with ‹Mac› over the cable." stays until the session
   comes; `StreamClient+Home.swift` is A601/F601 in the project file.
 - Verified (the plan's Results, step by step: H0 to H18, S1 to S7, the
@@ -1365,7 +1365,7 @@ before 1.0 (the Compatibility floor below).
   own addresses only; docs/app-store-metadata.md describes pairing at home
   (the download it needs, export compliance, the review notes, the
   description, the demo video, the screenshots); Pair This iPad… is in Away
-  from home; the floor's kinds 19 and 20 are `sill-pair/1`'s; the mutants' 32
+  from home; the floor's kinds 19 and 20 are `oriel-pair/1`'s; the mutants' 32
   jobs and their cost. Verified: `swift build -c release`; iOS Debug and
   Release for the simulator and Debug for a device, only the old
   `StreamClient` capture warning (StreamClient.swift:3011);
@@ -3938,7 +3938,7 @@ fixes of step 9's first review round (below); the branch merged as PR #13
   Wireless (`OriginPolicy`), with caps (1 MiB messages, 4 kind-17 changes a
   second, a clean device name). The remote door (`RemoteServer`, port 7455) is
   TLS 1.3 only, both ends self-signed P-256 keys pinned by SPKI SHA-256, ALPN
-  `sill/1` for a paired key, `sill-pair/1` only while a pairing window is
+  `oriel/1` for a paired key, `oriel-pair/1` only while a pairing window is
   open; pre-auth caps (8 pending, 2 per source, backoff after 5 of its own
   refusals), 8 sessions, remote clients evicted after 8 s of silence, forced
   keyframes at least 2 s apart. Kinds 18 (the signed MacInfo: Mac ID, name,
@@ -5097,7 +5097,7 @@ good.
   Remove at both doors). Pairing at home (docs/home-pairing-plan.md): `Door`
   (admission at a TLS door, one class behind both listeners: the pending
   caps, the backoff, the verify block, the device gate, one pairing request
-  per `sill-pair/1` connection; `RemoteServer` keeps the remote door's
+  per `oriel-pair/1` connection; `RemoteServer` keeps the remote door's
   listener), `DoorPolicy` (who each door admits, the ask rule's six steps,
   `afterGate`, `isTestHost`: a host that does not advertise and is not
   Sill.app's own executable; pure, `Tests/checks/door-policy`), `CableLink`
@@ -5519,7 +5519,7 @@ good.
   (targets, the rule's inputs, the layer above the layouts and under the
   pairing overlay, Take the Tour from the Settings panel's last row).
   `Info-Debug.plist` is the Debug configuration's Info.plist: Info.plist's
-  keys, with `_silltest._tcp` beside `_sill._tcp` for the harness's
+  keys, with `_orieltest._tcp` beside `_sill._tcp` for the harness's
   `-SillServiceType` (Release declares `_sill._tcp` alone).
   `PrivacyInfo.xcprivacy`, a resource of the target, is the privacy manifest:
   it declares UserDefaults (CA92.1) and `systemUptime` (35F9.1), and any new
@@ -5728,7 +5728,7 @@ step), and the bare binary draws the pre-26 look. `--encoder-selftest` and
 iOS side: open `iOSClient/Sill.xcodeproj`, set your team, run on a real
 device on the same Wi-Fi (or with the Mac's Direct Wireless Connection on).
 AWDL, headless and without touching a running Sill.app: the synthetic hosts do
-not advertise, but `SILL_TEST_SERVICE_TYPE=_silltest._tcp` registers them as
+not advertise, but `SILL_TEST_SERVICE_TYPE=_orieltest._tcp` registers them as
 "Sill test ‹pid›" under that test type (never `_sill._tcp`, so no device sees
 them) with the listener's own peer-to-peer flag, and prints which one it got;
 `SILL_TEST_SWAP_FAIL=port|all` makes a replacement's same-port (and any-port)
@@ -5738,7 +5738,7 @@ link-local address (`ifconfig en0`, `fe80::…%en0`; Python's socket takes it)
 stands in for a device on awdl0 when Direct Wireless turns off (a local
 connection to the Mac's own awdl0 address never became ready, so awdl0 cannot
 be tested headless); all three are honoured only by a host that does not
-advertise. `dns-sd -t 3 -includeAWDL -B _silltest._tcp local` lists a
+advertise. `dns-sd -t 3 -includeAWDL -B _orieltest._tcp local` lists a
 registration that includes AWDL a second time on awdl0's index (`python3 -c
 'import socket; print(socket.if_nametoindex("awdl0"))'`, 16 here). dns-sd
 options go before the command: `dns-sd -R … -includeAWDL` registers a TXT
@@ -5941,7 +5941,7 @@ tries the home rows first, which `-SillTapRow` and `-SillHomeLink` below reach),
 that route), `-SillHelloVersion <v>` (the version the hello gives, against a
 host's floor), `-SillScreenFPS 120` (a 120 Hz screen) and `-SillDeviceKeySE 1`
 (a Secure Enclave device key, R0-a); for pairing at home (the normal app and
-`-SillLive 1`), `-SillServiceType _silltest._tcp` (the browsers look for the
+`-SillLive 1`), `-SillServiceType _orieltest._tcp` (the browsers look for the
 test type, so a test host registered with SILL_TEST_SERVICE_TYPE is a real
 row with its TXT record and no real Mac is; only the Debug build's
 Info-Debug.plist declares it), `-SillHomeDoor paired|open|plain` (what a
@@ -6069,14 +6069,14 @@ device keeps working with Macs from the first public build on, or each says why
 - Kept as they are: the home door as Sill.app 1.0 ships it, TLS with pairing at home
   (docs/home-pairing-plan.md, branch `home-pairing`; it ships before 1.0, Noah 2026-09-25), not
   the plain-TCP `_sill._tcp` door, which only development builds and the CLI without `--pairing`
-  keep; the ALPNs `sill/1` and `sill-pair/1`, which every host offers for good at both doors
-  (`RemoteTLS.serverALPNs`: a later generation's `sill/2` only ever goes beside them); the 14-byte
+  keep; the ALPNs `oriel/1` and `oriel-pair/1`, which every host offers for good at both doors
+  (`RemoteTLS.serverALPNs`: a later generation's `oriel/2` only ever goes beside them); the 14-byte
   header; kinds 0–28 and 32 and their payloads (HEVC with ParameterSets; the JSON of Switcher,
   Input, Viewport, HostSettings, Remote, Compatibility, Pointer, MacMenu, Gesture and Clipboard;
   this fork's kinds 47 and 48, the Mac's sound (Sound.swift), go only to and from a host whose window
   list says `sound` 1;
-  29 to 31 stay free, 29 the audio plan's, 30 and 31 pull request #66's), inside `sill/1` at
-  both doors (19 and 20 on their own `sill-pair/1` connection, the next bullet); the ping echo; a
+  29 to 31 stay free, 29 the audio plan's, 30 and 31 pull request #66's), inside `oriel/1` at
+  both doors (19 and 20 on their own `oriel-pair/1` connection, the next bullet); the ping echo; a
   kind 16 within 2 s of the first window list, one per connection since Sill for Mac 0.5.1 (away
   from home, docs/remote-bundle-plan.md §4): its `settings` the pair that connection's controls
   set (the away quality for a device away), and its optional `away` (AwayQuality, from a host with
@@ -6106,7 +6106,7 @@ device keeps working with Macs from the first public build on, or each says why
   sent `{}`.
 - Pairing as 1.0 does it (docs/home-pairing-plan.md §3): the Bonjour TXT keys `r` (the recognition
   tag) and `p` ("1" pairing required, "0" open, no `p` a plain door, any other value read as "1");
-  a `sill-pair/1` connection is exactly one kind 19, with no hello (the device gate judges sessions
+  a `oriel-pair/1` connection is exactly one kind 19, with no hello (the device gate judges sessions
   only), and one kind 20, then the Mac closes it; kind 19's methods `qr`, `code` and, at the home
   door, `ask` and `cancel` (the remote door answers both `closed`), at `v` 1: a host answers any other `v`
   `closed` without counting a try, so a later method or proof format comes with a later `v`, never
@@ -6126,9 +6126,9 @@ device keeps working with Macs from the first public build on, or each says why
   before anything else. A device from 2026-09-25 on that receives it shows the host's message word
   for word, with its App Store link, and does not reconnect; older development builds cannot. At
   the TLS home door only devices from home pairing on receive it (Decided, below). Kind 22 reaches
-  a 1.0 device only inside a `sill/1` session, so such a host still completes that device's
-  `sill/1` handshake and reads its hello through the gate before refusing it: a host that stopped
-  offering `sill/1` would leave it a failed handshake (-9838), "disconnected" and a redial every
+  a 1.0 device only inside a `oriel/1` session, so such a host still completes that device's
+  `oriel/1` handshake and reads its hello through the gate before refusing it: a host that stopped
+  offering `oriel/1` would leave it a failed handshake (-9838), "disconnected" and a redial every
   few seconds, for ever.
 - Every device says hello first (kind 23: its version, build, protocol and name), and every host's
   window list gives its version and protocol (`hostVersion`, nil from SillHost and from Macs
@@ -6145,10 +6145,10 @@ device keeps working with Macs from the first public build on, or each says why
   without `--pairing` runs it at `.ready`); what changed while it held a session (the key removed,
   Require pairing on, Remote Access or internet access off, the session limit, Direct Wireless
   off) is judged again by `DoorPolicy.afterGate`, with the goodbye and the line that change's own
-  close gives. 1.0's TLS home door is `SillProtocol` 1 with ALPN `sill/1`, as the remote door is:
+  close gives. 1.0's TLS home door is `SillProtocol` 1 with ALPN `oriel/1`, as the remote door is:
   pairing on the home door is part of protocol 1, no longer an example of what raises it
   (Compatibility.swift, docs/update-notice-plan.md §3.2 and §4.6), and a later generation raises
-  both: `sill/2` is offered beside `sill/1` and `sill-pair/1`, never instead of them (the first
+  both: `oriel/2` is offered beside `oriel/1` and `oriel-pair/1`, never instead of them (the first
   bullet). Builds from before home
   pairing dial plain TCP and say hello in plaintext: at the TLS door they get a failed handshake
   and EOF, never kind 22 "update", and redial. Only development and TestFlight builds are that

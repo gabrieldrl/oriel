@@ -50,7 +50,7 @@ final class Reachability: @unchecked Sendable {
             guard store == nil, !stopped else { return }
             var context = SCDynamicStoreContext(version: 0, info: Unmanaged.passUnretained(self).toOpaque(),
                                                 retain: nil, release: nil, copyDescription: nil)
-            guard let s = SCDynamicStoreCreate(nil, "Sill remote access" as CFString, { _, _, info in
+            guard let s = SCDynamicStoreCreate(nil, "Oriel remote access" as CFString, { _, _, info in
                 guard let info else { return }
                 Unmanaged<Reachability>.fromOpaque(info).takeUnretainedValue().changed()
             }, &context) else { return }
@@ -90,7 +90,7 @@ final class Reachability: @unchecked Sendable {
     /// actor.
     static func read() -> Snapshot {
         var snap = Snapshot()
-        guard let store = SCDynamicStoreCreate(nil, "Sill remote access (read)" as CFString, nil, nil) else { return snap }
+        guard let store = SCDynamicStoreCreate(nil, "Oriel remote access (read)" as CFString, nil, nil) else { return snap }
         snap.primaryInterface = (SCDynamicStoreCopyValue(store, "State:/Network/Global/IPv4" as CFString) as? [String: Any])?["PrimaryInterface"] as? String
         snap.localHostName = SCDynamicStoreCopyLocalHostName(store) as String?
         func name(of id: String) -> String {

@@ -133,7 +133,7 @@ as a `sill://` link, a QR code or typed.
   - a goodbye message, so the device can say why;
   - `SafeText` for every device-supplied name;
   - a verify block that reads a lock-protected snapshot and never waits on the main actor;
-  - SNI "sill", P-256 only, and the ALPN check;
+  - SNI "oriel", P-256 only, and the ALPN check;
   - per-source backoff;
   - cancelling failed connections at once;
   - a dial order that knows the device's own subnet;
@@ -235,8 +235,8 @@ as a `sill://` link, a QR code or typed.
                          │   refuses: anything through a tunnel, anything from the internet          │
                          │                                                                           │
  device away ─────────▶  │ REMOTE DOOR  TLS 1.3, both keys pinned, port 7455, no Bonjour             │
- (VPN / port forward)    │   ALPN sill/1: a session (paired devices, Remote Access on)               │
-                         │   ALPN sill-pair/1: pairing (only while a pairing window is open)         │
+ (VPN / port forward)    │   ALPN oriel/1: a session (paired devices, Remote Access on)               │
+                         │   ALPN oriel-pair/1: pairing (only while a pairing window is open)         │
                          │   refuses internet sources before TLS unless "Allow connections from      │
                          │   the internet" is on                                                     │
                          │ Both doors: the same framing and kinds; kind 18 (signed addresses) on     │
@@ -264,7 +264,7 @@ case macInfo = 18        // host → device: JSON SignedMacInfo (Remote.swift) �
                          // doors, and again whenever it changes. Only from a host with an identity (Sill.app always;
                          // SillHost with --remote)
 case pairRequest = 19    // device → host: JSON PairRequest — the one message of a pairing connection (ALPN
-                         // sill-pair/1), at most 4 KB, within 10 s of the connection
+                         // oriel-pair/1), at most 4 KB, within 10 s of the connection
 case pairResult = 20     // host → device: JSON PairResult — the answer to 19; the host then closes the connection
 case pairingWanted = 21  // device → host, empty payload: "show your pairing code" (Pair This iPad…). Home door only,
                          // from this Mac's own networks, at most once per 30 s per connection; ignored elsewhere
@@ -354,9 +354,9 @@ public struct Goodbye: Codable, Sendable {
 //   {"host":"2001:db8::20","kind":"internet","via":"IPv6"}
 
 // kind 19
-{"v":1,"method":"qr","proof":"AyZAJqNTU5nSKEaHx6RZOf0K5dOeygR_8JSrCV_gNOo","name":"iPad","model":"iPad14,1"}
+{"v":1,"method":"qr","proof":"wEKyqYpWmaENNP2YpscNSZIReO67vfpX0kqNRZ8r3i4","name":"iPad","model":"iPad14,1"}
 // kind 20
-{"ok":true,"proof":"XAX-uZPsq_Ax8fvI_sV7Ex0a-ROi19rI-FW-ykPh9TE","macID":"A3C5HR4RBV67YR21","name":"Mac mini",
+{"ok":true,"proof":"JCm4itv7B29iKOJJbbHIkG_s96DJJJD7JtnL_NfEJx8","macID":"A3C5HR4RBV67YR21","name":"Mac mini",
  "recognitionKey":"ERERERERERERERERERERERERERERERERERERERERERE"}
 {"ok":false,"reason":"code","triesLeft":4}
 {"ok":false,"reason":"busy","retryAfter":2}
@@ -389,11 +389,11 @@ where `Role` is `.server` or `.client(alpn: String)`.
 
 **Server:**
 - `set_peer_authentication_required(true)`.
-- ALPN list `["sill/1", "sill-pair/1"]` (`add_tls_application_protocol` twice).
+- ALPN list `["oriel/1", "oriel-pair/1"]` (`add_tls_application_protocol` twice).
 
 **Client:**
 - ALPN exactly one of the two.
-- `set_tls_server_name("sill")`, so a DDNS or MagicDNS name never goes out in clear SNI. The Mac
+- `set_tls_server_name("oriel")`, so a DDNS or MagicDNS name never goes out in clear SNI. The Mac
   ignores SNI.
 
 **At `.ready`,** both ends read:
@@ -465,11 +465,11 @@ A host with an identity adds a TXT record to its Bonjour registration:
 `NWListener.Service(name:type:domain:txtRecord:)` with `NWTXTRecord(["r": tag])`.
 
 - **The tag.** base64url (16 characters) of 12 bytes: `p ‖ HMAC-SHA256(recognitionKey,
-  UTF8("sill-tag-v1") ‖ p)[0..<6]`.
+  UTF8("oriel-tag-v1") ‖ p)[0..<6]`.
   - `p` is 6 fresh random bytes at **every registration**: each launch, and each Direct Wireless
     replacement's re-advertisement.
   - `recognitionKey` is 32 random bytes kept with the host identity. It is sent only in kind 20 ok.
-- **Vector:** key `0x11` × 32 and `p = a1a2a3a4a5a6` give `r=oaKjpKWmL4V47Ctm` (Swift and Python
+- **Vector:** key `0x11` × 32 and `p = a1a2a3a4a5a6` give `r=oaKjpKWm0KqtgXom` (Swift and Python
   must agree).
 - **What devices do.** Both browsers use `.bonjourWithTXTRecord(type: "_sill._tcp", domain: nil)`.
   For each result they check the tag against every saved Mac's recognition key; a match names the
@@ -518,11 +518,11 @@ sill://pair?v=1&m=<macID>&k=<fp, base64url 43>&s=<secret, base64url 22>&n=<Mac n
 
 **Keys and proofs (`PairingProof`).**
 - QR key: the 16-byte secret `s`.
-- Code key: `K = PBKDF2-HMAC-SHA256(password: the 12 ASCII digits, salt: UTF8("sill-pair-v1") ‖
+- Code key: `K = PBKDF2-HMAC-SHA256(password: the 12 ASCII digits, salt: UTF8("oriel-pair-v1") ‖
   fp_mac (32 raw bytes), rounds: 600_000, length: 32)`, with CommonCrypto `CCKeyDerivationPBKDF`
   (an Apple framework). About 120–160 ms on this Mac.
-- `proof_D = HMAC-SHA256(key, UTF8("sill-pair-v1 device") ‖ 0x00 ‖ fp_device ‖ fp_mac_as_seen)`.
-- `proof_M = HMAC-SHA256(key, UTF8("sill-pair-v1 mac") ‖ 0x00 ‖ fp_mac ‖ fp_device)`.
+- `proof_D = HMAC-SHA256(key, UTF8("oriel-pair-v1 device") ‖ 0x00 ‖ fp_device ‖ fp_mac_as_seen)`.
+- `proof_M = HMAC-SHA256(key, UTF8("oriel-pair-v1 mac") ‖ 0x00 ‖ fp_mac ‖ fp_device)`.
 - Each side takes the other's fingerprint **from the TLS session, never from a message**. The Mac
   compares with `HMAC<SHA256>.isValidAuthenticationCode` (constant time).
 - **Why a relaying man-in-the-middle fails.** It must present its own key to the device, so the
@@ -537,12 +537,12 @@ sill://pair?v=1&m=<macID>&k=<fp, base64url 43>&s=<secret, base64url 22>&n=<Mac n
   fp_mac       348a629f5ceed032c3e8706ec47d9bfafb00fb4250b018dd965435ca50cb836e   (SHA-256 of "mac", a stand-in)
   fp_device    263a4dbe41488fb87214b0032339dbb9f0c8da14c16dfcf13084bf3c2552eca5   (SHA-256 of "device")
   code         482913557208
-  code K       e9baf879a1cc4ac8b21554df480b6c1621671319107c91e7cb05d154f649d31d
-  code proof_D dk7PZj4vHsAxj--1u9Vg7ehSn8a1tWc0RCG46YpFVO8
-  code proof_M 6BmGWC9XT8J8OY8phhq9bASgoSnoWpRxBeqZtvRrWmk
+  code K       f775b8b703bd677f8874cf01f4cf11deb72ce2c35ca5ba8ac1174b497699eb57
+  code proof_D pjapXmJWacEbXoNSba2kkTPZiTnNR616ntM978wOiPs
+  code proof_M eWbOSzaKA5iBuQbV_zPZ5S38OK4U6rzDEEu0Xlh62ig
   QR secret    22 × 16 bytes
-  qr proof_D   AyZAJqNTU5nSKEaHx6RZOf0K5dOeygR_8JSrCV_gNOo
-  qr proof_M   XAX-uZPsq_Ax8fvI_sV7Ex0a-ROi19rI-FW-ykPh9TE
+  qr proof_D   wEKyqYpWmaENNP2YpscNSZIReO67vfpX0kqNRZ8r3i4
+  qr proof_M   JCm4itv7B29iKOJJbbHIkG_s96DJJJD7JtnL_NfEJx8
   ```
 
 **The exchange.**
@@ -550,7 +550,7 @@ sill://pair?v=1&m=<macID>&k=<fp, base64url 43>&s=<secret, base64url 22>&n=<Mac n
 ```
 device                                                Mac, remote door (port 7455)
 TCP ──────────────────────────────────────────────▶  pre-auth caps; origin check (refused: closed before TLS)
-ClientHello (ALPN sill-pair/1, SNI "sill") ───────▶
+ClientHello (ALPN oriel-pair/1, SNI "oriel") ───────▶
             ◀──────────────────────────────────────  ServerHello … Certificate(Mac) … Finished
 device verify: QR path, the Mac's fp must equal k (else abort:
 the device's certificate is never sent); typed path, any P-256
@@ -560,7 +560,7 @@ kind 19 PairRequest {method, proof_D} ────────────▶  t
             ◀──────────────────────────────────────  kind 20 {ok, proof_M, macID, name, recognitionKey}, or
                                                      {ok:false, reason, triesLeft | retryAfter}; the Mac closes
 device checks proof_M, saves the Mac, closes. Then a session:
-ClientHello (ALPN sill/1), both pinned ───────────▶  Mac: fp paired and Remote Access on → the session
+ClientHello (ALPN oriel/1), both pinned ───────────▶  Mac: fp paired and Remote Access on → the session
             ◀──────────────────────────────────────  kinds 2, 16, 18, 4…, 5, 14 (today's catalog order), frames
 ```
 
@@ -591,7 +591,7 @@ ClientHello (ALPN sill/1), both pinned ───────────▶  Mac
 |---|---|---|
 | Older (PR #5) | This host | Home door as today. It skips kinds 18 and 22. It never finds the remote door (nothing advertises it). The origin gate refuses it only through a VPN, which only DEBUG `-SillConnect` ever did |
 | This device | Older host, or the CLI without `--remote` | Home door as today. No TXT tag and no kind 18: no Away from home group, and a saved Mac is not recognised on that host's row (only development builds hit this). A remote dial to such a host: `.waiting(-9836)` or refused, "…isn't Sill, or its Sill is too old to pair" |
-| This device | This host, Remote Access off | Home door as today. Kind 18 says `remoteAccess: false`. A remote dial to a listening door (window open) with ALPN sill/1 gets goodbye `remoteOff`; with the door down, it is refused |
+| This device | This host, Remote Access off | Home door as today. Kind 18 says `remoteAccess: false`. A remote dial to a listening door (window open) with ALPN oriel/1 gets goodbye `remoteOff`; with the door down, it is refused |
 | `sillclient.py` from a9cc248 | This host's home door | Unchanged: it skips unknown kinds |
 
 #### 3.9 Rules for later changes
@@ -602,7 +602,7 @@ These are the HostSettings.swift rules, applied to every new payload:
 - no enums on the wire (strings instead; an unknown value is skipped);
 - never rename or retype a field.
 
-The protocol generation is in the ALPN (`sill/2` can later be offered beside `sill/1`) and in
+The protocol generation is in the ALPN (`oriel/2` can later be offered beside `oriel/1`) and in
 `MacInfo.v`, `PairRequest.v` and the link's `v`.
 
 ---
@@ -812,14 +812,14 @@ It runs on StreamServer's queue. It is owned by `RemoteAccess` and hands admitte
 - **Verify block:** `fp ∈ paired` or `pairingOpen` → `complete(true)`; else `complete(false)`,
   counted as unpaired.
 - **At `.ready`,** read ALPN and fp from the metadata, then:
-  - **`sill/1`:**
+  - **`oriel/1`:**
     - requires `fp ∈ paired` and `remoteAccess`;
     - not paired → cancel (counted);
     - paired but Remote Access off → goodbye `remoteOff`, then close;
     - 8 sessions already → goodbye `busy`, then close;
     - else `server.serve(c, route: .remote(origin, label, fp))` and print
       "Remote client connected: ‹paired name› ‹label› (‹endpoint›)".
-  - **`sill-pair/1`:**
+  - **`oriel-pair/1`:**
     - requires `pairingOpen`, else cancel;
     - read exactly one header and payload (kind 19, at most 4096 bytes) within the deadline;
     - hop to the main actor: `PairingWindow.tryProof`;
@@ -1432,7 +1432,7 @@ and types, `isExpensive`). Then, at every browser change and at every due time:
   - each has TCP `connectionTimeout` 10 s;
   - the whole dial gives up after 20 s.
 - **Parameters:**
-  - TLS from `RemoteTLS` with ALPN `sill/1`;
+  - TLS from `RemoteTLS` with ALPN `oriel/1`;
   - a verify block that accepts only the saved fingerprint;
   - the §3.3 TCP options;
   - `includePeerToPeer = false`.
@@ -1817,7 +1817,7 @@ and types, `isExpensive`). Then, at every browser change and at every due time:
 
 | # | Check | Pass when |
 |---|---|---|
-| H0 | **Preflight** (no commit). Record the base commit; `git archive` it to `$SP/base` and build it. Baselines: `SillHost --synthetic` idle 35 s; with `sillclient.py PORT 5 desktop`; both again with `--direct-wireless`; the bare app's and the bundle's `-SillRenderPreviews`; the policy and ledger check counts; the base host through `sillrelay.py --rate-mbps 2 --delay-ms 150` for 90 s. **Probes:** P1, the loopback mTLS probe with the two ALPN values and the random-CN certificate; P2, PBKDF2 600k in Swift (CommonCrypto) equals §3.6's vector, and its time; P3, an accepted connection's `currentPath.localEndpoint` at `.preparing`, on loopback and when the Mac connects to its own Tailscale address (which interface does the local address map to?); P4, `NWBrowser.Descriptor.bonjourWithTXTRecord` reads `r` from a `_silltest._tcp` registration | Files exist; every probe answers, or the plan changes first |
+| H0 | **Preflight** (no commit). Record the base commit; `git archive` it to `$SP/base` and build it. Baselines: `SillHost --synthetic` idle 35 s; with `sillclient.py PORT 5 desktop`; both again with `--direct-wireless`; the bare app's and the bundle's `-SillRenderPreviews`; the policy and ledger check counts; the base host through `sillrelay.py --rate-mbps 2 --delay-ms 150` for 90 s. **Probes:** P1, the loopback mTLS probe with the two ALPN values and the random-CN certificate; P2, PBKDF2 600k in Swift (CommonCrypto) equals §3.6's vector, and its time; P3, an accepted connection's `currentPath.localEndpoint` at `.preparing`, on loopback and when the Mac connects to its own Tailscale address (which interface does the local address map to?); P4, `NWBrowser.Descriptor.bonjourWithTXTRecord` reads `r` from a `_orieltest._tcp` registration | Files exist; every probe answers, or the plan changes first |
 | H1 | Builds: `swift build -c release`; iOS Debug and Release as the earlier steps built them | Only the known warnings (CaptureProbe; the old `StreamClient` capture warning) |
 | H2 | **The CLI byte for byte.** H0's runs on the new build, digits masked, sorted | Identical, idle and streaming, with and without `--direct-wireless`; "Advertising _sill._tcp…" present; no TXT record (`dns-sd` on a test-type run) |
 | H3 | **Pure checks** (swiftc; each with mutants caught): the address parser (at least 40 cases, including every §7.9 rule); `PairingCode` (Damm over 20,000 codes: every substitution and adjacent transposition caught; normalisation; lengths); `PairingProof` (§3.6's vectors exactly; the labels differ; swapped fingerprints change the proofs); certificate, fingerprint and Mac ID (`SecCertificateCreateWithData` accepts; `openssl x509 -inform der -noout -text` parses a named curve; the fingerprint agrees in Swift and Python; the Mac ID vector); `RecognitionTag` (the vector; 10,000 wrong keys never match); `SafeText`; `PairLink` (round trip, IPv6, `v≠1`, `m≠MacID(k)`, missing fields); kind 18 signing (verifies; one flipped byte fails; the wrong key fails); `OriginPolicy` (every rule, by door and switch, including 100.64/10 on utun and on en0, ULA on utun and en0, on-link and off-link global IPv6, awdl, mapped IPv4); `AddressList.build` (fixtures shaped like Noah's store: utun0–3 link-local, Tailscale on utun4, the CoreDevice ULA on utun5, en0 private plus a deprecated ULA → exactly Tailscale v4, Tailscale v6, Wi‑Fi v4, and the MagicDNS name with the resolver stubbed; also a WireGuard service, a non-NE point-to-point tunnel, Wi‑Fi plus Ethernet, temporary IPv6, and global IPv6 only with the switch); `PairingWindow` (expiry, 5 failures, single use, spacing, per source, busy before K); `DiscoveryPolicy` and `RemoteDialPolicy` (the existing checks unchanged, plus Remote rows, due times, the path-change exemption, the 120 s stop, dial order with the subnet rule, the copy priority, and a LAN pin mismatch not counting); `SavedMacs` (merge, refresh, cap, never-save rules, clearing without a key) | All pass |
@@ -1825,16 +1825,16 @@ and types, `isExpensive`). Then, at every browser change and at every due time:
 | H5 | **Home door origin gate.** `SILL_TEST_ORIGIN=vpn`, then `=internet`, then unset; also the fixes' `SILL_TEST_PEER_TO_PEER_INTERFACE=en0` link-local client | Refused with zero bytes and one summary line; served without the variable; the en0 link-local client is served, and is disconnected when Direct Wireless turns off (the fixes' gate still passes) |
 | H6 | **The remote door up.** `SillHost --synthetic --remote` | Two new lines only: the core's "Remote access: listening on port P (TLS, paired devices only; 0 paired)." and main.swift's startup line with the port, the code and the URL; `lsof` shows two listeners; without `--remote` one listener, and H2 holds; `--internet` alone exits 2 |
 | H7 | **QR pairing.** `sillclient.py --tls --pair-url=URL --identity=$T/a`, then a session dial | Kind 20 ok with a valid `proof_M`; the "Paired … with the QR code" line; the session's catalog order 2, 16, 18, 4…, 5, 14; frames; kind 18 verifies and its macID equals MacID(fp) |
-| H8 | **A paired session.** The same identity, no code; then `--pair-url` again | A session with negotiated ALPN `sill/1`; re-pairing replaces the record (one row in `paired.json`) |
+| H8 | **A paired session.** The same identity, no code; then `--pair-url` again | A session with negotiated ALPN `oriel/1`; re-pairing replaces the record (one row in `paired.json`) |
 | H9 | **Typed pairing.** `--pair-code=CODE` with no pin | `proof_M` checked, the pin saved, then a session |
-| H10 | **Refusals.** (a) A new identity against the bare app with remote on and no window. (b) Five wrong codes, then the right one, and attempts under 1 s apart. (c) `SILL_TEST_PAIRING_TTL=5` and a correct code at 6 s. (d) Two clients with one code, 50 ms apart. (e) A plain client at the remote door; a TLS client at the home door; `curl http://127.0.0.1:P/` and a raw "POST /" at the remote door. (f) A paired `sill/1` session while Remote Access is off and a window is open (bare app) | (a) The client reaches ready and then a TLS read error; no Sill byte; only the minute's summary. (b) `triesLeft` 4…1, then `stopped`; the right code then gets `closed`; too soon gets `busy`. (c) `expired`. (d) Exactly one ok. (e) Dropped, with zero bytes; -9836; closed within 100 ms with no plaintext answer. (f) Goodbye `remoteOff` |
+| H10 | **Refusals.** (a) A new identity against the bare app with remote on and no window. (b) Five wrong codes, then the right one, and attempts under 1 s apart. (c) `SILL_TEST_PAIRING_TTL=5` and a correct code at 6 s. (d) Two clients with one code, 50 ms apart. (e) A plain client at the remote door; a TLS client at the home door; `curl http://127.0.0.1:P/` and a raw "POST /" at the remote door. (f) A paired `oriel/1` session while Remote Access is off and a window is open (bare app) | (a) The client reaches ready and then a TLS read error; no Sill byte; only the minute's summary. (b) `triesLeft` 4…1, then `stopped`; the right code then gets `closed`; too soon gets `busy`. (c) `expired`. (d) Exactly one ok. (e) Dropped, with zero bytes; -9836; closed within 100 ms with no plaintext answer. (f) Goodbye `remoteOff` |
 | H11 | **Pre-auth caps.** 12 raw TCP connections to the remote door from 127.0.0.1 and ::1, while a paired client streams; then 5 failed handshakes from one source (`SILL_TEST_BACKOFF_SECONDS=5`) | At most 2 held per source and 8 in all, the rest closed at once; each held one closed at 10 ± 0.5 s; the paired client served throughout; the source refused during the backoff, then allowed |
 | H12 | **No plaintext.** A passthrough `sillrelay.py` records both directions of a 10 s paired session | None of "macName", "windows", "Test Pattern" or the device name appears in either direction; the host's first byte is 0x16 |
 | H13 | **Remote-route rules.** From a paired session, `--set=directWireless=1,bitrate=25000000@3`; kind 21 on the remote door; kind 21 from a loopback home session (twice within 30 s); `SILL_TEST_ORIGIN=internet` with `--internet`, then internet access turned off on the bare app | Direct Wireless refused with its line, the bitrate applied, one answer; kind 21 ignored on the remote door; the CLI prints its code once in 30 s; the internet session is served, then gets goodbye `internetOff` within 1 s and EOF |
 | H14 | **Slow link.** `sillrelay.py --rate-mbps 2 --delay-ms 150`, 90 s, remote session vs H0's base; also an unshaped home-door client on the new build | The base shows a "not draining" eviction or a keyframe storm. The new build: no eviction, frames in every 5 s window, forced keyframe requests at least 2 s apart, keyframes a minute at most the base's; record the pong RTT p95. The unshaped home client's keyframes a minute and `net.dropped` equal the base's within noise |
 | H15 | **Liveness.** `sillrelay.py --blackhole-after 5` on a remote session, and on a home session | Remote: "Client silent for … dropping" at about 13 s (5 + 8). Home: the 4 s drain rule, as today |
 | H16 | **Port.** The bare app, remote on, `-remotePort P` with P held by a Python socket; then released; then `-SillSetAfter '3 remotePort=P2'` while a remote session streams | The "in use" line and status; listening within 30 s of the release; a rebind with the session continuing, and kind 18 carrying P2 |
-| H17 | **The TXT tag.** `SILL_TEST_SERVICE_TYPE=_silltest._tcp SILL_TEST_REMOTE_DIR=$T/h SillHost --synthetic --remote`; `dns-sd -t 3 -L "Sill test <pid>" _silltest._tcp local`; a Direct Wireless toggle through `sillclient --set` | An `r=` that Python resolves with `$T/h/recognition-key`; a new `r` after the replacement that still resolves; no TXT record without `--remote` |
+| H17 | **The TXT tag.** `SILL_TEST_SERVICE_TYPE=_orieltest._tcp SILL_TEST_REMOTE_DIR=$T/h SillHost --synthetic --remote`; `dns-sd -t 3 -L "Sill test <pid>" _orieltest._tcp local`; a Direct Wireless toggle through `sillclient --set` | An `r=` that Python resolves with `$T/h/recognition-key`; a new `r` after the replacement that still resolves; no TXT record without `--remote` |
 | H18 | **Reachability.** `SillHost --print-reachability` (addresses masked in the log); kind 18 of a `--remote` host | Tailscale (plus MagicDNS when it resolves) and Wi‑Fi; no utun0–3, CoreDevice tunnel, temporary or deprecated IPv6, awdl or llw; kind 18's list equals it (with 127.0.0.1 first on test hosts); no router query with `SILL_TEST_NO_ROUTER=1` |
 | H19 | **The app, persistence.** The bare `SillMenuBar --synthetic` with `SILL_TEST_REMOTE_DIR=$T/app -SillPairAfter 1 -SillLogFile $T/app.log`, then `-SillSetAfter '3 remoteAccess=1,internetAccess=1,remotePort=P'`, then a relaunch, then `-SillUnpairAfter 8` | `sillclient` pairs with `$T/app/pairing.url`; the settings save and apply (`defaults read SillMenuBar`); after the relaunch the same Mac ID, the same port and a valid pairing; goodbye `removed` within 1 s, and the next dial refused; **the log contains neither the code nor the secret** (grep both); then `defaults delete SillMenuBar` |
 | H20 | **TLS cost.** 60 s at 60 fps synthetic, `sillclient --stats` over the remote door vs the home door | Host CPU within +0.5 percentage points (`ps`, release); median frame age within 1 ms |

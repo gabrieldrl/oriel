@@ -202,7 +202,7 @@ package enum MenuRefusal: Equatable {
     package static let changedNote = "The menus changed. Open the menu again."
     package static let unavailableNote = "It isn’t available right now."
     package static let tooManyNote = "Too many requests. Open the menu again."
-    package static let noAccessNote = "Allow Accessibility for Sill on the Mac (System Settings › Privacy & Security › Accessibility)."
+    package static let noAccessNote = "Allow Accessibility for Oriel on the Mac (System Settings › Privacy & Security › Accessibility)."
     package static func notRespondingNote(_ app: String) -> String { "\(app) isn’t responding." }
     package static func goneNote(_ app: String) -> String { "\(app) is no longer open." }
 

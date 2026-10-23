@@ -5,7 +5,7 @@ import StreamProtocol
 
 /// The embedded code scanner (docs/remote-access-plan.md §7.7, §7.10): VisionKit's
 /// DataScannerViewController in the card's viewfinder, never a presentation. It reads QR codes; a
-/// sillgdl://pair link goes to `onLink`, anything else shows "That’s not a Sill code." under the
+/// oriel://pair link goes to `onLink`, anything else shows "That’s not a Oriel code." under the
 /// viewfinder for 2 s. The person chose to point the camera, so there is no confirmation step.
 /// A link arrives each time the scanner finds the code (again, when a scanner is shown anew with
 /// the code in view) and each time the person taps it; StreamClient.scanned decides what starts.
@@ -24,7 +24,7 @@ struct CodeScanner: View {
     }
 
     let mode: Mode
-    /// A sillgdl://pair link, and whether the person tapped the code rather than the scanner finding it.
+    /// A oriel://pair link, and whether the person tapped the code rather than the scanner finding it.
     let onLink: (PairLink, _ tapped: Bool) -> Void
     /// A scan failed and the same code is held: the caption says a tap on it tries again.
     var retryNeedsTap = false
@@ -58,7 +58,7 @@ struct CodeScanner: View {
                 RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Palette.control)
                 if denied {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Sill can’t use the camera. Enter the code instead, or allow the camera in Settings.")
+                        Text("Oriel can’t use the camera. Enter the code instead, or allow the camera in Settings.")
                             .font(.system(size: 15))
                             .foregroundStyle(Palette.text)
                             .fixedSize(horizontal: false, vertical: true)
@@ -88,7 +88,7 @@ struct CodeScanner: View {
             .accessibilityElement(children: denied ? .contain : .ignore)
             .accessibilityLabel(denied ? "" : mac.map(DiscoveryPolicy.HomeCopy.viewfinderLabel) ?? "Camera. Point it at the code on your Mac.")
             if !denied {
-                Text(notSill ? "That’s not a Sill code." : retryNeedsTap ? "Tap the code to try again."
+                Text(notSill ? "That’s not a Oriel code." : retryNeedsTap ? "Tap the code to try again."
                      : mac.map(DiscoveryPolicy.HomeCopy.viewfinderCaption) ?? "Point at the code on your Mac")
                     .font(.system(size: 13))
                     .foregroundStyle(notSill ? Color.orange : Palette.muted)
@@ -114,7 +114,7 @@ struct CodeScanner: View {
         } else if !notSill {
             notSill = true
             notSillToken += 1
-            AccessibilityNotification.Announcement("That’s not a Sill code.").post()
+            AccessibilityNotification.Announcement("That’s not a Oriel code.").post()
         }
     }
 

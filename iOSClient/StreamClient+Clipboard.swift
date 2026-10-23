@@ -212,7 +212,7 @@ extension StreamClient {
         if let last = clipboardActivatedAt, uptime - last < 0.5 { return }
         clipboardActivatedAt = uptime
         guard ClipboardPolicy.hostTakes(hostClipboard) else { return }
-        lookAtClipboard(why: "Sill became active")
+        lookAtClipboard(why: "Oriel became active")
     }
 
     /// Offers the chip when ClipboardPolicy says; reads only the change count and whether there is text.

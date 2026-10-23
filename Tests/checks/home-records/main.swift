@@ -39,7 +39,7 @@ check("trust list: a key paired over the cable keeps method \"cable\" and its ca
       viaCableJSON.contains("\"cableDevice\":\"\(cableID)\"") && viaCableJSON.contains("\"method\":\"cable\"") && !viaCableJSON.contains("00008110001A2B3C4D5E6F70"))
 check("trust list: round trip", (try? JSONDecoder().decode([PairedDevice].self, from: Data(viaCableJSON.utf8))) == [viaCable])
 let olderReads = try? JSONDecoder().decode([OldPairedDevice].self, from: Data(viaCableJSON.utf8))
-check("trust list: an older Sill.app reads the new list (the unknown key ignored, not \"damaged\")",
+check("trust list: an older Oriel.app reads the new list (the unknown key ignored, not \"damaged\")",
       olderReads == [OldPairedDevice(fingerprint: fpA, name: "iPad", model: "iPad14,1", pairedAt: 1_790_000_200, method: "cable")])
 let plain = PairedDevice(fingerprint: fpB, name: "iPhone", model: nil, pairedAt: 1, method: PairRequest.code)
 check("trust list: the old init still makes a record without cableDevice", plain.cableDevice == nil && !sorted(plain).contains("cableDevice"))

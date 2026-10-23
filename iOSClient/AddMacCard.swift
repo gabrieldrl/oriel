@@ -117,12 +117,12 @@ struct AddMacCard: View {
                 .font(.system(size: 13))
                 .foregroundStyle(Palette.muted)
         } else {
-            Text("Pair once, and Sill reaches your Mac from anywhere, through your VPN or the internet.")
+            Text("Pair once, and Oriel reaches your Mac from anywhere, through your VPN or the internet.")
                 .font(.system(size: 13))
                 .foregroundStyle(Palette.muted)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(typed ? "Type the address and code that Sill shows on your Mac."
-                       : "On your Mac, choose Pair iPhone or iPad… in the Sill menu, then point this \(device) at the code.")
+            Text(typed ? "Type the address and code that Oriel shows on your Mac."
+                       : "On your Mac, choose Pair iPhone or iPad… in the Oriel menu, then point this \(device) at the code.")
                 .font(.system(size: 13))
                 .foregroundStyle(Palette.text)
                 .fixedSize(horizontal: false, vertical: true)
@@ -388,7 +388,7 @@ extension UIViewController {
     }
 }
 
-/// A sillgdl://pair link from outside the app, waiting for the person (§7.7): shown in the card's
+/// A oriel://pair link from outside the app, waiting for the person (§7.7): shown in the card's
 /// place on the connect screen, or over the stream. Never acted on by itself: a poster or a message
 /// could otherwise add a look-alike "Mac" that collects keystrokes.
 struct LinkConfirmation: View {

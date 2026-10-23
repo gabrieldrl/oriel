@@ -135,7 +135,7 @@ struct StreamScreen: View {
     /// hold lets go meanwhile (`keyboardTakers`).
     @State private var menusOpen = false
     /// Pair This iPad… (the panel's Away from home group): the pairing overlay covers the stream.
-    /// Up here, like the panel, so a rotation keeps it. An outside sillgdl://pair link shows the same
+    /// Up here, like the panel, so a rotation keeps it. An outside oriel://pair link shows the same
     /// overlay with its confirmation.
     @State private var pairingOverlay = false
     /// The DEBUG harness's stand-in for the camera (the simulator has none); nil on a device.
@@ -2077,7 +2077,7 @@ struct DrawerRow<Leading: View>: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 if let trailing {
                     // Whole, on one line, whatever the title's length: the title truncates instead
-                    // ("Not paired", "Update Sill" and "3 windows" hold a space).
+                    // ("Not paired", "Update Oriel" and "3 windows" hold a space).
                     Text(trailing)
                         .font(.system(size: 13))
                         .foregroundStyle(Palette.muted)

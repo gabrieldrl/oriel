@@ -419,7 +419,7 @@ enum DiscoveryPolicy {
     }
 
     /// How the move home dials the saved Mac's network row (since pairing at home,
-    /// docs/home-pairing-plan.md §7.2): TLS `sill/1` pinned to the saved Mac's key, the key the
+    /// docs/home-pairing-plan.md §7.2): TLS `oriel/1` pinned to the saved Mac's key, the key the
     /// session through the remote door is pinned to, and the trust a tap's dial of that row takes
     /// (`homeDial`'s `.pinned`). Nil, and no move, for a row a tap would not dial pinned: a plain
     /// door (an older Sill, the CLI without --pairing: never a plain dial, which a Release build never
@@ -591,7 +591,7 @@ enum DiscoveryPolicy {
             case .cableSettling: return "the cable appeared; waiting for it to settle"
             case .upTooSoon: return "the cable is up, but the last move to it was under 5 s ago"
             case .cableFailing: return "the cable is up, but the last move to it did not complete; the next waits longer"
-            case .cableRefused: return "the cable reaches another Mac, or another launch of Sill; not tried again until it is plugged in again"
+            case .cableRefused: return "the cable reaches another Mac, or another launch of Oriel; not tried again until it is plugged in again"
             case .noWifi: return "the cable went away, and the Mac is not on Wi\u{2011}Fi"
             case .downTooSoon: return "the cable went away, but the last move to Wi\u{2011}Fi was under 5 s ago"
             case .lost: return "Wi\u{2011}Fi's path is gone, and there is no cable"
@@ -752,7 +752,7 @@ enum DiscoveryPolicy {
     static func reconnectLine(mac: String, failed: Int, direct: Bool) -> String {
         if failed >= reconnectDials { return "Stopped trying to reach \(mac). Tap it to try again." }
         if failed >= reconnectQuietAfter {
-            return "\(mac) isn\u{2019}t answering. It may be asleep. Sill keeps trying, or tap it to try now."
+            return "\(mac) isn\u{2019}t answering. It may be asleep. Oriel keeps trying, or tap it to try now."
         }
         return direct ? "Reconnecting to \(mac) directly\u{2026}" : "Reconnecting to \(mac)\u{2026}"
     }
@@ -927,7 +927,7 @@ enum DiscoveryPolicy {
             case .method(let m): return m?.word
             case .notPaired, .openDoor: return "Not paired"
             case .pairsOverCable: return Method.wired.word
-            case .updateSill: return "Update Sill"
+            case .updateSill: return "Update Oriel"
             }
         }
 
@@ -945,7 +945,7 @@ enum DiscoveryPolicy {
             case .notPaired: return "Pairs with a code \(name) shows, then connects."
             case .openDoor: return "Connects without pairing: \(name) lets any device in."
             case .pairsOverCable: return "Pairs over the USB cable, then connects."
-            case .updateSill: return "\(name)\u{2019}s Sill is too old for this \(device)."
+            case .updateSill: return "\(name)\u{2019}s Oriel is too old for this \(device)."
             }
         }
     }
@@ -972,11 +972,11 @@ enum DiscoveryPolicy {
 
     /// What a connection to a Mac at home is (§7.4).
     enum HomeDial: Equatable {
-        /// `sill/1`, pinned to the saved Mac's key; connected at its first window list.
+        /// `oriel/1`, pinned to the saved Mac's key; connected at its first window list.
         case pinned
-        /// `sill/1` taking any Mac key: an unsaved Mac on an open door (`p=0`). Nothing is saved.
+        /// `oriel/1` taking any Mac key: an unsaved Mac on an open door (`p=0`). Nothing is saved.
         case anyKey
-        /// The ask (`sill-pair/1`, kind 19 "ask"): pinned to the saved key for a saved Mac that
+        /// The ask (`oriel-pair/1`, kind 19 "ask"): pinned to the saved key for a saved Mac that
         /// removed this device (only its trust in this device changed, so no look-alike can answer
         /// and a typed code goes only to the real Mac), else taking any key and remembering it.
         case ask(pinned: Bool)
@@ -1029,7 +1029,7 @@ enum DiscoveryPolicy {
 
     /// The status line after a tap that dialed nothing because the Mac's Sill is too old.
     static func updateSillStatus(mac: String) -> String {
-        "\(mac) runs an older Sill. Update Sill on the Mac to connect."
+        "\(mac) runs an older Oriel. Update Oriel on the Mac to connect."
     }
 
     /// Whether this device's connection runs over the USB cable to the Mac, as this device sees it
@@ -1121,7 +1121,7 @@ enum DiscoveryPolicy {
     enum HomeTrust: Equatable {
         /// A plain door (`homeDial`'s `.plain`: a DEBUG build, a Mac never seen with `p`): no TLS.
         case plain
-        /// A saved Mac: every connection `sill/1`, pinned to its key.
+        /// A saved Mac: every connection `oriel/1`, pinned to its key.
         case saved(pin: Data)
         /// An unsaved Mac on an open door (`p=0`): the session's first connection takes any key,
         /// and every later one pins the key that one saw (`seen`).
@@ -1376,7 +1376,7 @@ enum DiscoveryPolicy {
         enum PairedReach: Equatable {
             /// This session came through the remote door: "Connected through Tailscale."
             case connected
-            /// "Away from home, Sill reaches Mac mini through Tailscale (…)."
+            /// "Away from home, Oriel reaches Mac mini through Tailscale (…)."
             case reaches
             /// Remote Access is off on the Mac: how to turn it on (a Mac paired at home).
             case turnOnRemoteAccess
@@ -1426,13 +1426,13 @@ enum DiscoveryPolicy {
         static func overlayAsking(mac: String) -> String { "Asking \(mac) for a code\u{2026}" }
         static func overlayShowing(mac: String) -> String { "\(mac) is showing a code now." }
         static func overlayOpenOnMac(mac: String) -> String {
-            "\(mac) didn\u{2019}t show a code by itself. On the Mac, choose Pair iPhone or iPad\u{2026} in the Sill menu."
+            "\(mac) didn\u{2019}t show a code by itself. On the Mac, choose Pair iPhone or iPad\u{2026} in the Oriel menu."
         }
         static func overlayLocked(mac: String, device: String) -> String {
             "Unlock \(mac), then choose Pair This \(device)\u{2026} again."
         }
         static func openOnMac(mac: String) -> String {
-            "\(mac) didn\u{2019}t show a code. On the Mac, choose Pair iPhone or iPad\u{2026} in the Sill menu, then tap \(mac) again."
+            "\(mac) didn\u{2019}t show a code. On the Mac, choose Pair iPhone or iPad\u{2026} in the Oriel menu, then tap \(mac) again."
         }
         static func locked(mac: String) -> String { "Unlock \(mac), then tap it again." }
         static func removed(mac: String, device: String) -> String { "\(mac) removed this \(device). Tap it to pair again." }
@@ -1447,16 +1447,16 @@ enum DiscoveryPolicy {
         /// or a closed code the Mac keeps this device quiet (a cancel on the Mac, a stop), so the
         /// words send the person to its menu first; after an expiry a tap is enough.
         static func stopped(mac: String) -> String {
-            "\(mac) stopped pairing after too many wrong codes. On the Mac, choose Pair iPhone or iPad\u{2026} in the Sill menu, then tap \(mac) again."
+            "\(mac) stopped pairing after too many wrong codes. On the Mac, choose Pair iPhone or iPad\u{2026} in the Oriel menu, then tap \(mac) again."
         }
         static func expired(mac: String) -> String { "That code expired. Tap \(mac) for a new one." }
         static func closed(mac: String) -> String {
-            "That code no longer works. On the Mac, choose Pair iPhone or iPad\u{2026} in the Sill menu, then tap \(mac) again."
+            "That code no longer works. On the Mac, choose Pair iPhone or iPad\u{2026} in the Oriel menu, then tap \(mac) again."
         }
         static func proofFailed(mac: String) -> String {
             "Pairing didn\u{2019}t finish: \(mac) couldn\u{2019}t show it knows the code. Tap it to try again."
         }
         /// Nothing answered the ask or a proof at the row (it went, or Sill quit meanwhile).
-        static func noAnswer(mac: String) -> String { "\(mac) didn\u{2019}t answer. Check that Sill is open on it, then tap it again." }
+        static func noAnswer(mac: String) -> String { "\(mac) didn\u{2019}t answer. Check that Oriel is open on it, then tap it again." }
     }
 }

@@ -352,7 +352,7 @@ func probeOnly() async -> Int32 {
     let vd: VirtualDisplay
     do { vd = try await createDisplay() } catch {
         bad("\(error)")
-        note("The private API is unavailable here: Sill must fall back to streaming real windows.")
+        note("The private API is unavailable here: Oriel must fall back to streaming real windows.")
         return 1
     }
     let id = vd.displayID
@@ -439,7 +439,7 @@ func fullRun(target: String) async -> Int32 {
     let vd: VirtualDisplay
     do { vd = try await createDisplay() } catch {
         bad("\(error)")
-        note("The private API is unavailable here: Sill must fall back to streaming real windows.")
+        note("The private API is unavailable here: Oriel must fall back to streaming real windows.")
         return 5
     }
     let vb = vd.bounds

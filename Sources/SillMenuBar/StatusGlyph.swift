@@ -1,22 +1,22 @@
 import AppKit
 
-/// The status item's image: design/AppIcon.svg reduced to a menu bar template. The iMac is an
-/// outline with its stand, the iPad sits tilted in its screen as in the icon, and the state shows
-/// on the iPad: empty (idle), a dot (a device is connected), a window (streaming), or a badge at
-/// the lower right (Sill needs attention).
+/// The status item's image: Oriel's bay window (Packaging/AppIcon.icon) reduced to a menu bar
+/// template. A centre pane between two side panes turned away in perspective, and the state shows
+/// in how many are filled: outlines (idle), the centre filled (a device is connected), all three
+/// filled (streaming), or outlines with a badge at the lower right (Oriel needs attention).
 ///
-/// Drawn in code from the SVG's own coordinates, so there is no asset to keep in sync, and marked
-/// as a template so the menu bar tints it for light and dark bars and highlights it when the menu
-/// is open. `symbolFallback` (SF Symbol macbook.and.ipad) is the stand-in if this drawing is ever
-/// dropped; the previews render both side by side.
+/// Drawn in code, so there is no asset to keep in sync, and marked as a template so the menu bar
+/// tints it for light and dark bars and highlights it when the menu is open. `symbolFallback` (SF
+/// Symbol macbook.and.ipad) is the stand-in if this drawing is ever dropped; the previews render
+/// both side by side.
 enum StatusGlyph {
     enum State: Equatable, CaseIterable { case idle, connected, streaming, attention }
 
-    /// 18 pt tall: 16 pt of drawing and a point above and below, like the system's own items.
-    static let size = NSSize(width: 21, height: 18)
+    /// 18 pt tall: 14 pt of drawing and two points above and below, like the system's own items.
+    static let size = NSSize(width: 23, height: 18)
 
     static let symbolFallback: NSImage? = {
-        let image = NSImage(systemSymbolName: "macbook.and.ipad", accessibilityDescription: "Sill")
+        let image = NSImage(systemSymbolName: "macbook.and.ipad", accessibilityDescription: "Oriel")
         image?.isTemplate = true
         return image
     }()
@@ -28,62 +28,55 @@ enum StatusGlyph {
             return true
         }
         image.isTemplate = true
-        image.accessibilityDescription = "Sill"
+        image.accessibilityDescription = "Oriel"
         return image
     }
 
-    // MARK: Geometry, in AppIcon.svg units (1024 grid; the iMac group's 56-unit shift applied)
+    // MARK: Geometry, in points (flipped: y down)
 
-    /// Units → points: the drawing spans the iMac's 536-unit height (body top to foot bottom) in
-    /// 16 pt, centred in the image.
-    private static let scale: CGFloat = 16 / 536
-    private static let origin = CGPoint(x: 176 - (size.width / scale - 672) / 2, y: 232 - 1 / scale)
+    /// The panes' outline, drawn inside each shape.
+    private static let line: CGFloat = 1.3
+    private static let top: CGFloat = 2, bottom: CGFloat = 16
 
-    private static func rect(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat) -> CGRect {
-        CGRect(x: (x - origin.x) * scale, y: (y - origin.y) * scale, width: w * scale, height: h * scale)
+    /// The centre pane: 11 by 14, its corners rounded as the icon's.
+    private static let centre = CGPath(roundedRect: CGRect(x: 6, y: top, width: 11, height: bottom - top),
+                                       cornerWidth: 2.2, cornerHeight: 2.2, transform: nil)
+
+    /// A side pane: a trapezoid whose inner edge (beside the centre, 1.4 pt away) is nearly the
+    /// centre's height and whose outer edge is three quarters of it, as the icon's are, its corners
+    /// rounded by 0.7 pt (the polygon stroked with round joins, as the icon's SVG does).
+    private static func side(left: Bool) -> CGPath {
+        let r: CGFloat = 0.7, h = bottom - top
+        let inner: CGFloat = 18.4 + r, outer: CGFloat = 22.4 - r
+        let innerInset = h * 0.01 + r, outerInset = h * 0.125 + r
+        let x = { (v: CGFloat) in left ? size.width - v : v }
+        let core = CGMutablePath()
+        core.addLines(between: [CGPoint(x: x(inner), y: top + innerInset), CGPoint(x: x(outer), y: top + outerInset),
+                                CGPoint(x: x(outer), y: bottom - outerInset), CGPoint(x: x(inner), y: bottom - innerInset)])
+        core.closeSubpath()
+        return core.union(core.copy(strokingWithWidth: 2 * r, lineCap: .round, lineJoin: .round, miterLimit: 1))
     }
 
-    private static func rounded(_ r: CGRect, _ radius: CGFloat) -> CGPath {
-        CGPath(roundedRect: r, cornerWidth: radius * scale, cornerHeight: radius * scale, transform: nil)
+    private static let sides = [side(left: true), side(left: false)]
+
+    /// A pane filled, or its outline: the shape stroked at twice the line, clipped to itself.
+    private static func pane(_ shape: CGPath, filled: Bool, in ctx: CGContext) {
+        if filled { ctx.addPath(shape); ctx.fillPath(); return }
+        ctx.saveGState()
+        ctx.addPath(shape)
+        ctx.clip()
+        ctx.setLineWidth(2 * line)
+        ctx.addPath(shape)
+        ctx.strokePath()
+        ctx.restoreGState()
     }
 
     private static func draw(_ state: State, in ctx: CGContext) {
         ctx.setFillColor(NSColor.black.cgColor)
         ctx.setStrokeColor(NSColor.black.cgColor)
 
-        // The iMac: body outline (stroked inside the SVG's 672×456 rectangle), neck and foot.
-        let stroke: CGFloat = 50                              // 1.5 pt
-        ctx.setLineWidth(stroke * scale)
-        ctx.addPath(rounded(rect(176 + stroke / 2, 232 + stroke / 2, 672 - stroke, 456 - stroke), 60 - stroke / 2))
-        ctx.strokePath()
-        ctx.fill(rect(480, 686, 64, 50))
-        ctx.addPath(rounded(rect(372, 728, 280, 40), 20))
-        ctx.fillPath()
-
-        // The iPad, tilted -5° like the icon's, centred in the iMac's screen: an outline whose
-        // screen shows the state.
-        let center = rect(512, 460, 0, 0).origin
-        ctx.saveGState()
-        ctx.translateBy(x: center.x, y: center.y)
-        ctx.rotate(by: -5 * .pi / 180)
-        let pad = CGRect(x: -180 * scale, y: -125 * scale, width: 360 * scale, height: 250 * scale)
-        let border: CGFloat = 40                              // 1.2 pt
-        ctx.setLineWidth(border * scale)
-        ctx.addPath(CGPath(roundedRect: pad.insetBy(dx: border / 2 * scale, dy: border / 2 * scale),
-                           cornerWidth: 24 * scale, cornerHeight: 24 * scale, transform: nil))
-        ctx.strokePath()
-        switch state {
-        case .connected:
-            let d: CGFloat = 70 * scale
-            ctx.fillEllipse(in: CGRect(x: -d / 2, y: -d / 2, width: d, height: d))
-        case .streaming:
-            let window = pad.insetBy(dx: (border + 30) * scale, dy: (border + 30) * scale)
-            ctx.addPath(CGPath(roundedRect: window, cornerWidth: 12 * scale, cornerHeight: 12 * scale, transform: nil))
-            ctx.fillPath()
-        case .idle, .attention:
-            break
-        }
-        ctx.restoreGState()
+        pane(centre, filled: state == .connected || state == .streaming, in: ctx)
+        for s in sides { pane(s, filled: state == .streaming, in: ctx) }
 
         // Attention: a dot at the lower right, cut out of whatever it overlaps.
         if state == .attention {

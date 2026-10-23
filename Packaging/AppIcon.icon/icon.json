@@ -1,0 +1,18 @@
+{
+  "fill" : {
+    "automatic-gradient" : "extended-srgb:0.15000,0.40000,0.95000,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [ { "image-name" : "Centre.svg", "name" : "Centre" } ],
+      "name" : "Centre"
+    },
+    {
+      "layers" : [ { "image-name" : "Sides.svg", "name" : "Sides" } ],
+      "name" : "Sides"
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : "shared"
+  }
+}

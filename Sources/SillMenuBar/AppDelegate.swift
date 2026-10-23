@@ -30,7 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         DebugHooks.renderPreviewsIfAsked(model: model)      // exits when asked
         // A menu bar app with no windows open is exactly what automatic termination would end.
-        ProcessInfo.processInfo.disableAutomaticTermination("Sill serves devices from the menu bar")
+        ProcessInfo.processInfo.disableAutomaticTermination("Oriel serves devices from the menu bar")
         ProcessInfo.processInfo.disableSuddenTermination()
         let item = StatusItemController(model: model)        // "Starting…" until the host is up
         statusItem = item

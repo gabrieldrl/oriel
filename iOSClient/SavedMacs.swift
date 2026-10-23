@@ -35,7 +35,7 @@ struct SavedMac: Codable, Hashable, Identifiable {
     var lastRoute: String?
     /// This device has seen the Mac's home door speak TLS: a TXT record with `p`, or a TLS session
     /// at home (docs/home-pairing-plan.md §7.3). Its rows are then dialed only over TLS, in DEBUG
-    /// too, and a row of it without `p` reads "Update Sill" (no downgrade: its own Sill never goes
+    /// too, and a row of it without `p` reads "Update Oriel" (no downgrade: its own Sill never goes
     /// back to plain, and someone may be replaying its tag). Kept by a new pairing with the same
     /// Mac (`SavedMacs.adding`). Optional, so a record from before it decodes.
     var homeTLS: Bool?

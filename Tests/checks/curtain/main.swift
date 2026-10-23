@@ -32,8 +32,8 @@ check(!json(WindowList(macName: "Mac", windows: [], active: .desktop)).contains(
 let own: [UInt32] = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 14, 18, 19, 20, 22, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34]
 for t in own {
     check(CurtainPolicy.blocks(type: t, userData: 0), "the Mac's own \(t) is stopped")
-    check(!CurtainPolicy.blocks(type: t, userData: CurtainPolicy.marker), "Sill's own \(t) goes through")
-    check(CurtainPolicy.blocks(type: t, userData: CurtainPolicy.marker + 1), "another app's mark is not Sill's (\(t))")
+    check(!CurtainPolicy.blocks(type: t, userData: CurtainPolicy.marker), "Oriel's own \(t) goes through")
+    check(CurtainPolicy.blocks(type: t, userData: CurtainPolicy.marker + 1), "another app's mark is not Oriel's (\(t))")
 }
 check(CurtainPolicy.blocked == Set(own), "exactly these: \(CurtainPolicy.blocked.sorted())")
 for t: UInt32 in [0, 8, 9, 13, 15, 16, 17, 21, 28, 35, 36, 0xFFFF_FFFE, 0xFFFF_FFFF] {

@@ -158,7 +158,7 @@ do {
     w.inputArrived(from: A, movesPointer: true)
     check(w.sample(devices: both)?.controller == .client(A), "a device's input hands it the pointer")
     c.now += 0.03; l.point = pt(400, 100)   // Sill's own move, absolute
-    check(w.sample(devices: both)?.controller == .client(A), "Sill's move within the settle stays the device's")
+    check(w.sample(devices: both)?.controller == .client(A), "Oriel's move within the settle stays the device's")
     for _ in 0..<8 { c.now += 0.03; _ = w.sample(devices: both) }   // the settle runs out, the pointer still
     check(w.sample(devices: both)?.controller == .client(A), "a still pointer after the settle stays the device's")
     c.now += 0.03; l.point = pt(401, 100)
@@ -191,7 +191,7 @@ do {
     w.sillMoved()
     l.point = pt(300, 300)
     c.now += 0.03
-    check(w.sample(devices: both)?.controller == .client(A), "a post noted before it lands stays Sill's")
+    check(w.sample(devices: both)?.controller == .client(A), "a post noted before it lands stays Oriel's")
     c.now += 0.03
     w.sillMoved(to: pt(700, 400))   // a real host: `to` moves nothing
     l.point = pt(300, 300)
@@ -418,7 +418,7 @@ do {
     w.sillMoved(to: pt(600, 600))
     let r = w.sample(devices: both)
     check(r.map { $0.x == 0.6 && $0.y == 0.6 } == true, "the dry run's move (\(String(describing: r)))")
-    check(r?.controller == .client(A), "…is Sill's: the device keeps the pointer")
+    check(r?.controller == .client(A), "…is Oriel's: the device keeps the pointer")
     c.now = 50.9
     check(w.sample(devices: both)?.x == 0.6, "no step since: it stays")
     c.now = 51.2

@@ -23,7 +23,7 @@ enum TestHooks {
     static func reportIgnored(testHost: Bool, environment: [String: String] = ProcessInfo.processInfo.environment) {
         guard !testHost else { return }
         for name in doorAndPairing where !(environment[name] ?? "").isEmpty {
-            print("\(name) ignored: only a test host takes it (one that does not advertise and is not Sill.app itself).")
+            print("\(name) ignored: only a test host takes it (one that does not advertise and is not Oriel.app itself).")
         }
     }
 }

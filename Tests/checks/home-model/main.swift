@@ -101,7 +101,7 @@ r = row(door: .pairingRequired, method: .wifi, tag: tagM)
 check("4 paired again: pinned, not revoked, homeTLS kept by the new record", r.tap == .pinned && saved[0].revoked == nil && saved[0].homeTLS == true)
 // 5. An older Sill.app on the Mac (no p, same tag): nothing dialed, in DEBUG too; -SillForgetHomeTLS lets DEBUG dial it plain.
 r = row(door: .plain, method: .wifi, tag: tagM, debug: true)
-check("5 an older Sill.app: Update Sill and nothing dialed, in DEBUG too (no downgrade)", r.word == .updateSill && r.tap == .updateSill && r.reconnect == .updateSill)
+check("5 an older Oriel.app: Update Oriel and nothing dialed, in DEBUG too (no downgrade)", r.word == .updateSill && r.tap == .updateSill && r.reconnect == .updateSill)
 saved = SavedMacs.forgettingHomeTLS(saved)
 r = row(door: .plain, method: .wifi, tag: tagM, debug: true)
 check("5 after -SillForgetHomeTLS 1: DEBUG dials it plain, as before pairing at home", r.tap == .plain && P.sessionTrust(r.tap, savedPin: nil) == .plain)
@@ -170,7 +170,7 @@ for close in closes { for byThisProof in [true, false] {
     quietAll += 1
     let reason = PairingWindow.closedReason(close, stoppedByThisProof: byThisProof)
     let words = cardWords(reason)
-    let menuFirst = words.contains("choose Pair iPhone or iPad\u{2026} in the Sill menu, then tap Mac mini again")
+    let menuFirst = words.contains("choose Pair iPhone or iPad\u{2026} in the Oriel menu, then tap Mac mini again")
     if AskLimits.quiets(close) ? menuFirst : (menuFirst || words.hasSuffix("for a new one.")) { quietHonest += 1 }
     else { print("  \(close) (\(byThisProof)): \(reason) → \(words)") }
 } }

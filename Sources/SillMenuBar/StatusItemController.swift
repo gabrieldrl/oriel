@@ -55,7 +55,7 @@ enum MenuBuilder {
             .separator,
             MenuEntry(kind: .item, title: "Settings…", key: ",", action: .showSettings),
             .separator,
-            MenuEntry(kind: .item, title: "Quit Sill", key: "q", action: .quit),
+            MenuEntry(kind: .item, title: "Quit Oriel", key: "q", action: .quit),
         ]
     }
 

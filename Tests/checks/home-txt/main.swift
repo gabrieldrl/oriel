@@ -25,7 +25,7 @@ check("canonical JSON tells true from 1 and ignores key order", !same(#"{"a":tru
 
 check("the key is p", X.key == "p")
 check("build: 1 with Require pairing on, 0 with it off", X.value(requirePairing: true) == "1" && X.value(requirePairing: false) == "0")
-check("parse: no p is a plain door (Sill.app before this change, SillHost without --pairing)", X.door([:]) == .plain && X.door(["r": "oaKjpKWmL4V47Ctm"]) == .plain)
+check("parse: no p is a plain door (Oriel.app before this change, SillHost without --pairing)", X.door([:]) == .plain && X.door(["r": "oaKjpKWmL4V47Ctm"]) == .plain)
 check("parse: p=1 requires pairing, p=0 is open", X.door(["r": "t", "p": "1"]) == .pairingRequired && X.door(["r": "t", "p": "0"]) == .open)
 check("parse: any other value reads as 1, the safe side", ["", "2", "yes", "true", "no", "false", " 0", "0 ", "00", "O", "-0", "0x0", "\u{0660}"].allSatisfy { X.door(["p": $0]) == .pairingRequired })
 check("parse: keys are case-insensitive (P)", X.door(["P": "0"]) == .open && X.door(["P": "1"]) == .pairingRequired)

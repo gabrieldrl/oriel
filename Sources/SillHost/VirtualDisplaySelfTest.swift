@@ -47,7 +47,7 @@ package enum VirtualDisplaySelfTest {
             // `--virtual-display-selftest 120` asks for a 120 Hz display (what a ProMotion device gets).
             let args = CommandLine.arguments
             let hz = args.firstIndex(of: "--virtual-display-selftest").flatMap { i in args.count > i + 1 ? Double(args[i + 1]) : nil } ?? 60
-            d = try VirtualDisplay(name: "Sill", widthPt: 1000, heightPt: 700, scale: 2, refreshHz: hz,
+            d = try VirtualDisplay(name: "Oriel", widthPt: 1000, heightPt: 700, scale: 2, refreshHz: hz,
                                    vendorID: VirtualStage.vendorID, productID: VirtualStage.productID, serialNum: VirtualStage.serialNum)
             print("  requested refresh: \(Int(hz)) Hz")
         } catch {

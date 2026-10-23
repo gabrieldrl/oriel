@@ -119,9 +119,9 @@ for reason in [Goodbye.quit, Goodbye.removed, Goodbye.remoteOff, Goodbye.interne
     let bytes = String(decoding: Wire.encode(Goodbye(reason: reason)), as: UTF8.self)
     check(bytes == "{\"reason\":\"\(reason)\"}", "goodbye \(reason): \(bytes)")
 }
-let update = Goodbye(reason: Goodbye.update, message: "Update Sill on your iPad to keep using Mac mini. It needs version 1.2 or later.",
+let update = Goodbye(reason: Goodbye.update, message: "Update Oriel on your iPad to keep using Mac mini. It needs version 1.2 or later.",
                      minimumVersion: "1.2", reconnect: false)
-check(json(update) == #"{"message":"Update Sill on your iPad to keep using Mac mini. It needs version 1.2 or later.","minimumVersion":"1.2","reason":"update","reconnect":false}"#,
+check(json(update) == #"{"message":"Update Oriel on your iPad to keep using Mac mini. It needs version 1.2 or later.","minimumVersion":"1.2","reason":"update","reconnect":false}"#,
       "the update goodbye: \(json(update))")
 check(Wire.decode(Goodbye.self, from: Data(#"{"reason":"quit"}"#.utf8)) == Goodbye(reason: "quit"), "an old goodbye reads with nil fields")
 check(Wire.decode(Goodbye.self, from: Data(#"{"message":"x"}"#.utf8)) == nil, "no reason: no goodbye")

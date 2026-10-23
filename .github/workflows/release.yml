@@ -1,23 +1,25 @@
-# Releases of Sill for Mac. Started by pushing a tag v<version>, the version in Packaging/Info.plist
-# (`git tag v0.3.0 && git push origin v0.3.0` on the commit to release), or by hand with such a tag
-# (Actions › Release › Run workflow). What it does depends on the repository variable
+# Releases of Oriel for Mac. Started by pushing a tag v<version>, the version in Packaging/Info.plist
+# (`git tag v0.1.0 && git push origin v0.1.0` on the commit to release), or by hand with such a tag
+# (Actions › Release › Run workflow). How it signs depends on the repository variable
 # SILL_SIGN_IN_CI (Settings › Secrets and variables › Actions › Variables):
 #
-# - Not set, or anything but true: verify only. It checks the tag against Packaging/Info.plist,
-#   runs the pure checks, builds Sill.app with Scripts/make-app.sh (signed ad hoc: the runner has
-#   no identity), makes the disk image with Scripts/make-dmg.sh (signed ad hoc too), and keeps the
-#   app, zipped, and the image as this run's two artifacts for 14 days. It uses no secret and
-#   creates no release.
-# - true: sign and publish. The same checks, then the Developer ID certificate goes into a
+# - Not set, or anything but true: ad hoc. It checks the tag against Packaging/Info.plist, runs the
+#   pure checks, builds Oriel.app with Scripts/make-app.sh (signed ad hoc: the runner has no
+#   identity, and this fork's team has no Developer ID), makes the disk image with
+#   Scripts/make-dmg.sh (signed ad hoc too), keeps both as this run's artifacts for 14 days, and
+#   creates the GitHub Release v<version> with Oriel.dmg, Oriel.zip and their .sha256 files. It
+#   uses no secret. Not notarized, so macOS refuses the first open until it is allowed once in
+#   System Settings › Privacy & Security (Open Anyway); the release notes say so. Every Oriel.app's
+#   update check reads that release.
+# - true: Developer ID. The same checks, then the Developer ID certificate goes into a
 #   temporary keychain, the notary credentials into a profile in it, and Scripts/release.sh
-#   --publish builds Sill.app, has Apple notarize it, staples the ticket, checks a copy the way
+#   --publish builds Oriel.app, has Apple notarize it, staples the ticket, checks a copy the way
 #   Gatekeeper will, puts the stapled app in the disk image and has Apple notarize that too, and
-#   creates the GitHub Release v<version> with Sill.dmg, Sill.zip and their .sha256 files, the
-#   files the site's download page links. The keychain is deleted at the end, whatever happened.
+#   creates the GitHub Release v<version> with Oriel.dmg, Oriel.zip and their .sha256 files. The
+#   keychain is deleted at the end, whatever happened.
 #
 # docs/release-checklist.md, "Releasing from GitHub Actions", lists every secret and variable, how
-# to make and rotate them, and what a run costs (free in a public repository; in a private one,
-# macOS minutes against the account's included minutes, then $0.062 a minute on 2026-09-25).
+# to make and rotate them, and what a run costs (free in a public repository).
 name: Release
 
 on:
@@ -49,12 +51,14 @@ env:
   SILL_RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
-  verify:
-    name: Verify (no signing, no release)
+  adhoc:
+    name: Build ad hoc and publish (not notarized)
     if: vars.SILL_SIGN_IN_CI != 'true'
     # As in ci.yml: the image with Xcode 27 (macOS 27, public preview).
     runs-on: xcode-27
     timeout-minutes: 30
+    permissions:
+      contents: write # the GitHub Release, with this repository's own token
     steps:
       - name: Check out the tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -76,45 +80,43 @@ jobs:
       - name: Pure checks (Tests/checks/run-all.sh)
         run: Tests/checks/run-all.sh
 
-      - name: Build Sill.app (Scripts/make-app.sh, signed ad hoc)
+      - name: Build Oriel.app (Scripts/make-app.sh, signed ad hoc)
         run: Scripts/make-app.sh
 
-      - name: Check Sill.app and zip it
+      - name: Check Oriel.app and zip it
         id: zip
         run: |
-          app=.build/Sill.app
+          app=.build/Oriel.app
           version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")"
           build="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$app/Contents/Info.plist")"
           codesign --verify --strict "$app"
           for file in Assets.car AppIcon.icns; do
             if [ ! -f "$app/Contents/Resources/$file" ]; then
-              echo "::error::Sill.app has no $file: make-app.sh could not make the icon (its warning above says why), and a signed release refuses to ship without one."
+              echo "::error::Oriel.app has no $file: make-app.sh could not make the icon (its warning above says why), and a signed release refuses to ship without one."
               exit 1
             fi
           done
-          zip=".build/Sill-$version-adhoc.zip"
+          zip=".build/Oriel-$version-adhoc.zip"
           ditto -c -k --keepParent "$app" "$zip"
           echo "zip=$zip" >> "$GITHUB_OUTPUT"
           {
-            echo "Sill $version ($build) for $(lipo -archs "$app/Contents/MacOS/Sill"): the checks passed and Sill.app built."
+            echo "Oriel $version ($build) for $(lipo -archs "$app/Contents/MacOS/Oriel"): the checks passed and Oriel.app built."
             echo
-            echo "The artifact $(basename "$zip") is signed ad hoc, not with Developer ID, and not notarized: for trying out, not for anyone else to download. SHA-256 $(shasum -a 256 "$zip" | awk '{ print $1 }')."
+            echo "The artifact $(basename "$zip") is signed ad hoc, not with Developer ID, and not notarized. SHA-256 $(shasum -a 256 "$zip" | awk '{ print $1 }')."
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
-      # The image a release publishes as Sill.dmg, made the same way from this ad hoc app: its
-      # window, background and volume icon can be looked at before a signed release.
+      # The image the release publishes as Oriel.dmg, made from this ad hoc app.
       - name: Make the disk image (Scripts/make-dmg.sh, signed ad hoc)
         id: dmg
         run: |
-          app=.build/Sill.app
+          app=.build/Oriel.app
           version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")"
-          dmg=".build/Sill-$version-adhoc.dmg"
+          dmg=".build/Oriel-$version-adhoc.dmg"
           Scripts/make-dmg.sh --sign - "$app" "$dmg"
           echo "dmg=$dmg" >> "$GITHUB_OUTPUT"
           {
             echo
-            echo "The artifact $(basename "$dmg") is the disk image a release publishes as Sill.dmg, with this Sill.app inside, signed ad hoc and not notarized: for looking at its window, not for anyone else to download. SHA-256 $(shasum -a 256 "$dmg" | awk '{ print $1 }')."
-            echo "Nothing was published: the repository variable SILL_SIGN_IN_CI is not true."
+            echo "The artifact $(basename "$dmg") is the disk image the release publishes as Oriel.dmg, with this Oriel.app inside, signed ad hoc and not notarized. SHA-256 $(shasum -a 256 "$dmg" | awk '{ print $1 }')."
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Keep the zip as this run's artifact
@@ -134,8 +136,40 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
+      # The release itself: the names the update check's page and the README link, each with its
+      # .sha256. It must not exist yet (a tag is released once); --verify-tag refuses a tag that
+      # is not on GitHub. Marked latest, which is what every Oriel.app's update check reads.
+      - name: Publish the GitHub Release (ad hoc, not notarized)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ZIP: ${{ steps.zip.outputs.zip }}
+          DMG: ${{ steps.dmg.outputs.dmg }}
+        run: |
+          version="${SILL_RELEASE_TAG#v}"
+          dir="$RUNNER_TEMP/release"
+          mkdir -p "$dir"
+          cp "$DMG" "$dir/Oriel.dmg"
+          cp "$ZIP" "$dir/Oriel.zip"
+          (cd "$dir" && shasum -a 256 Oriel.dmg > Oriel.dmg.sha256 && shasum -a 256 Oriel.zip > Oriel.zip.sha256)
+          cat > "$dir/notes.md" <<NOTES
+          Oriel $version for Mac: stream your Mac's windows to your iPhone and iPad.
+
+          Download **Oriel.dmg**, open it and drag Oriel to Applications.
+
+          This build is signed ad hoc and **not notarized by Apple**, so the first time you open it
+          macOS says it can't check it for malicious software. To open it: try once, then go to
+          System Settings › Privacy & Security, scroll to Security and click **Open Anyway** next to
+          Oriel. macOS remembers the choice.
+
+          Oriel checks this page once a day and tells you when a newer version is out.
+          NOTES
+          gh release create "$SILL_RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --latest \
+            --title "Oriel $version" --notes-file "$dir/notes.md" \
+            "$dir/Oriel.dmg" "$dir/Oriel.dmg.sha256" "$dir/Oriel.zip" "$dir/Oriel.zip.sha256"
+          echo "Published $(gh release view "$SILL_RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url --jq .url)" | tee -a "$GITHUB_STEP_SUMMARY"
+
   publish:
-    name: Sign, notarize and publish
+    name: Sign with Developer ID, notarize and publish
     if: vars.SILL_SIGN_IN_CI == 'true'
     runs-on: xcode-27
     timeout-minutes: 60

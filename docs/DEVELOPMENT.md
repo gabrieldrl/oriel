@@ -1056,7 +1056,7 @@ simulator:
   drawn as an iPad draws such a window (the compact halves), not as a phone
   does, so an iPhone simulator can photograph it; `phone` the other way
   round.
-- Pairing at home: `-SillServiceType _silltest._tcp` (only test hosts
+- Pairing at home: `-SillServiceType _orieltest._tcp` (only test hosts
   registered under that type are rows), `-SillHomeDoor paired|open|plain`
   (what a `-SillConnect` address counts as), `-SillCableTest 1` (this
   device's path counts as the cable) and the connect screen's `home…` cases;

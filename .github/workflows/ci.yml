@@ -1,7 +1,7 @@
-# CI for Sill: on pull requests and pushes to main (unless they touch only documents), and by hand
+# CI for Oriel: on pull requests and pushes to main and dev (unless they touch only documents), and by hand
 # (Actions › CI › Run workflow).
 #
-# One macOS job builds the Mac side with SwiftPM (release: the host library, the CLI, Sill.app's
+# One macOS job builds the Mac side with SwiftPM (release: the host library, the CLI, Oriel.app's
 # executable and the probes), runs the pure checks in Tests/checks, builds the iOS app for the
 # simulator without signing, and runs the CLI where it exits before capturing, encoding or
 # listening. Nothing here signs anything or uses a secret. Run by hand with "mutants" ticked, it
@@ -21,7 +21,7 @@ on:
   pull_request:
     paths-ignore: ['**.md', 'docs/**', 'site/**', 'design/screenshots/**', 'LICENSE']
   push:
-    branches: [main]
+    branches: [main, dev]
     paths-ignore: ['**.md', 'docs/**', 'site/**', 'design/screenshots/**', 'LICENSE']
   workflow_dispatch:
     inputs:
@@ -113,15 +113,17 @@ jobs:
 
       # Only the CLI's paths that end before the host starts: a refused flag, and
       # --print-reachability, which reads this machine's network configuration once (read-only)
-      # and prints the addresses a paired device would be given away from home.
+      # and prints the addresses a paired device would be given away from home. The flag must be
+      # one the CLI still refuses: an unknown one starts a host, which runs until this step's
+      # timeout (as --internet did once internet access was removed).
       - name: Run the CLI where it needs no capture, encoder or listener
         timeout-minutes: 2
         run: |
           status=0
-          message="$(.build/release/SillHost --internet 2>&1)" || status=$?
-          echo "SillHost --internet: exit status $status, \"$message\""
-          if [ "$status" -ne 2 ] || [ "$message" != "--internet needs --remote." ]; then
-            echo "::error::SillHost --internet should refuse with exit status 2"
+          message="$(.build/release/SillHost --remote=80 2>&1)" || status=$?
+          echo "SillHost --remote=80: exit status $status, \"$message\""
+          if [ "$status" -ne 2 ] || [ "$message" != "--remote=PORT takes a port from 1024 to 65535." ]; then
+            echo "::error::SillHost --remote=80 should refuse with exit status 2"
             exit 1
           fi
           .build/release/SillHost --print-reachability

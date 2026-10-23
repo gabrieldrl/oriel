@@ -211,7 +211,7 @@ the whole display (951×669, 669×951, 466×678, 678×466) with the strips as sa
   --synthetic` (127.0.0.1 alone, the software encoder; its port from `lsof -nP -iTCP -sTCP:LISTEN -a
   -p <pid>`; it stops at SIGTERM, not always at SIGINT). The app:
   `xcrun simctl launch --console-pty <UDID> me.saffer.sill -SillConnect 127.0.0.1:<port>
-  -SillHomeDoor plain -SillServiceType _silltest._tcp` (`-SillServiceType` keeps real Macs off the
+  -SillHomeDoor plain -SillServiceType _orieltest._tcp` (`-SillServiceType` keeps real Macs off the
   connect screen); `-SillSettings 1` and `-SillTourState fresh -SillTour touch` open the panel and the
   tour. The synthetic host serves no menus: the Menus button needs `SILL_TEST_MENU_PID` and
   `Scripts/menufixture.swift` (Build and run in CLAUDE.md).

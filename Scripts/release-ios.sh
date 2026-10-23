@@ -344,7 +344,7 @@ check_app() {
     [ "$value" = false ] || fail "$app's ITSAppUsesNonExemptEncryption is $value, not NO: every build would wait on Missing Compliance (iOSClient/Info.plist; docs/app-store-metadata.md §6)."
     plist_value NSLocalNetworkUsageDescription "$plist" >/dev/null || fail "$app has no NSLocalNetworkUsageDescription: iOS would never ask for Local Network access."
     value="$(plist_value NSBonjourServices "$plist")" || value=""
-    grep -F '_sillgdl._tcp' >/dev/null <<<"$value" || fail "$app's NSBonjourServices lacks _sillgdl._tcp: the device would find no Mac."
+    grep -F '_oriel._tcp' >/dev/null <<<"$value" || fail "$app's NSBonjourServices lacks _oriel._tcp: the device would find no Mac."
     plist_value NSCameraUsageDescription "$plist" >/dev/null || fail "$app has no NSCameraUsageDescription: Add a Mac…'s scanner would crash it."
     [ -f "$app/PrivacyInfo.xcprivacy" ] || fail "$app has no PrivacyInfo.xcprivacy: App Store Connect refuses an upload whose required-reason APIs aren't declared (ITMS-91053)."
     plutil -lint -s "$app/PrivacyInfo.xcprivacy" || fail "$app/PrivacyInfo.xcprivacy is not a valid property list."
@@ -352,7 +352,7 @@ check_app() {
     [ -n "$value" ] && version_at_least "$value" "$xcode_minimum" \
         || fail "$app was built with the iOS ${value:-(unknown)} SDK, and the iPhone Duo's layouts need the iOS $xcode_minimum SDK (Xcode $xcode_minimum; docs/iphone-duo-plan.md)."
     if [ "$quiet" = 0 ]; then
-        say "Checked its Sill.app: $version ($build), $bundle_id, the iOS $value SDK, ITSAppUsesNonExemptEncryption NO, the Local Network, Bonjour (_sillgdl._tcp) and camera entries, PrivacyInfo.xcprivacy"
+        say "Checked its Sill.app: $version ($build), $bundle_id, the iOS $value SDK, ITSAppUsesNonExemptEncryption NO, the Local Network, Bonjour (_oriel._tcp) and camera entries, PrivacyInfo.xcprivacy"
     fi
 }
 

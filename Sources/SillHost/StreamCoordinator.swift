@@ -310,7 +310,7 @@ package final class StreamCoordinator {
             if let identity = remote.identity {
                 home = .tls(StreamServer.HomeTLS(identity: identity, trust: remote.trust))
             } else {
-                home = .closed("Sill couldn’t use its key \(remote.keyPlace) (\(remote.identityProblem ?? "no identity"))")
+                home = .closed("Oriel couldn’t use its key \(remote.keyPlace) (\(remote.identityProblem ?? "no identity"))")
             }
         }
         // The test pattern is for test clients, not devices.
@@ -1806,7 +1806,7 @@ package final class StreamCoordinator {
     // MARK: The Mac's menus (MenuMirror; docs/menu-bar-plan.md §4.5)
     //
     // Which app's menus a device is shown: the streamed window's, or on the Desktop the frontmost
-    // app's (never Sill's own: a device's "Quit Sill" would end the host). The mirror hears of a
+    // app's (never Sill's own: a device's "Quit Oriel" would end the host). The mirror hears of a
     // change only while a device subscribes; with none, `menuTargetChanged` is one comparison.
 
     /// The app behind the current source, for the menus: nil for nothing streaming and for Sill.

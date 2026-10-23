@@ -303,7 +303,7 @@ check("model: ...B leaves at 20 s and this Mac is listed at 20.3 s: moved at 22.
 m = sameName({ $0 >= 5 ? ["Studio"] : [] }, host: { _ in nil }, session: nil)
 check("model: two hosts from before the ID: moved at 7.0 s by name, as before (\(m.events))", m.events == ["7.00 moved"])
 m = sameName({ $0 >= 5 ? ["Studio"] : [] }, host: { _ in nil })
-check("model: this session's host has an ID and the network's Studio none (an older Sill): refused (\(m.events))",
+check("model: this session's host has an ID and the network's Studio none (an older Oriel): refused (\(m.events))",
       m.events == ["7.00 refused"])
 m = sameName({ $0 >= 5 ? ["Studio"] : [] }, host: { _ in "A" })
 check("model: the same host on the network: moved at exactly 7.0 s, as before (\(m.events))", m.events == ["7.00 moved"])
@@ -940,7 +940,7 @@ check("review: ...the settle still counts (a move down at 69: at 71, not 70), an
       && plan(pin(.wifi, now: 12, wired: "anpi0", since: 0, wifi: "en0", up: 10)) == .stay(.upTooSoon, recheckAt: 15))
 check("review: the new reasons read as the console prints them",
       P.Keep.cableFailing.text == "the cable is up, but the last move to it did not complete; the next waits longer"
-      && P.Keep.cableRefused.text == "the cable reaches another Mac, or another launch of Sill; not tried again until it is plugged in again")
+      && P.Keep.cableRefused.text == "the cable reaches another Mac, or another launch of Oriel; not tried again until it is plugged in again")
 check("review: the memberwise defaults: no refused listing, no failures",
       PI(now: 1, route: .wifi, lastPong: 1).refusedCable == nil && PI(now: 1, route: .wifi, lastPong: 1).upFailures == 0)
 

@@ -5,7 +5,7 @@ import CryptoKit
 import CommonCrypto
 
 // Pairing (docs/remote-access-plan.md §3.5–3.6): the typed code, the proofs both sides exchange,
-// the Bonjour recognition tag and the sillgdl://pair link. Shared by the Mac, the device and the
+// the Bonjour recognition tag and the oriel://pair link. Shared by the Mac, the device and the
 // checks; the vectors in the plan were computed in Python and these functions must match them.
 
 /// The 12-digit typed code: 11 uniformly random digits, then one Damm check digit, so a typo is
@@ -72,14 +72,14 @@ public enum PairingCode {
 /// the device) makes the device's proof bind the wrong fingerprint and the Mac rejects it.
 ///
 /// - QR path: the key is the link's 16-byte secret.
-/// - Typed path: K = PBKDF2-HMAC-SHA256(the 12 ASCII digits, "sill-pair-v1" ‖ fp_mac, 600,000
+/// - Typed path: K = PBKDF2-HMAC-SHA256(the 12 ASCII digits, "oriel-pair-v1" ‖ fp_mac, 600,000
 ///   rounds, 32 bytes): about 90–160 ms here. An intercepted proof then costs about 6·10¹⁶ SHA-256
 ///   compressions to grind within the 5-minute window.
-/// - proof_D = HMAC-SHA256(key, "sill-pair-v1 device" ‖ 0x00 ‖ fp_device ‖ fp_mac)
-/// - proof_M = HMAC-SHA256(key, "sill-pair-v1 mac" ‖ 0x00 ‖ fp_mac ‖ fp_device)
+/// - proof_D = HMAC-SHA256(key, "oriel-pair-v1 device" ‖ 0x00 ‖ fp_device ‖ fp_mac)
+/// - proof_M = HMAC-SHA256(key, "oriel-pair-v1 mac" ‖ 0x00 ‖ fp_mac ‖ fp_device)
 public enum PairingProof {
     public static let rounds: UInt32 = 600_000
-    static let label = "sill-pair-v1"
+    static let label = "oriel-pair-v1"
 
     /// The typed path's key. Nil for a code that is not 12 digits or if CommonCrypto fails.
     public static func codeKey(code: String, macFingerprint: Data) -> SymmetricKey? {
@@ -138,12 +138,12 @@ public enum PairingProof {
 /// The Bonjour TXT record's `r`: recognises a saved Mac on a network whatever its Bonjour name
 /// ("Mac (2)" after a clash, a renamed Mac, a stranger's Mac of the same name at a café) without
 /// broadcasting a stable identifier. base64url (16 characters) of 12 bytes: `p ‖
-/// HMAC-SHA256(recognitionKey, "sill-tag-v1" ‖ p)[0..<6]`, where `p` is 6 fresh random bytes at
+/// HMAC-SHA256(recognitionKey, "oriel-tag-v1" ‖ p)[0..<6]`, where `p` is 6 fresh random bytes at
 /// every registration. Replayable, so a recognition hint and never authentication.
 public enum RecognitionTag {
     /// The TXT key.
     public static let txtKey = "r"
-    static let label = "sill-tag-v1"
+    static let label = "oriel-tag-v1"
 
     /// A tag for `recognitionKey` (32 bytes). `nonce` (6 bytes) is for the checks' vector; left
     /// out, a fresh random one is drawn. Nil only if the random source fails.
@@ -218,7 +218,7 @@ public enum HomeDoorTXT {
 }
 
 /// The QR code's content, also a link another app can hand over (always behind a confirmation on
-/// the device): `sillgdl://pair?v=1&m=<macID>&k=<fp>&s=<secret>&n=<Mac name>&p=<port>&a=<address>…`.
+/// the device): `oriel://pair?v=1&m=<macID>&k=<fp>&s=<secret>&n=<Mac name>&p=<port>&a=<address>…`.
 /// About 230 bytes: a version 11 QR code at level M.
 public struct PairLink: Hashable, Sendable {
     public static let maxAddresses = 5
@@ -249,7 +249,7 @@ public struct PairLink: Hashable, Sendable {
 
     /// Why a link was refused.
     public enum Failure: Error, Equatable, Sendable {
-        /// Not a sillgdl://pair URL at all.
+        /// Not a oriel://pair URL at all.
         case notALink
         /// `v` missing or not 1.
         case version
@@ -268,7 +268,7 @@ public struct PairLink: Hashable, Sendable {
         var items: [(String, String)] = [("v", "1"), ("m", macID), ("k", Base64URL.encode(fingerprint)),
                                          ("s", Base64URL.encode(secret)), ("n", name), ("p", String(port))]
         items += addresses.prefix(Self.maxAddresses).map { ("a", $0.text) }
-        return "sillgdl://pair?" + items.map { "\($0.0)=\(Self.escape($0.1))" }.joined(separator: "&")
+        return "oriel://pair?" + items.map { "\($0.0)=\(Self.escape($0.1))" }.joined(separator: "&")
     }
 
     static func escape(_ s: String) -> String {
@@ -281,7 +281,7 @@ public struct PairLink: Hashable, Sendable {
     /// first 5 addresses, and cleans `n` with SafeText.
     public static func parse(_ text: String) -> Result<PairLink, Failure> {
         guard let c = URLComponents(string: text.trimmingCharacters(in: .whitespacesAndNewlines)),
-              c.scheme?.lowercased() == "sillgdl", c.host?.lowercased() == "pair", c.path.isEmpty || c.path == "/",
+              c.scheme?.lowercased() == "oriel", c.host?.lowercased() == "pair", c.path.isEmpty || c.path == "/",
               let items = c.queryItems else { return .failure(.notALink) }
         func single(_ key: String) -> Result<String, Failure> {
             let values = items.filter { $0.name == key }

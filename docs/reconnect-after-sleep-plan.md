@@ -175,8 +175,8 @@ most every 10 s, as it already was at its next window list. No host change.
 - Builds: the iOS app Debug and Release for the generic simulator and Debug for a generic device
   (`CODE_SIGNING_ALLOWED=NO`); `swift build -c release`; `Tests/checks/run-all.sh`.
 - On a private simulator ("Sill reconnect", deleted after), the Debug app with `-SillServiceType
-  _silltest._tcp` against `SillHost --synthetic --pairing` registered with
-  `SILL_TEST_SERVICE_TYPE=_silltest._tcp`, on loopback, the software encoder, no router: pair, stream,
+  _orieltest._tcp` against `SillHost --synthetic --pairing` registered with
+  `SILL_TEST_SERVICE_TYPE=_orieltest._tcp`, on loopback, the software encoder, no router: pair, stream,
   `kill -STOP` the host for 20 s, `kill -CONT`. main's build: two "letting it go" lines, then
   silence under "Reconnecting…". This build: the dials at 0, 5, 15 and 35 s, the session back
   without a tap. A longer stop for the quiet line.
@@ -193,8 +193,8 @@ most every 10 s, as it already was at its next window list. No host change.
 All on 2026-10-14, on a private simulator, "Sill reconnect" (iPad mini (A17 Pro), iOS 27.0; deleted
 after), with the Debug app built ad hoc (`CODE_SIGN_IDENTITY=-`, so the simulator gives it a
 keychain), against `SillHost --synthetic --pairing` on 127.0.0.1 alone (SILL_TEST_LOOPBACK,
-SILL_TEST_SOFTWARE_ENCODER, SILL_TEST_NO_ROUTER, SILL_TEST_SERVICE_TYPE=_silltest._tcp, its identity
-and trust list in SILL_TEST_REMOTE_DIR), the app with `-SillServiceType _silltest._tcp -SillTapRow
+SILL_TEST_SOFTWARE_ENCODER, SILL_TEST_NO_ROUTER, SILL_TEST_SERVICE_TYPE=_orieltest._tcp, its identity
+and trust list in SILL_TEST_REMOTE_DIR), the app with `-SillServiceType _orieltest._tcp -SillTapRow
 "Sill test"`, so the host was a real Bonjour row and its reconnect a row's. The device was paired
 once, with the code at the host's remote door (`--remote` for that run only): this Mac's console was
 locked, so the host answered the ask "locked", as it should. Times are from the console (each line
@@ -291,7 +291,7 @@ stamped as it came) and the host's log; the loss is the device's "connection sil
   (124, 10 and 17) each found as often as at 1c4b921 and on main: the fixes change only a comment
   there. Live, on a private simulator ("Sill reconnect-fix 69", iPad mini (A17 Pro), iOS 27.0, deleted
   after), the Debug app built ad hoc against `SillHost --synthetic` (a plain door on 127.0.0.1 alone,
-  the software encoder, no router, registered as a `_silltest._tcp` row), found as a row and
+  the software encoder, no router, registered as a `_orieltest._tcp` row), found as a row and
   streaming: four trips to the background (the Settings app for 2.3, 2.3, 2.3 and 15 s); each return
   made the network browser again with the row kept beside it, settled 3.05 to 3.13 s later, and the
   session went on over the one connection the host saw throughout (no "connection silent", no "Client

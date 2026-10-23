@@ -129,7 +129,7 @@ func startHost() {
             remote?.openPairing(requestedBy: nil)
             if synthetic { print("Synthetic mode: pick Desktop on the device (or from a test client) to stream a test pattern.") }
             if virtualDisplay { print("Virtual display mode: a picked window streams from its own HiDPI display; Ctrl-C puts it back.") }
-            print("\(c.windowCount) windows on screen. Advertising _sillgdl._tcp on the local network.")
+            print("\(c.windowCount) windows on screen. Advertising _oriel._tcp on the local network.")
             if c.active == .none { print("Nothing is streaming yet: pick a window from the iOS app. Ctrl-C to stop.") }
             Stats.shared.startPrinting()
         } catch {

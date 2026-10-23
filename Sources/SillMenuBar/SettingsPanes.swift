@@ -93,7 +93,7 @@ private struct GeneralPane: View {
                 Toggle("Launch at login", isOn: Binding(get: { model.loginItem.isOn }, set: { model.loginItem.set($0) }))
                     .disabled(!model.loginItem.available)
                 if !model.loginItem.available {
-                    Footnote("Available when Sill runs from its app bundle.")
+                    Footnote("Available when Oriel runs from its app bundle.")
                 } else if model.loginItem.needsApproval {
                     LabeledContent("Waiting for your approval") {
                         Button("Approve in System Settings…") { model.loginItem.openSystemSettings() }
@@ -111,7 +111,7 @@ private struct GeneralPane: View {
                         .textSelection(.enabled)
                 }
                 if !Self.runsFromApplications {
-                    Label("The login item and the permissions follow this copy of Sill. Keep one copy, in Applications.",
+                    Label("The login item and the permissions follow this copy of Oriel. Keep one copy, in Applications.",
                           systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
                 }
@@ -139,7 +139,7 @@ private struct GeneralPane: View {
             Section {
                 Toggle("Direct wireless connection", isOn: $settings.config.directWireless)
             } footer: {
-                Footnote("Lets your iPhone and iPad connect when they’re near this Mac, even without a shared Wi\u{2011}Fi network, the way AirDrop does. While it’s on, this Mac’s Wi\u{2011}Fi keeps stepping away from your network, so streaming over Wi\u{2011}Fi can stutter. Anyone nearby with Sill can find this Mac; only devices you paired can connect, unless Require pairing is off.")
+                Footnote("Lets your iPhone and iPad connect when they’re near this Mac, even without a shared Wi\u{2011}Fi network, the way AirDrop does. While it’s on, this Mac’s Wi\u{2011}Fi keeps stepping away from your network, so streaming over Wi\u{2011}Fi can stutter. Anyone nearby with Oriel can find this Mac; only devices you paired can connect, unless Require pairing is off.")
             }
             // The clipboard both ways (HostClipboard): at once, no restart. Each device has its own
             // switch too. macOS's answer is read with the permissions (once a second while this pane
@@ -165,9 +165,9 @@ private struct GeneralPane: View {
             }
             Section {
                 // A way out when the status item is hidden (a crowded menu bar, the notch).
-                Button("Quit Sill") { NSApp.terminate(nil) }
+                Button("Quit Oriel") { NSApp.terminate(nil) }
             } footer: {
-                Footnote("Sill \(AppModel.version) (\(AppModel.build)). Free and open source.")
+                Footnote("Oriel \(AppModel.version) (\(AppModel.build)). Free and open source.")
             }
         }
     }
@@ -300,7 +300,7 @@ private struct StreamingPane: View {
             } header: {
                 Text("Away from home")
             } footer: {
-                Footnote("Sill streams at these while every connected device is away from home, through a VPN or over the internet, so a slow connection never starts at your home quality. A device away from home changes these, and never your Quality and Resolution above."
+                Footnote("Oriel streams at these while every connected device is away from home, through a VPN or over the internet, so a slow connection never starts at your home quality. A device away from home changes these, and never your Quality and Resolution above."
                          + (model.coordinator?.status.snapshot.away == true ? " Streaming at these now." : ""))
             }
             Section {
@@ -312,7 +312,7 @@ private struct StreamingPane: View {
                 Section {
                     Label(snapshot.hardwareEncoderStuck
                           ? "The hardware encoder is stuck, so streams use the software encoder: up to 60 fps at Standard resolution. Restarting the Mac fixes this."
-                          : "The hardware encoder is busy or not answering, so streams use the software encoder: up to 60 fps at Standard resolution. Sill switches back by itself once it keeps up again.",
+                          : "The hardware encoder is busy or not answering, so streams use the software encoder: up to 60 fps at Standard resolution. Oriel switches back by itself once it keeps up again.",
                           systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
                 }
@@ -334,7 +334,7 @@ private struct VirtualDisplayPane: View {
             Section {
                 Toggle("Stream from a virtual display", isOn: $settings.config.virtualDisplay)
             } footer: {
-                Footnote("Sill moves the window you pick onto an invisible display made for your device, so it keeps updating when other windows cover it and text is drawn at your device’s scale. The window leaves this screen while it streams and comes back when you stop streaming or quit Sill.")
+                Footnote("Oriel moves the window you pick onto an invisible display made for your device, so it keeps updating when other windows cover it and text is drawn at your device’s scale. The window leaves this screen while it streams and comes back when you stop streaming or quit Oriel.")
             }
             Section {
                 LabeledContent("Status") {
@@ -359,7 +359,7 @@ private struct VirtualDisplayPane: View {
                     }
                 }
             } footer: {
-                Footnote("Uses a private macOS interface (CGVirtualDisplay). If a macOS update breaks it, Sill streams the window where it is.")
+                Footnote("Uses a private macOS interface (CGVirtualDisplay). If a macOS update breaks it, Oriel streams the window where it is.")
             }
         }
     }
@@ -395,22 +395,22 @@ private struct PermissionsPane: View {
             Section {
                 PermissionRow(title: "Screen Recording", allowed: permissions.screenRecording,
                               // Not "on this network": a device connected over Direct Wireless shares none.
-                              explanation: "Lets Sill capture the windows you pick on your iPhone or iPad. Nothing is recorded or saved; frames go straight to your devices.",
+                              explanation: "Lets Oriel capture the windows you pick on your iPhone or iPad. Nothing is recorded or saved; frames go straight to your devices.",
                               button: model.settings.askedScreenRecording ? "Open System Settings…" : "Allow…") {
                     permissions.requestScreenRecording()
                 }
                 PermissionRow(title: "Accessibility", allowed: permissions.accessibility,
-                              explanation: "Lets your iPhone or iPad click, scroll and type on this Mac, and lets Sill move and size the window it streams.",
+                              explanation: "Lets your iPhone or iPad click, scroll and type on this Mac, and lets Oriel move and size the window it streams.",
                               button: model.settings.askedAccessibility ? "Open System Settings…" : "Allow…") {
                     permissions.requestAccessibility()
                 }
             } footer: {
-                Footnote("Access belongs to Sill itself. Access you gave Terminal for the SillHost command-line tool doesn’t carry over.")
+                Footnote("Access belongs to Oriel itself. Access you gave Terminal for the SillHost command-line tool doesn’t carry over.")
             }
             if permissions.relaunchSuggested, !permissions.screenRecording {
                 Section {
-                    LabeledContent("Screen Recording starts working once Sill opens again.") {
-                        Button(permissions.canRelaunch ? "Relaunch Sill" : "Quit Sill") { permissions.relaunch() }
+                    LabeledContent("Screen Recording starts working once Oriel opens again.") {
+                        Button(permissions.canRelaunch ? "Relaunch Oriel" : "Quit Oriel") { permissions.relaunch() }
                     }
                 }
             }
@@ -420,13 +420,13 @@ private struct PermissionsPane: View {
                         Button("Open Local Network…") { permissions.openPrivacyPane("Privacy_LocalNetwork") }
                     } label: {
                         Text("Local Network")
-                        Text("If your iPhone or iPad can’t find this Mac, allow Sill in Privacy & Security › Local Network.")
+                        Text("If your iPhone or iPad can’t find this Mac, allow Oriel in Privacy & Security › Local Network.")
                     }
                 }
             }
             if permissions.allGranted {
                 Section {
-                    Label("You’re all set. Open Sill on your iPhone or iPad.", systemImage: "checkmark.seal.fill")
+                    Label("You’re all set. Open Oriel on your iPhone or iPad.", systemImage: "checkmark.seal.fill")
                 }
             }
         }

@@ -1,11 +1,11 @@
 #!/bin/zsh
-# Exit 0 only when no device is connected to this Mac's Sill.app, read from its log: the LAST
+# Exit 0 only when no device is connected to this Mac's Oriel.app, read from its log: the LAST
 # "[30s] idle · 0 clients" or "Client left" line is newer than the last "Client connected"/"Remote
 # client connected" line, AND the last stats line is not a "[1s] … · N client(s)" line (N >= 1)
 # from the last 60 s. "Last" is by each line's own timestamp, not by its place in the file: two
-# Sill.app processes writing the log at once (a relaunch) interleave their lines (HostLog's file
+# Oriel.app processes writing the log at once (a relaunch) interleave their lines (HostLog's file
 # sink writes at its own offset), so file order is not time order.
-# Stricter than that where two Sill.app processes run at once (one idle, one streaming): any
+# Stricter than that where two Oriel.app processes run at once (one idle, one streaming): any
 # "[1s] … · N client(s)" line in the last 60 s blocks, not only the newest stats line.
 # With --since 'YYYY-MM-DD HH:MM:SS': also fail if any connect line is at or after that time.
 # Why: a hardware encoder run beside a stream shares the Mac's one encoder engine with it (CLAUDE.md,

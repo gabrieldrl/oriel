@@ -7,7 +7,7 @@ import CryptoKit
 // fields, `PairRequest.cable`, `PairResult.method` and `PairResult.message`). The rules of
 // HostSettings.swift apply to every one of them: JSON only; fields added later are optional; no
 // enums on the wire (strings, so an unknown value is skipped instead of failing the whole decode);
-// never rename or retype a field. The generation is in the ALPN (`sill/1`, `sill-pair/1`, which
+// never rename or retype a field. The generation is in the ALPN (`oriel/1`, `oriel-pair/1`, which
 // every host offers for good: RemoteTLS.serverALPNs), `PairRequest.v` (a host answers any other
 // than 1 `closed` without counting a try, so a later pairing method or proof comes with a later
 // `v`, never as a new method at 1, which a first-build host would count as a wrong code) and the

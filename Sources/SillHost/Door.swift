@@ -109,7 +109,7 @@ final class Door {
                 let n = c.values.reduce(0, +)
                 return "Home door refused \(n) connection\(n == 1 ? "" : "s") in the last minute: \(c["unpaired", default: 0]) unpaired, "
                     + "\(c["vpn", default: 0]) through a VPN, \(c["internet", default: 0]) from the internet, "
-                    + "\(c["older", default: 0]) from an older Sill (not TLS), \(c["limit", default: 0]) over the limit."
+                    + "\(c["older", default: 0]) from an older Oriel (not TLS), \(c["limit", default: 0]) over the limit."
             }
         }
     }()
@@ -265,7 +265,7 @@ final class Door {
         }
     }
 
-    /// `sill/1`, judged again at `.ready`: the remote door's paired session (Remote Access on,
+    /// `oriel/1`, judged again at `.ready`: the remote door's paired session (Remote Access on,
     /// fewer than 8 sessions), or the home door's session with its key (paired, or any key while
     /// Require pairing is off). A paired key clears its source. Then the device gate, here for both
     /// doors (StreamServer's `gate`): with the floor at "0" (every build so far) nothing waits; above
@@ -328,7 +328,7 @@ final class Door {
         StreamServer.closeWithGoodbye(Goodbye(reason: reason), on: c, queue: queue)
     }
 
-    /// `sill-pair/1`: exactly one kind 19 of at most 4 KB within the admission deadline, then
+    /// `oriel-pair/1`: exactly one kind 19 of at most 4 KB within the admission deadline, then
     /// DoorPolicy.pairing says how it is treated: judged on the main actor (an ask at home, or a
     /// proof for the pairing window), or, for an ask at the remote door and for a request of a
     /// later generation (`v` not 1) at either, answered `closed` here with no try counted. One

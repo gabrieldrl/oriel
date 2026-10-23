@@ -101,11 +101,11 @@ func plistLines(_ record: DSRecord?) -> [String] {
 
 let release = DMGLayout(width: 660, height: 400, left: 200, top: 120, iconSize: 128, textSize: 12,
                         background: ".background/background.tiff", backgroundColor: (255, 255, 255),
-                        items: [.init(name: "Sill.app", x: 170, y: 180), .init(name: "Applications", x: 490, y: 180)],
+                        items: [.init(name: "Oriel.app", x: 170, y: 180), .init(name: "Applications", x: 490, y: 180)],
                         hidden: [".background", ".VolumeIcon.icns"])
 let releaseArguments = ["--window", "660x400", "--position", "200,120", "--icon-size", "128", "--text-size", "12",
                         "--background", ".background/background.tiff", "--background-color", "ffffff",
-                        "--item", "Sill.app=170,180", "--item", "Applications=490,180",
+                        "--item", "Oriel.app=170,180", "--item", "Applications=490,180",
                         "--hidden", ".background", "--hidden", ".VolumeIcon.icns"]
 let fromScript = ((try? String(contentsOfFile: layoutFile, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init)
 check("make-dmg.sh: its layout is the one checked here", fromScript == releaseArguments,
@@ -130,9 +130,9 @@ let toHFS: Int64 = 2_082_844_800                                   // 1904-01-01
 let volumeCreated = Date(timeIntervalSince1970: 1_790_000_000)     // September 2026
 let fileCreated = Date(timeIntervalSince1970: 1_790_000_061.75)    // a fraction: whole seconds kept
 let volumeSeconds = 1_790_000_000 + toHFS, fileSeconds = 1_790_000_061 + toHFS
-let alias = FinderAlias(volumeName: "Sill", volumeCreated: volumeCreated, parentID: 30, parentName: ".background",
+let alias = FinderAlias(volumeName: "Oriel", volumeCreated: volumeCreated, parentID: 30, parentName: ".background",
                         fileID: 31, fileName: "background.tiff", fileCreated: fileCreated, folderIDs: [30],
-                        path: "/.background/background.tiff", mountPoint: "/Volumes/Sill")
+                        path: "/.background/background.tiff", mountPoint: "/Volumes/Oriel")
 
 func pascal(_ string: String, _ size: Int) -> [UInt8] {
     let bytes = Array(string.utf8)
@@ -158,11 +158,11 @@ func aliasBytes(volume: String, volumeDate: Int64, parentID: UInt32, file: Strin
 }
 func releaseTags() -> [(Int16, [UInt8])] {
     [(0, Array(".background".utf8)), (16, long(UInt64(volumeSeconds) << 16)), (17, long(UInt64(fileSeconds) << 16)),
-     (1, words([30])), (2, Array("Sill:.background:\u{0}background.tiff".utf8)),
-     (14, [0, 15] + utf16BE("background.tiff")), (15, [0, 4] + utf16BE("Sill")),
-     (18, Array("/.background/background.tiff".utf8)), (19, Array("/Volumes/Sill".utf8))]
+     (1, words([30])), (2, Array("Oriel:.background:\u{0}background.tiff".utf8)),
+     (14, [0, 15] + utf16BE("background.tiff")), (15, [0, 5] + utf16BE("Oriel")),
+     (18, Array("/.background/background.tiff".utf8)), (19, Array("/Volumes/Oriel".utf8))]
 }
-let wantUTC = aliasBytes(volume: "Sill", volumeDate: volumeSeconds, parentID: 30, file: "background.tiff", fileID: 31,
+let wantUTC = aliasBytes(volume: "Oriel", volumeDate: volumeSeconds, parentID: 30, file: "background.tiff", fileID: 31,
                          fileDate: fileSeconds, tags: releaseTags())
 let aliasUTC = (try? alias.encoded(timeZone: utc)) ?? Data()
 check("alias: the background's record as Finder writes it, byte for byte (the 4-byte dates in UTC)",
@@ -170,7 +170,7 @@ check("alias: the background's record as Finder writes it, byte for byte (the 4-
 // HFS+ keeps a volume's dates in local time: the Mac that makes the image puts its own offset in
 // the two 4-byte dates, and nothing else changes (tags 16 and 17 stay UTC).
 let eastern = TimeZone(secondsFromGMT: -4 * 3600)!
-let wantEastern = aliasBytes(volume: "Sill", volumeDate: volumeSeconds - 14_400, parentID: 30, file: "background.tiff",
+let wantEastern = aliasBytes(volume: "Oriel", volumeDate: volumeSeconds - 14_400, parentID: 30, file: "background.tiff",
                              fileID: 31, fileDate: fileSeconds - 14_400, tags: releaseTags())
 let aliasEastern = (try? alias.encoded(timeZone: eastern)) ?? Data()
 check("alias: 4 hours west of UTC, the two 4-byte dates 14,400 s earlier and nothing else",
@@ -178,8 +178,8 @@ check("alias: 4 hours west of UTC, the two 4-byte dates 14,400 s earlier and not
 
 if let fields = try? FinderAlias.fields(of: aliasUTC) {
     check("alias: fields(of:) reads its length, version and kind", fields.length == wantUTC.count && fields.version == 2 && fields.kind == 0)
-    check("alias: fields(of:) reads the volume: Sill, its date, H+, an ejectable disk",
-          fields.volumeName == "Sill" && fields.volumeDate == UInt32(volumeSeconds) && fields.fileSystem == "H+" && fields.diskType == 5)
+    check("alias: fields(of:) reads the volume: Oriel, its date, H+, an ejectable disk",
+          fields.volumeName == "Oriel" && fields.volumeDate == UInt32(volumeSeconds) && fields.fileSystem == "H+" && fields.diskType == 5)
     check("alias: fields(of:) reads the file: its folder 30, background.tiff, ID 31, its date",
           fields.parentID == 30 && fields.fileName == "background.tiff" && fields.fileID == 31 && fields.fileDate == UInt32(fileSeconds))
     check("alias: fields(of:) reads levels -1 and -1 and the attributes 0x0d02",
@@ -273,7 +273,7 @@ check("leaf: the records read, and every byte after them in the page is zero", p
 let recs = parsed?.records ?? []
 check("records: the folder's four, then each icon's place, sorted by name without regard to case, then by code",
       recs.map { "\($0.name) \($0.code) \($0.type)" } == [". bwsp blob", ". icvp blob", ". vSrn long", ". vstl type", ".background Iloc blob",
-                                                          ".VolumeIcon.icns Iloc blob", "Applications Iloc blob", "Sill.app Iloc blob"],
+                                                          ".VolumeIcon.icns Iloc blob", "Applications Iloc blob", "Oriel.app Iloc blob"],
       "(\(recs.map { "\($0.name) \($0.code)" }))")
 func record(_ name: String, _ code: String) -> Rec? { recs.first { $0.name == name && $0.code == code } }
 let bwspWant = ["ContainerShowSidebar: bool false", "PreviewPaneVisibility: bool false", "ShowPathbar: bool false",
@@ -290,8 +290,8 @@ check("icvp: the picture through its alias, white beyond it, 128-point icons, 12
 check("vSrn: 1", record(".", "vSrn")?.value == [0, 0, 0, 1])
 check("vstl: icon view (icnv), whatever the Mac's default view", record(".", "vstl")?.value == Array("icnv".utf8))
 func iloc(_ x: UInt32, _ y: UInt32) -> [UInt8] { words([16, x, y]) + [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0, 0] }
-check("Iloc: Sill.app's centre at (170, 180), the arrow's tail, then the eight bytes Finder writes",
-      record("Sill.app", "Iloc")?.value == iloc(170, 180))
+check("Iloc: Oriel.app's centre at (170, 180), the arrow's tail, then the eight bytes Finder writes",
+      record("Oriel.app", "Iloc")?.value == iloc(170, 180))
 check("Iloc: Applications at (490, 180), the arrow's head", record("Applications", "Iloc")?.value == iloc(490, 180))
 check("Iloc: .background and .VolumeIcon.icns in a row below the 400 points, out of sight",
       record(".background", "Iloc")?.value == iloc(128, 656) && record(".VolumeIcon.icns", "Iloc")?.value == iloc(316, 656))

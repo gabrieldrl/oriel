@@ -1,6 +1,6 @@
 #!/bin/zsh
 # Hardware verification of this tree's encoder against a base commit's. USES THE MAC'S HARDWARE
-# VIDEO ENCODER. Before every run it checks that no device is connected to this Mac's Sill.app
+# VIDEO ENCODER. Before every run it checks that no device is connected to this Mac's Oriel.app
 # (no-device.sh: its log's last idle/"Client left" line newer than its last "Client connected", and
 # no "[1s] … · N client" stats line in the last 60 s) and skips the run if one is; a watcher stops a
 # run if a device connects while it runs. One run at a time, each under 60 s. Before each run it
@@ -55,12 +55,12 @@ echo "building (never touches the encoder): this tree, $BASE from git archive, t
   (cd $OUT/tree-$BASE && swift build -c release --product SillHost)
 } > $HW/build.log 2>&1 || { echo "build failed: see $HW/build.log"; exit 1 }
 
-guard() {   # NAME: 0 when no device is connected to Sill.app
+guard() {   # NAME: 0 when no device is connected to Oriel.app
   if $HERE/no-device.sh > $HW/$1.guard.txt 2>&1; then
     $HERE/engine-free.sh || { echo "note: $1 shares the encoder with:"; sed 's/^/    /' $OUT/engine-busy.txt | tail -1; }
     return 0
   fi
-  echo "SKIP $1: a device is connected to Sill.app"; sed 's/^/    /' $HW/$1.guard.txt; return 1
+  echo "SKIP $1: a device is connected to Oriel.app"; sed 's/^/    /' $HW/$1.guard.txt; return 1
 }
 stamp() { date "+%Y-%m-%d %H:%M:%S" }
 ave() {     # NAME FROM TO: the AppleAVE2 lines of that window, parsed
@@ -68,7 +68,7 @@ ave() {     # NAME FROM TO: the AppleAVE2 lines of that window, parsed
   python3 $HERE/hbparse.py $HW/$1.ave.txt > $HW/$1.hb.txt
 }
 # Watches Sill.log while the given pids live; stops them if a device connects. By the lines'
-# timestamps, not by bytes appended: two Sill.app processes (a relaunch) write the file at their
+# timestamps, not by bytes appended: two Oriel.app processes (a relaunch) write the file at their
 # own offsets, so a new line can land in the middle of it.
 watch_pids() {
   local since=$(date "+%Y-%m-%d %H:%M:%S")
@@ -77,7 +77,7 @@ watch_pids() {
     for p in "$@"; do kill -0 $p 2>/dev/null && alive=1; done
     (( alive )) || return 0
     if grep -hE "Client connected|Remote client connected" $SILLLOG 2>/dev/null | awk -v s="$since" 'substr($0, 1, 19) >= s { f = 1 } END { exit !f }'; then
-      echo "ABORT: a device connected to Sill.app during the run; stopping it"
+      echo "ABORT: a device connected to Oriel.app during the run; stopping it"
       for p in "$@"; do kill -INT $p 2>/dev/null; done; sleep 1; for p in "$@"; do kill -9 $p 2>/dev/null; done
       return 1
     fi

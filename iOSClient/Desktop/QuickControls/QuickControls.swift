@@ -87,7 +87,7 @@ private struct CurtainControl: View {
             .accessibilityElement()
             .accessibilityLabel("Mac's Screen Off")
             .accessibilityValue(on ? "On" : "Off")
-            .accessibilityHint(refused ? "The Mac couldn’t: allow Sill in Privacy & Security › Accessibility on the Mac."
+            .accessibilityHint(refused ? "The Mac couldn’t: allow Oriel in Privacy & Security › Accessibility on the Mac."
                                : "Darkens the Mac and stops its own keyboard and trackpad while you work it from here.")
             .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
     }

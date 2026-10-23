@@ -153,7 +153,7 @@ final class HostSound {
                 print("Sound: this Mac's sound goes to \(n) device\(n == 1 ? "" : "s") at \(kHz) kHz; its own speakers are silent meanwhile.")
             } catch {
                 problem = "failed"
-                print("Sound: macOS did not let Sill hear this Mac's sound: \(error). The Mac's speakers play as usual.")
+                print("Sound: macOS did not let Oriel hear this Mac's sound: \(error). The Mac's speakers play as usual.")
             }
         } else {
             problem = "unsupported"

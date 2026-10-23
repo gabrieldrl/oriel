@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-r"""A fake GitHub "latest release" endpoint for testing Sill.app's update check without GitHub.
+r"""A fake GitHub "latest release" endpoint for testing Oriel.app's update check without GitHub.
 
 usage: sillfeed.py PORT [flags...]      (PORT 0: any free port; the first line says which)
   --tag TAG          the release's tag_name (default v0.4.0)

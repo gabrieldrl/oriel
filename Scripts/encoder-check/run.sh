@@ -17,7 +17,7 @@
 # The probe and encoder checks run in real time with tight timing bounds, so they stay here, out of
 # CI. They build under .build/encoder-check/, the other two under .build/checks/. Every binary is
 # checked with otool before it runs: one that links VideoToolbox is refused, so nothing here can
-# open an encoder session, and these checks are safe while Sill.app streams. The hardware runs are
+# open an encoder session, and these checks are safe while Oriel.app streams. The hardware runs are
 # verify-hardware.sh's, under its own rules.
 set -u
 ROOT=${0:A:h:h:h}

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Makes Sill.dmg, the disk image Sill for Mac is downloaded in: its window shows Sill.app beside a
+# Makes Oriel.dmg, the disk image Sill for Mac is downloaded in: its window shows Oriel.app beside a
 # link to Applications, over a background with an arrow from the one to the other, so installing is
 # the drag every Mac app asks for. Scripts/release.sh makes it from the notarized, stapled app and
 # signs it with the same Developer ID; the release workflow's verify job, from the ad hoc app.
@@ -7,7 +7,7 @@
 #   Scripts/make-dmg.sh --sign IDENTITY APP DMG
 #       IDENTITY is a Developer ID Application identity as codesign takes it (its name, part of it,
 #       or its SHA-1 hash), or - to sign ad hoc (the release workflow's verify job has no identity).
-#       APP is a signed Sill.app; DMG the image to write, replaced if it exists.
+#       APP is a signed Oriel.app; DMG the image to write, replaced if it exists.
 #   Scripts/make-dmg.sh --prepare
 #       only compiles the layout tool and renders the background (both cached in .build/dmg), so
 #       release.sh finds a problem with either before it sends anything to Apple.
@@ -29,7 +29,7 @@
 #   background's alias leading to the picture wherever the image is mounted, the picture's sizes,
 #   the volume icon. Window: design/DMGBackground.svg's 660 x 400 points plus macOS 27's 32-point
 #   title bar (DMGLayout.titleBar says why), icon view, no toolbar, sidebar or status bar, 128-point
-#   icons, Sill.app at (170, 180) and Applications at (490, 180), the ends of the SVG's arrow;
+#   icons, Oriel.app at (170, 180) and Applications at (490, 180), the ends of the SVG's arrow;
 #   .background and .VolumeIcon.icns placed below the window, for anyone who shows hidden files.
 #   Tests/checks/dmg-layout checks the layout tool's .DS_Store and alias against these numbers.
 # - The background: design/DMGBackground.svg, rendered by Quick Look at 660 and 1320 pixels wide
@@ -39,9 +39,9 @@
 # - The volume's icon: the app's AppIcon.icns (make-app.sh's, masked like the app icon) as
 #   .VolumeIcon.icns, with the custom-icon flag on the volume's root.
 # - The image is signed last (codesign, identifier com.gabrieldrl.sill.dmg), then checked: hdiutil
-#   verify, codesign --verify, and mounted read-only: exactly Sill.app, Applications (a link to
+#   verify, codesign --verify, and mounted read-only: exactly Oriel.app, Applications (a link to
 #   /Applications), .background, .VolumeIcon.icns and .DS_Store at its root, the layout, and a
-#   Sill.app that passes codesign --verify --deep --strict and is byte for byte the APP given
+#   Oriel.app that passes codesign --verify --deep --strict and is byte for byte the APP given
 #   (the stapled ticket included). release.sh then has Apple notarize the image and staples it.
 #
 # The image is attached without Finder seeing it (-nobrowse) and mounted in a new folder in the
@@ -51,7 +51,7 @@
 # under $TMPDIR or /private/tmp), and the check below refuses any file it didn't put there.
 set -euo pipefail
 
-volume_name=Sill
+volume_name=Oriel
 window=660x400          # design/DMGBackground.svg's size: the window's content, in points
 position=200,120        # the window's top-left corner on the screen
 icon_size=128
@@ -60,10 +60,10 @@ edge=ffffff             # the SVG's every edge: shown where the window is larger
 layout=(
     --window "$window" --position "$position" --icon-size "$icon_size" --text-size "$text_size"
     --background .background/background.tiff --background-color "$edge"
-    --item Sill.app=170,180 --item Applications=490,180
+    --item Oriel.app=170,180 --item Applications=490,180
     --hidden .background --hidden .VolumeIcon.icns
 )
-expected_root=".DS_Store .VolumeIcon.icns .background Applications Sill.app"
+expected_root=".DS_Store .VolumeIcon.icns .background Applications Oriel.app"
 
 say() { printf '==> %s\n' "$*"; }
 fail() { printf 'error: %s\n' "$*" >&2; exit 1; }
@@ -219,12 +219,12 @@ main() {
     local kilobytes megs
     kilobytes="$(du -sk "$app" | awk '{ print $1 }')"
     megs=$((kilobytes / 1024 + 16))
-    say "Making the disk image: Sill $version ($build) beside Applications, on $window points of background"
+    say "Making the disk image: Oriel $version ($build) beside Applications, on $window points of background"
     hdiutil_retrying create -ov -size "${megs}m" -fs HFS+ -volname "$volume_name" -nospotlight -type UDIF \
         "$work/rw.dmg" >/dev/null || fail "hdiutil can't create a ${megs} MB HFS+ image"
     attach "$work/rw.dmg" rw
     local writable="$mounted" writable_device="$device"
-    ditto "$app" "$writable/Sill.app"
+    ditto "$app" "$writable/Oriel.app"
     ln -s /Applications "$writable/Applications"
     mkdir "$writable/.background"
     cp .build/dmg/background.tiff "$writable/.background/background.tiff"
@@ -232,18 +232,18 @@ main() {
     "$tool" write "$writable" "${layout[@]}" >/dev/null
     detach "$writable_device" || fail "hdiutil can't detach the image being made ($writable_device)"
 
-    hdiutil_retrying convert -ov "$work/rw.dmg" -format ULFO -o "$work/Sill.dmg" >/dev/null || fail "hdiutil can't compress the image"
+    hdiutil_retrying convert -ov "$work/rw.dmg" -format ULFO -o "$work/Oriel.dmg" >/dev/null || fail "hdiutil can't compress the image"
     rm -f "$work/rw.dmg"
 
     # Signed: Developer ID with a secure timestamp, as notarization requires; ad hoc without one.
     local timestamp=--timestamp
     if [ "$identity" = - ]; then timestamp=--timestamp=none; fi
-    codesign --force --sign "$identity" "$timestamp" --identifier com.gabrieldrl.sill.dmg "$work/Sill.dmg" \
+    codesign --force --sign "$identity" "$timestamp" --identifier com.gabrieldrl.sill.dmg "$work/Oriel.dmg" \
         || fail "codesign can't sign the image with '$identity'"
 
     say "Checking the image"
-    check_image "$work/Sill.dmg" "$app"
-    mv "$work/Sill.dmg" "$dmg"
+    check_image "$work/Oriel.dmg" "$app"
+    mv "$work/Oriel.dmg" "$dmg"
     rm -rf "$work"
     local signer bytes
     signer="$(codesign -dvv "$dmg" 2>&1 | sed -n 's/^Authority=//p' | head -1)"
@@ -268,11 +268,11 @@ check_image() {
     [ -L "$mounted/Applications" ] && [ "$(readlink "$mounted/Applications")" = /Applications ] \
         || fail "the image's Applications is not a link to /Applications"
     "$tool" check "$mounted" "${layout[@]}"
-    codesign --verify --deep --strict "$mounted/Sill.app" 2>/dev/null || fail "the image's Sill.app doesn't pass codesign --verify --deep --strict"
-    diff -r "$app" "$mounted/Sill.app" >/dev/null || fail "the image's Sill.app differs from $app"
+    codesign --verify --deep --strict "$mounted/Oriel.app" 2>/dev/null || fail "the image's Oriel.app doesn't pass codesign --verify --deep --strict"
+    diff -r "$app" "$mounted/Oriel.app" >/dev/null || fail "the image's Oriel.app differs from $app"
     local volume
     volume="$(df -k "$mounted" | awk 'NR == 2 { printf "%.1f MB used of %.1f MB", $3 / 1024, $2 / 1024 }')"
-    echo "Sill.app is $app's, byte for byte, and passes codesign; the volume: $volume; the image's signature: ${signer:-ad hoc}."
+    echo "Oriel.app is $app's, byte for byte, and passes codesign; the volume: $volume; the image's signature: ${signer:-ad hoc}."
     detach "$device" || fail "hdiutil can't detach $image"
 }
 

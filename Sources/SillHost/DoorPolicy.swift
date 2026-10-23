@@ -61,8 +61,8 @@ enum DoorPolicy {
     // MARK: The verify block
 
     /// The TLS handshake's verify block: trust is the key and the application protocol, nothing
-    /// else. `sill/1` for a paired key, and at home for any key while Require pairing is off;
-    /// `sill-pair/1` always at home (an ask needs no window), and at the remote door only while a
+    /// else. `oriel/1` for a paired key, and at home for any key while Require pairing is off;
+    /// `oriel-pair/1` always at home (an ask needs no window), and at the remote door only while a
     /// window it takes proofs for is open; anything else never.
     static func trusts(_ door: Door, alpn: String?, _ t: Trust) -> Bool {
         guard t.hasKey else { return false }
@@ -91,10 +91,10 @@ enum DoorPolicy {
     }
 
     /// What `.ready` does with a connection the verify block let through, judged again against the
-    /// switches as they are now. Home: `sill/1` is the session while its key is still trusted,
-    /// `sill-pair/1` is read. Remote, as before: an unpaired key is refused, a paired one gets
+    /// switches as they are now. Home: `oriel/1` is the session while its key is still trusted,
+    /// `oriel-pair/1` is read. Remote, as before: an unpaired key is refused, a paired one gets
     /// goodbye `remoteOff` while Remote Access is off and `busy` at `maxRemoteSessions`, and
-    /// `sill-pair/1` is read only while a window the remote door takes proofs for is open.
+    /// `oriel-pair/1` is read only while a window the remote door takes proofs for is open.
     static func atReady(_ door: Door, alpn: String?, _ t: Trust, remoteSessions: Int) -> AtReady {
         guard t.hasKey else { return .refuse("unpaired") }
         switch (door, alpn) {
@@ -199,7 +199,7 @@ enum DoorPolicy {
     // MARK: An older Sill, for the menu
 
     /// How many plain tries (a handshake that failed with -9836 at the home door) one source makes
-    /// within `olderSillSpan` before the menu says "An iPhone or iPad Needs Sill Updated". An older
+    /// within `olderSillSpan` before the menu says "An iPhone or iPad Needs Oriel Updated". An older
     /// Sill tries again and again (a tap, then its reconnect every 2 to 10 s), while a TLS 1.2 client
     /// (a scanner, an old TLS library), which fails the same way, usually tries once: the menu waits
     /// for the third (the security review, 2026-09-27). The minute's summary counts every one.

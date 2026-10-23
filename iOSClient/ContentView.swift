@@ -61,7 +61,7 @@ struct ContentView: View {
             Self.orientFromLaunchArgument()      // -SillOrientation landscape|portrait
             #endif
         }
-        // sillgdl://pair from the Camera, Messages or `xcrun simctl openurl`: a confirmation first.
+        // oriel://pair from the Camera, Messages or `xcrun simctl openurl`: a confirmation first.
         .onOpenURL { client.handleOpenURL($0) }
     }
 
@@ -325,8 +325,8 @@ struct ContentView: View {
 ///   `hint` (nothing listed: the hint and Search Nearby), `nearby` (a Wi-Fi row and Direct
 ///   rows), `methods` (a row ending in each word: Wired, Wi-Fi, none, Direct, and long names) or
 ///   `denied` (Local Network access denied: the status says what to do, no hint); `update` (a Mac
-///   refused this version: "Update Sill on your iPad to keep using Mac mini. It needs version 1.2
-///   or later." as the status line above a Wi‑Fi row, and "Update Sill in the App Store" under it
+///   refused this version: "Update Oriel on your iPad to keep using Mac mini. It needs version 1.2
+///   or later." as the status line above a Wi‑Fi row, and "Update Oriel in the App Store" under it
 ///   when `-SillAppStoreURL https://apps.apple.com/app/id000000000` gives the link an address) or
 ///   `notice` (a goodbye reason this build does not know: the Mac's two-line message, no link);
 ///   or remote access's: `remote` (Remote rows), `addmac`, `addcode`, `addcodeerror`, `pairing`,
@@ -335,10 +335,10 @@ struct ContentView: View {
 ///   `externalpair` (an outside link's confirmation); or pairing at home's
 ///   (docs/home-pairing-plan.md §7.9): `homerows` (a saved Wi-Fi row, "Not paired", an unpaired
 ///   "Wired" over the cable, a Wired row through a USB Ethernet adapter reading "Not paired", an
-///   open door's row reading "Not paired", "Update Sill", and long names), `homeasking` (a tap's ask: "Pairing with Mac mini…", the row
+///   open door's row reading "Not paired", "Update Oriel", and long names), `homeasking` (a tap's ask: "Pairing with Mac mini…", the row
 ///   lit), `homecard` (the home card, scanning), `homecode` (its typed path), `homecodeerror` (a
 ///   wrong code), `homelocked`, `homeopenonmac`, `homerevoked`, `homecabledone`, `homeolder` (a tap
-///   on an "Update Sill" row) or `pairingrequired`; or `asleep` (issue #69: a saved Mac's row stays
+///   on an "Update Oriel" row) or `pairingrequired`; or `asleep` (issue #69: a saved Mac's row stays
 ///   listed and the automatic reconnect's dials of it have not connected: "Mac mini isn’t answering.
 ///   It may be asleep. Sill keeps trying, or tap it to try now."). Ignored with `-SillLive 1`. The
 ///   mock never browses; Search Nearby and a row's tap only change what it shows (see
@@ -351,18 +351,18 @@ struct ContentView: View {
 ///   from the background makes the network browser again too, and the nearby one if it runs, "browser:
 ///   rebuilt … (back from the background)"), and the automatic reconnect its dials ("reconnect: …").
 /// * Pairing at home, in the normal app and under `-SillLive 1` (§7.9): `-SillServiceType
-///   _silltest._tcp` (the browsers look for that type: a test host registered with
+///   _orieltest._tcp` (the browsers look for that type: a test host registered with
 ///   SILL_TEST_SERVICE_TYPE is a real row, and no real Mac is; the Debug build's Info.plist
 ///   declares it); `-SillHomeDoor paired|open|plain` (what a `-SillConnect` address counts as: an
 ///   address has no TXT record; `paired` is the one saved Mac when exactly one is saved, else an
 ///   unsaved Mac whose door asks for pairing); `-SillForgetHomeTLS 1` (dial an older Sill.app
 ///   plainly again); `-SillCableTest 1` (this device's path counts as the USB cable for the ask);
 ///   and for the gates, which drive no UI: `-SillTapRow <name prefix>` (taps that row once, as soon
-///   as it is listed), `-SillHomeCode <digits>` and `-SillHomeLink <sillgdl://pair…>` (typed into, or
+///   as it is listed), `-SillHomeCode <digits>` and `-SillHomeLink <oriel://pair…>` (typed into, or
 ///   scanned by, the home card once the Mac shows its code), `-SillOverlayCode <digits>` (Pair This
 ///   iPad… with that code, once, over a session at home over TLS).
 /// * Real pairing, in the normal app and under `-SillLive 1` (not the mock): `-SillPairURL
-///   '<sillgdl://pair…>'` pairs with that link at launch, without the confirmation, at the link's own
+///   '<oriel://pair…>'` pairs with that link at launch, without the confirmation, at the link's own
 ///   addresses only, as Add a Mac… does (a link with none, a home-only one, pairs nothing): a
 ///   confirmed link tries the home rows first, which the gates reach with `-SillTapRow` and
 ///   `-SillHomeLink` above; `-SillPairCode
@@ -764,7 +764,7 @@ enum InputScript {
         guard let endpoint, isLoopback(endpoint) else {
             return "the session was not dialled to a loopback address (-SillConnect 127.0.0.1:PORT)"
         }
-        if let hostVersion { return "the host says it is Sill \(hostVersion), which posts input to this Mac" }
+        if let hostVersion { return "the host says it is Oriel \(hostVersion), which posts input to this Mac" }
         return nil
     }
 
@@ -1128,7 +1128,7 @@ struct ConnectScreen: View {
         // before Sill's App Store address is known (SillLinks): the words say what to do anyway.
         if let notice = client.notice, notice.storeLink, notice.text == client.status, let url = SillLinks.appStore {
             Link(destination: url) {
-                Text("Update Sill in the App Store")
+                Text("Update Oriel in the App Store")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Palette.accent)
                     .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
@@ -1143,7 +1143,7 @@ struct ConnectScreen: View {
             // The kind of link, never the Wi-Fi network's name: that needs Location access, which
             // Sill does not ask for (DiscoveryPolicy.method); "Remote" for a saved Mac dialed away
             // from home; at home, what a tap does first when it pairs ("Not paired", "Wired" over
-            // the cable) or cannot connect ("Update Sill"), with VoiceOver's label and hint for it
+            // the cable) or cannot connect ("Update Oriel"), with VoiceOver's label and hint for it
             // (DiscoveryPolicy.RowWord). The row a tap's ask is waiting on is lit, as the drawer
             // lights the app on screen, while the status line says "Pairing with…".
             DrawerRow(height: 50, highlighted: client.homeAsk.map { $0.phase == .asking && $0.target.row == mac.id } ?? false,
@@ -1164,7 +1164,7 @@ struct ConnectScreen: View {
         }
 
         if client.showsNearbyHint {
-            Text("Your Mac has to be on the same Wi\u{2011}Fi network as this \(device), or have Direct Wireless Connection turned on in Sill. Away from home, add it once with a code from your Mac.")
+            Text("Your Mac has to be on the same Wi\u{2011}Fi network as this \(device), or have Direct Wireless Connection turned on in Oriel. Away from home, add it once with a code from your Mac.")
                 .font(.system(size: 13))
                 .foregroundStyle(Palette.muted)
                 .fixedSize(horizontal: false, vertical: true)
@@ -1271,7 +1271,7 @@ struct ConnectScreen: View {
     /// openURL), and VoiceOver reads it as a link. The addresses are SillLinks'.
     private func footer(_ layout: ConnectLayout) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Needs the free Sill app on your Mac.")
+            Text("Needs the free Oriel app on your Mac.")
                 .foregroundStyle(Palette.muted)
                 .fixedSize(horizontal: false, vertical: true)
             // All three on one line while they fit, else the download link over the other two,

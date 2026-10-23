@@ -99,7 +99,7 @@ final class UpdateChecker {
         c.waitsForConnectivity = false
         // Accept-Language fixed: URLSession would otherwise send this Mac's preferred languages.
         // What else it adds (Host, Accept-Encoding, Connection) says nothing about the Mac.
-        c.httpAdditionalHeaders = ["User-Agent": "Sill/\(configuration.running ?? "unknown")",
+        c.httpAdditionalHeaders = ["User-Agent": "Oriel/\(configuration.running ?? "unknown")",
                                    "Accept": "application/vnd.github+json",
                                    "X-GitHub-Api-Version": "2022-11-28",
                                    "Accept-Language": "en"]
@@ -136,7 +136,7 @@ final class UpdateChecker {
     func start() {
         guard !started else { return }
         started = true
-        if let offer { print("Update: Sill \(offer.version) is available (found by an earlier check).") }
+        if let offer { print("Update: Oriel \(offer.version) is available (found by an earlier check).") }
         if configuration.checkAtStart {
             if testPatternOnly {
                 print("SillUpdateNow ignored: test pattern mode checks only a test feed (-SillUpdateFeed).")

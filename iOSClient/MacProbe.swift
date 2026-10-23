@@ -15,7 +15,7 @@ enum MacReach: Equatable {
 
 /// One check of a saved Mac through its remote door: its addresses in the dial's order
 /// (RemoteDialPolicy.order), one at a time, TLS 1.3 as a session dial makes it (RemoteTLS, this
-/// device's certificate, `sill/1`), pinned to the Mac's key. The handshake stops in the verify
+/// device's certificate, `oriel/1`), pinned to the Mac's key. The handshake stops in the verify
 /// block, whatever key answered, so the device never sends its certificate and nothing reaches
 /// the Mac's sessions: no session, no catalog, no line in its log. The Mac counts a handshake the
 /// device ended (-9825) as a peer that went away by itself, never toward its backoff

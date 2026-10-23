@@ -619,7 +619,7 @@ final class InputInjector {
 
     /// The parent process, which is the app the permission actually attaches to. Launched by
     /// LaunchServices (Finder, `open`, a login item) the parent is launchd and the permission
-    /// belongs to the app bundle itself: name it ("Sill") rather than "launchd".
+    /// belongs to the app bundle itself: name it ("Oriel") rather than "launchd".
     private static func launchingAppName() -> String {
         if getppid() == 1, let name = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String {
             return "\"\(name)\""

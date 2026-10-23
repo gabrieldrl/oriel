@@ -114,7 +114,7 @@ final class HEVCEncoder {
 
 /// Runs `run` `delay` seconds from now, on time: a strict timer with no leeway. Dispatch's
 /// asyncAfter may fire a share of its delay late, which frames going in one at a time add up (the
-/// one-inside case read 24 to 29 fps against 33 with it, while Sill.app streamed beside).
+/// one-inside case read 24 to 29 fps against 33 with it, while Oriel.app streamed beside).
 let timerQueue = DispatchQueue(label: "standin.timers", qos: .userInteractive, attributes: .concurrent)
 func onTime(after delay: Double, _ run: @escaping () -> Void) {
     let timer = DispatchSource.makeTimerSource(flags: .strict, queue: timerQueue)

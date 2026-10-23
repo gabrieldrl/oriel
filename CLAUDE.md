@@ -8,8 +8,16 @@ subscription, no servers. Read `docs/BRIEF.md` before doing product-level work.
 pushed there is visible to everyone; upstream Saffsanity/sill, fetch only: its push URL is `DISABLE`).
 Start with `docs/OVERVIEW.md`: what Sill is, the repository map, how it works, the build, and the
 fork's own identifiers (bundle IDs `com.gabrieldrl.sill[.mac]`, team JF8R4AVC2H, Bonjour
-`_sillgdl._tcp`), which replace the `me.saffer.sill` / `_sill._tcp` values in upstream's docs.
+`_oriel._tcp`), which replace the `me.saffer.sill` / `_sill._tcp` values in upstream's docs.
 Formerly winstream; the folder still carries the old name.
+
+**The product is Oriel (2026-10-23).** What people see says Oriel: both apps' names, the Mac's
+`Oriel.app` (executable `Oriel`), `Oriel.dmg`/`Oriel.zip`, every visible string, and the wire
+(`_oriel._tcp`, `oriel://`, ALPNs `oriel/1` and `oriel-pair/1`, the `oriel-pair-v1` and
+`oriel-tag-v1` labels). Kept as Sill on purpose: bundle IDs, code names (SillHost, SillMenuBar,
+`-Sill…` arguments, `SILL_*`), defaults keys (`Sill.‹name›`), `~/Library/Application Support/Sill`
+and `~/Library/Logs/Sill/Sill.log`, the keychain label "Sill Remote Access", the cable and Require
+pairing labels (`sill-cable-v1`, `sill-require-pairing-off-v1`), the iOS product `Sill.app`.
 
 Where the detail is:
 - `docs/NOTES.md`: the upstream maintainer's full working notes (every step's record since the
@@ -132,14 +140,14 @@ device keeps working with Macs from the first public build on, or each says why
 - Kept as they are: the home door as Sill.app 1.0 ships it, TLS with pairing at home
   (docs/home-pairing-plan.md, branch `home-pairing`; it ships before 1.0, Noah 2026-09-25), not
   the plain-TCP `_sill._tcp` door, which only development builds and the CLI without `--pairing`
-  keep; the ALPNs `sill/1` and `sill-pair/1`, which every host offers for good at both doors
-  (`RemoteTLS.serverALPNs`: a later generation's `sill/2` only ever goes beside them); the 14-byte
+  keep; the ALPNs `oriel/1` and `oriel-pair/1`, which every host offers for good at both doors
+  (`RemoteTLS.serverALPNs`: a later generation's `oriel/2` only ever goes beside them); the 14-byte
   header; kinds 0–28 and 32 and their payloads (HEVC with ParameterSets; the JSON of Switcher,
   Input, Viewport, HostSettings, Remote, Compatibility, Pointer, MacMenu, Gesture and Clipboard;
   this fork's kinds 47 and 48, the Mac's sound (Sound.swift), go only to and from a host whose window
   list says `sound` 1;
-  29 to 31 stay free, 29 the audio plan's, 30 and 31 pull request #66's), inside `sill/1` at
-  both doors (19 and 20 on their own `sill-pair/1` connection, the next bullet); the ping echo; a
+  29 to 31 stay free, 29 the audio plan's, 30 and 31 pull request #66's), inside `oriel/1` at
+  both doors (19 and 20 on their own `oriel-pair/1` connection, the next bullet); the ping echo; a
   kind 16 within 2 s of the first window list, one per connection since Sill for Mac 0.5.1 (away
   from home, docs/remote-bundle-plan.md §4): its `settings` the pair that connection's controls
   set (the away quality for a device away), and its optional `away` (AwayQuality, from a host with
@@ -169,7 +177,7 @@ device keeps working with Macs from the first public build on, or each says why
   sent `{}`.
 - Pairing as 1.0 does it (docs/home-pairing-plan.md §3): the Bonjour TXT keys `r` (the recognition
   tag) and `p` ("1" pairing required, "0" open, no `p` a plain door, any other value read as "1");
-  a `sill-pair/1` connection is exactly one kind 19, with no hello (the device gate judges sessions
+  a `oriel-pair/1` connection is exactly one kind 19, with no hello (the device gate judges sessions
   only), and one kind 20, then the Mac closes it; kind 19's methods `qr`, `code` and, at the home
   door, `ask` and `cancel` (the remote door answers both `closed`), at `v` 1: a host answers any other `v`
   `closed` without counting a try, so a later method or proof format comes with a later `v`, never
@@ -189,9 +197,9 @@ device keeps working with Macs from the first public build on, or each says why
   before anything else. A device from 2026-09-25 on that receives it shows the host's message word
   for word, with its App Store link, and does not reconnect; older development builds cannot. At
   the TLS home door only devices from home pairing on receive it (Decided, below). Kind 22 reaches
-  a 1.0 device only inside a `sill/1` session, so such a host still completes that device's
-  `sill/1` handshake and reads its hello through the gate before refusing it: a host that stopped
-  offering `sill/1` would leave it a failed handshake (-9838), "disconnected" and a redial every
+  a 1.0 device only inside a `oriel/1` session, so such a host still completes that device's
+  `oriel/1` handshake and reads its hello through the gate before refusing it: a host that stopped
+  offering `oriel/1` would leave it a failed handshake (-9838), "disconnected" and a redial every
   few seconds, for ever.
 - Every device says hello first (kind 23: its version, build, protocol and name), and every host's
   window list gives its version and protocol (`hostVersion`, nil from SillHost and from Macs
@@ -208,10 +216,10 @@ device keeps working with Macs from the first public build on, or each says why
   without `--pairing` runs it at `.ready`); what changed while it held a session (the key removed,
   Require pairing on, Remote Access or internet access off, the session limit, Direct Wireless
   off) is judged again by `DoorPolicy.afterGate`, with the goodbye and the line that change's own
-  close gives. 1.0's TLS home door is `SillProtocol` 1 with ALPN `sill/1`, as the remote door is:
+  close gives. 1.0's TLS home door is `SillProtocol` 1 with ALPN `oriel/1`, as the remote door is:
   pairing on the home door is part of protocol 1, no longer an example of what raises it
   (Compatibility.swift, docs/update-notice-plan.md §3.2 and §4.6), and a later generation raises
-  both: `sill/2` is offered beside `sill/1` and `sill-pair/1`, never instead of them (the first
+  both: `oriel/2` is offered beside `oriel/1` and `oriel-pair/1`, never instead of them (the first
   bullet). Builds from before home
   pairing dial plain TCP and say hello in plaintext: at the TLS door they get a failed handshake
   and EOF, never kind 22 "update", and redial. Only development and TestFlight builds are that

@@ -38,20 +38,20 @@ check(DeviceGate.deviceWord(h("1.0", "sillclient iPhone")) == "device", "iPhone 
 check(DeviceGate.deviceWord(h("1.0", "\u{202E}iPad")) == "iPad", "a bidi override is cleaned first")
 check(DeviceGate.deviceWord(h("1.0", nil)) == "device" && DeviceGate.deviceWord(nil) == "device", "no name")
 let ipadRefusal = DeviceGate.refusal(h("1.1", "iPad (iPad14,1)"), floor: f12, macName: "Mac mini")
-check(ipadRefusal == Goodbye(reason: "update", message: "Update Sill on your iPad to keep using Mac mini. It needs version 1.2 or later.",
+check(ipadRefusal == Goodbye(reason: "update", message: "Update Oriel on your iPad to keep using Mac mini. It needs version 1.2 or later.",
                              minimumVersion: "1.2", reconnect: false), "the iPad's refusal: \(ipadRefusal)")
 check(DeviceGate.message(h("1.1", "iPhone (iPhone17,1)"), floor: SillVersion("2")!, macName: "Noah’s MacBook Pro")
-      == "Update Sill on your iPhone to keep using Noah’s MacBook Pro. It needs version 2.0 or later.", "an iPhone's message, floor 2 shows 2.0")
+      == "Update Oriel on your iPhone to keep using Noah’s MacBook Pro. It needs version 2.0 or later.", "an iPhone's message, floor 2 shows 2.0")
 check(DeviceGate.message(nil, floor: SillVersion("99")!, macName: "Mac")
-      == "Update Sill on your device to keep using Mac. It needs version 99.0 or later.", "no hello: 'your device'")
+      == "Update Oriel on your device to keep using Mac. It needs version 99.0 or later.", "no hello: 'your device'")
 check(DeviceGate.refusal(nil, floor: SillVersion("1.2.0")!, macName: "M").minimumVersion == "1.2", "minimumVersion as SillVersion shows it")
 check(DeviceGate.message(h("1", "iPad"), floor: f12, macName: "Mac mini").count <= 200, "at most 200 characters (§4.6)")
 
 // The log lines.
 check(DeviceGate.refusedLine(h("1.0", "iPad (iPad14,1)"), endpoint: "192.168.1.23:52344", floor: f12)
-      == "Refused iPad (iPad14,1) (Sill 1.0): needs 1.2 or later.", "Refused, a named device")
+      == "Refused iPad (iPad14,1) (Oriel 1.0): needs 1.2 or later.", "Refused, a named device")
 check(DeviceGate.refusedLine(nil, endpoint: "192.168.1.23:52344", floor: f12)
-      == "Refused 192.168.1.23:52344 (an older Sill): needs 1.2 or later.", "Refused, no hello")
+      == "Refused 192.168.1.23:52344 (an older Oriel): needs 1.2 or later.", "Refused, no hello")
 check(DeviceGate.refusedLine(h(nil), endpoint: "127.0.0.1:5", floor: f12) == "Refused 127.0.0.1:5 (no version): needs 1.2 or later.",
       "Refused, a hello without a version")
 check(!DeviceGate.refusedLine(h("1.0\nClient connected: forged", "iPad\nforged"), endpoint: "e", floor: f12).contains("\n"),
@@ -60,10 +60,10 @@ check(DeviceGate.countLine(14, source: "192.168.1.23", floor: f12)
       == "Refused 14 more connections from 192.168.1.23 in the last minute: too old for this Mac (needs 1.2 or later).", "count line")
 check(DeviceGate.countLine(1, source: "::1", floor: f12).hasPrefix("Refused 1 more connection from ::1 "), "count line, one")
 check(DeviceGate.helloLine(h("1.0", "iPad (iPad14,1)", build: "42", protocol: 1), endpoint: "192.168.1.23:52344")
-      == "Client hello: iPad (iPad14,1), Sill 1.0 (42), protocol 1 (192.168.1.23:52344)", "hello line, full")
+      == "Client hello: iPad (iPad14,1), Oriel 1.0 (42), protocol 1 (192.168.1.23:52344)", "hello line, full")
 check(DeviceGate.helloLine(h(nil), endpoint: "192.168.1.23:52344") == "Client hello: 192.168.1.23:52344, no version", "hello line, empty")
 check(DeviceGate.helloLine(h("1.0", "iPad (iPad14,1)", protocol: 1), endpoint: "127.0.0.1:5")
-      == "Client hello: iPad (iPad14,1), Sill 1.0, protocol 1 (127.0.0.1:5)", "hello line, no build (H5)")
+      == "Client hello: iPad (iPad14,1), Oriel 1.0, protocol 1 (127.0.0.1:5)", "hello line, no build (H5)")
 check(DeviceGate.helloLine(h(nil, nil, protocol: 1), endpoint: "e") == "Client hello: e, no version, protocol 1", "hello line, protocol only")
 check(DeviceGate.helloLine(h("", "iPad"), endpoint: "e") == "Client hello: iPad, no version (e)", "an empty version is no version")
 check(!DeviceGate.helloLine(h("1\n2", "a\u{2028}b", build: "4\r2"), endpoint: "e").contains(where: { $0.isNewline }), "the hello line stays one line")

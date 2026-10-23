@@ -495,8 +495,8 @@ enum TourPolicy {
     static let skipHint = "Ends the tour. Take the Tour in Settings shows it again."
     /// The Settings panel's last row.
     static let takeTourTitle = "Take the Tour"
-    static func takeTourFootnote(device: String) -> String { "A short tour of Sill’s controls on this \(device)." }
-    static func takeTourHint(device: String) -> String { "Shows how to use Sill on this \(device)." }
+    static func takeTourFootnote(device: String) -> String { "A short tour of Oriel’s controls on this \(device)." }
+    static func takeTourHint(device: String) -> String { "Shows how to use Oriel on this \(device)." }
 
     /// The title as VoiceOver reads it: its place in the run, when the run has more than one card.
     static func spokenTitle(_ copy: TourCopy, index: Int, count: Int) -> String {
@@ -583,7 +583,7 @@ enum TourPolicy {
                 rows.append(row("cursorarrow.click.2", [strong("Tap with two fingers"), plain(" on the trackpad to right-click.")]))
                 rows.append(row("hand.draw", [strong("Touch and hold"), plain(" the trackpad, "), strong("then drag"), plain(", to move a window or select text.")]))
             }
-            let subtitle = keysOnItsSide ? "On its side, Sill adds keys and a trackpad." : "Upright, Sill adds keys and a trackpad."
+            let subtitle = keysOnItsSide ? "On its side, Oriel adds keys and a trackpad." : "Upright, Oriel adds keys and a trackpad."
             let hint: String
             switch layout {
             case .landscape, .portrait: hint = "Below the bar: the row of keys, then the trackpad."

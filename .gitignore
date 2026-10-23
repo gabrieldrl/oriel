@@ -1,4 +1,6 @@
+.build
 .build/
+*.nosync
 .swiftpm/
 xcuserdata/
 *.xcuserstate

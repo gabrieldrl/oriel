@@ -97,11 +97,11 @@ The clipboard (kind 32; docs/clipboard-plan.md). Each kind 32 received is printe
   --expect=clipboard=TEXT  (with --expect's other keys, or alone) at exit, the last kind 32's text;
                      clipboard=none: none came
 The remote door (TLS 1.3, both keys pinned; PORT is the remote door's):
-  --tls              a session (ALPN sill/1) with this client's identity, pinning the Mac's key saved by
+  --tls              a session (ALPN oriel/1) with this client's identity, pinning the Mac's key saved by
                      an earlier pairing in --identity (or given with --pin)
   --identity=DIR     this client's P-256 key and certificate, made on first use with /usr/bin/openssl
                      (DIR/key.pem, DIR/cert.pem), and the paired Mac (DIR/mac.json); required with --tls
-  --pair-url=URL     pair first with a sillgdl://pair link (the QR path: the Mac is pinned to its k before
+  --pair-url=URL     pair first with a oriel://pair link (the QR path: the Mac is pinned to its k before
                      a byte is sent), save the Mac, then run the session
   --pair-code=CODE   pair first with the typed code (no pin: the proofs bind both keys), then the session
   --pin=FP|none      pin this base64url fingerprint instead of the saved one; none accepts any key
@@ -115,7 +115,7 @@ Pairing at home (a TLS home door: SillHost --pairing, or the bare app; PORT is t
   --then-code=FILE   after "shown", read the code from FILE (waiting up to 5 s for 12 digits) and pair with
                      it over the same door, pinned to the key the ask saw; with --pair-url instead, pair by
                      the link after "shown"
-  --pair-hold=S      open a pairing connection (ALPN sill-pair/1) that sends nothing for S seconds, then
+  --pair-hold=S      open a pairing connection (ALPN oriel-pair/1) that sends nothing for S seconds, then
                      print whether the host closed it first (HOLD closed at T s, or HOLD open); nothing else
   --pair-cancel      the device's Cancel: kind 19 "cancel" on a new pairing connection, after --pair-ask's
                      "shown" pinned to the key the ask saw, or alone (any key, or --pin's); prints kind 20
@@ -281,7 +281,7 @@ def spki(der):
 SPKI_PREFIX = bytes.fromhex("3059301306072a8648ce3d020106082a8648ce3d030107034200")
 def parse_link(url):
     u = urllib.parse.urlsplit(url)
-    if u.scheme.lower() != "sillgdl" or u.netloc.lower() != "pair": raise ValueError("--pair-url: not a sillgdl://pair link")
+    if u.scheme.lower() != "oriel" or u.netloc.lower() != "pair": raise ValueError("--pair-url: not a oriel://pair link")
     q = urllib.parse.parse_qs(u.query, keep_blank_values=True)
     one = lambda k: (q.get(k) or [None])[0] if len(q.get(k, [])) == 1 else None
     if one("v") != "1": raise ValueError("--pair-url: v is not 1")
@@ -351,7 +351,7 @@ def verify_macinfo(payload, pin):
     return ok, i
 pair_results = []      # every kind 20 of the pairing phase, in order (--expect-pair checks the last)
 def pair(url=None, code=None, pin=None):
-    """One pairing connection (ALPN sill-pair/1): kind 19 out, kind 20 back. Saves the Mac on ok.
+    """One pairing connection (ALPN oriel-pair/1): kind 19 out, kind 20 back. Saves the Mac on ok.
     `url` pairs by the QR link (pinned to its k), `code` by the typed code (pinned to `pin` when the
     ask saw the Mac's key, else to nothing: the proofs bind both keys)."""
     url = url if url is not None else pair_url
@@ -359,14 +359,14 @@ def pair(url=None, code=None, pin=None):
     key, cert, fp_dev = ensure_identity(identity_dir)
     if url:
         lk = parse_link(url) if url != pair_url else link
-        s, fp_mac = tls_connect("sill-pair/1", lk["fp"])
+        s, fp_mac = tls_connect("oriel-pair/1", lk["fp"])
         k, method = lk["secret"], "qr"
     else:
-        s, fp_mac = tls_connect("sill-pair/1", pin)
+        s, fp_mac = tls_connect("oriel-pair/1", pin)
         t0 = time.time()
-        k = hashlib.pbkdf2_hmac("sha256", code.encode(), b"sill-pair-v1" + fp_mac, 600_000, 32); method = "code"
+        k = hashlib.pbkdf2_hmac("sha256", code.encode(), b"oriel-pair-v1" + fp_mac, 600_000, 32); method = "code"
         print(f"  code key derived in {1000 * (time.time() - t0):.0f} ms")
-    proof = hmac.new(k, b"sill-pair-v1 device\x00" + fp_dev + fp_mac, hashlib.sha256).digest()
+    proof = hmac.new(k, b"oriel-pair-v1 device\x00" + fp_dev + fp_mac, hashlib.sha256).digest()
     req = {"v": pair_v, "method": method, "proof": b64u(proof), "name": device, "model": "sillclient"}
     s.sendall(msg(19, json.dumps(req).encode()))
     try:
@@ -378,7 +378,7 @@ def pair(url=None, code=None, pin=None):
     r = json.loads(m[1]); print(f"  pairResult: {json.dumps(r, sort_keys=True)}")
     pair_results.append(r)
     if not r.get("ok"): print(f"PAIR FAIL: {r.get('reason')}"); return False
-    want = hmac.new(k, b"sill-pair-v1 mac\x00" + fp_mac + fp_dev, hashlib.sha256).digest()
+    want = hmac.new(k, b"oriel-pair-v1 mac\x00" + fp_mac + fp_dev, hashlib.sha256).digest()
     if not hmac.compare_digest(b64u_decode(r.get("proof", "")), want): print("PAIR FAIL: proof_M does not check"); return False
     if r.get("macID") != macid(fp_mac): print("PAIR FAIL: macID is not the Mac's key"); return False
     with open(os.path.join(identity_dir, "mac.json"), "w") as f:
@@ -391,7 +391,7 @@ def ask(cable, pin=None):
     A proof-less ok is taken only as the answer to an ask that said cable: true, with the macID of
     the key this connection saw and a 32-byte recognition key; then the Mac is saved."""
     ensure_identity(identity_dir)
-    s, fp_mac = tls_connect("sill-pair/1", pin)
+    s, fp_mac = tls_connect("oriel-pair/1", pin)
     req = {"v": pair_v, "method": "ask", "proof": "", "name": device, "model": "sillclient"}
     if cable: req["cable"] = True
     s.sendall(msg(19, json.dumps(req).encode()))
@@ -422,7 +422,7 @@ def ask(cable, pin=None):
 def cancel_ask(pin=None):
     """--pair-cancel: the device's Cancel (kind 19 "cancel"); the answer is always closed."""
     ensure_identity(identity_dir)
-    s, fp_mac = tls_connect("sill-pair/1", pin)
+    s, fp_mac = tls_connect("oriel-pair/1", pin)
     req = {"v": pair_v, "method": "cancel", "proof": "", "name": device, "model": "sillclient"}
     s.sendall(msg(19, json.dumps(req).encode()))
     try:
@@ -551,7 +551,7 @@ try:
     if hello_delay < 0: raise ValueError("--hello-delay must be 0 or more")
     # Input reaches only a host that never posts it: a --synthetic host on this Mac (every one is a
     # dry run). A variable in this client's environment would say nothing about the host it reaches;
-    # the listener's own arguments do (neither Sill.app nor a real SillHost carries --synthetic).
+    # the listener's own arguments do (neither Oriel.app nor a real SillHost carries --synthetic).
     if any(e[2] in INPUT for e in events):
         if host not in ("127.0.0.1", "::1", "localhost") or not synthetic_listener(port):
             raise ValueError(f"--move, --tap, --key and --input only go to a --synthetic host on this Mac, which never posts input; nothing on port {port} is one.")
@@ -583,10 +583,10 @@ if flood:
     print(f"  flood: {flood} connections opened and reset before sending")
 mac_pin = None
 if pair_hold is not None:
-    # A pairing connection still pending: TLS up (ALPN sill-pair/1), then silence. The host's
+    # A pairing connection still pending: TLS up (ALPN oriel-pair/1), then silence. The host's
     # admission deadline (10 s) or a Direct Wireless change may close it first.
     ensure_identity(identity_dir)
-    hs, _ = tls_connect("sill-pair/1", b64u_decode(pin_arg) if pin_arg and pin_arg != "none" else None)
+    hs, _ = tls_connect("oriel-pair/1", b64u_decode(pin_arg) if pin_arg and pin_arg != "none" else None)
     t_hold = time.time(); closed_at = None
     hs.settimeout(0.1)
     while time.time() - t_hold < pair_hold:
@@ -628,7 +628,7 @@ if tls:
     else: print("sillclient.py: no saved Mac in --identity; pair first or give --pin", file=sys.stderr); sys.exit(2)
     if dur <= 0: sys.exit(0)
     try:
-        s, _ = tls_connect("sill/1", mac_pin)
+        s, _ = tls_connect("oriel/1", mac_pin)
     except (OSError, ssl.SSLError) as e:
         print(f"TLS refused: {e}"); sys.exit(0 if expect_tls_fail else 1)
 else:

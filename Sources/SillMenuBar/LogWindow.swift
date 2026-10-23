@@ -33,7 +33,7 @@ final class LogWindowController: NSWindowController, NSWindowDelegate {
 
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 900, height: 520),
                               styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: true)
-        window.title = "Sill Log"
+        window.title = "Oriel Log"
         window.isReleasedWhenClosed = false
         window.collectionBehavior.insert(.moveToActiveSpace)
         window.minSize = NSSize(width: 480, height: 240)

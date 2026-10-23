@@ -223,8 +223,8 @@ enum UpdatePolicy {
 
     // MARK: Words
 
-    /// "Sill 0.4 Is Available…": the status menu's item.
-    static func menuTitle(_ offer: Offer) -> String { "Sill \(offer.version) Is Available…" }
+    /// "Oriel 0.4 Is Available…": the status menu's item.
+    static func menuTitle(_ offer: Offer) -> String { "Oriel \(offer.version) Is Available…" }
     /// "You have 0.3; opens its download page".
     static func menuSubtitle(running: SillVersion) -> String { "You have \(running); opens its download page" }
 
@@ -235,11 +235,11 @@ enum UpdatePolicy {
         let again = manual ? "" : "; trying again in \(duration(retryIn))"
         switch outcome {
         case .newer(let offer):
-            return "Update check: Sill \(offer.version) is available (this is \(running)): \(offer.url.absoluteString)"
+            return "Update check: Oriel \(offer.version) is available (this is \(running)): \(offer.url.absoluteString)"
         case .upToDate(let tag):
             return manual ? "Update check: up to date (this is \(running); the latest release is \(tag))." : nil
         case .noRelease:
-            return "Update check failed: GitHub has no release of Sill (HTTP 404)."
+            return "Update check failed: GitHub has no release of Oriel (HTTP 404)."
         case .limited(let status, let reset):
             return "Update check failed: GitHub is limiting requests from this network (HTTP \(status)"
                 + (reset.map { "; it resets at \(time($0))" } ?? "") + ")."
@@ -267,14 +267,14 @@ enum UpdatePolicy {
     /// Settings › General's line after Check Now, and whether it is a failure (shown in orange).
     static func resultLine(_ outcome: Outcome, time: (Date) -> String) -> (text: String, failed: Bool) {
         switch outcome {
-        case .newer(let offer): return ("Sill \(offer.version) is available.", false)
-        case .upToDate: return ("Sill is up to date.", false)
-        case .noRelease: return ("Couldn’t check: GitHub has no release of Sill yet.", true)
+        case .newer(let offer): return ("Oriel \(offer.version) is available.", false)
+        case .upToDate: return ("Oriel is up to date.", false)
+        case .noRelease: return ("Couldn’t check: GitHub has no release of Oriel yet.", true)
         case .limited(_, let reset):
             return ("Couldn’t check: GitHub is limiting requests from this network. "
                     + (reset.map { "Try again after \(time($0))." } ?? "Try again in an hour."), true)
         case .httpError(let status): return ("Couldn’t check: GitHub answered with an error (HTTP \(status)).", true)
-        case .notARelease: return ("Couldn’t check: GitHub’s answer wasn’t a release Sill understands.", true)
+        case .notARelease: return ("Couldn’t check: GitHub’s answer wasn’t a release Oriel understands.", true)
         case .noConnection(let code, let description):
             return (tlsCodes.contains(code) ? "Couldn’t check: \(description)" : "Couldn’t check: this Mac isn’t connected to the internet.", true)
         case .timeout: return ("Couldn’t check: GitHub didn’t answer within \(Int(requestTimeout)) seconds.", true)
@@ -297,8 +297,8 @@ enum UpdatePolicy {
     }
 
     static let notCheckedLine = "Not checked yet."
-    static let noVersionLine = "This build of Sill has no version number, so it can’t check."
-    static let testPatternLine = "Sill doesn’t check for updates in test pattern mode."
+    static let noVersionLine = "This build of Oriel has no version number, so it can’t check."
+    static let testPatternLine = "Oriel doesn’t check for updates in test pattern mode."
 
     /// The pane's line, first match wins: a check running; this run's Check Now result (kept until
     /// GitHub answers an automatic check, UpdateChecker); why Sill cannot check (no version, test
@@ -316,7 +316,7 @@ enum UpdatePolicy {
         } else if testPatternOnly {
             p.line = testPatternLine
         } else if let offer {
-            p.line = "Sill \(offer.version) is available."
+            p.line = "Oriel \(offer.version) is available."
         } else if let lastCheck {
             p.line = "Last checked \(date(lastCheck))."
         }
@@ -324,5 +324,5 @@ enum UpdatePolicy {
     }
 
     /// The pane's footer.
-    static let footnote = "Once a day, Sill asks GitHub whether a newer version is out. GitHub sees this Mac’s IP address and which version of Sill it has; nothing else is sent. Sill never downloads or installs anything by itself: a new version opens its page on GitHub, where you download it."
+    static let footnote = "Once a day, Oriel asks GitHub whether a newer version is out. GitHub sees this Mac’s IP address and which version of Oriel it has; nothing else is sent. Oriel never downloads or installs anything by itself: a new version opens its page on GitHub, where you download it."
 }

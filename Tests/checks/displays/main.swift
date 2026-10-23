@@ -104,7 +104,7 @@ var seen = Set<UInt32>(), clashes = 0
 for i in 0..<2000 { if !seen.insert(DisplayPolicy.serial(owner: "key-\(i)", slot: 1)).inserted { clashes += 1 } }
 check(clashes <= 1, "2000 devices rarely share a number: \(clashes)")
 
-check(DisplayPolicy.vendorID == 0x5111, "Sill's vendor, which keeps the app's windows off them")
+check(DisplayPolicy.vendorID == 0x5111, "Oriel's vendor, which keeps the app's windows off them")
 check(DisplayPolicy.productID == 2, "a product of their own, not the window stage's 1")
 check(DisplayPolicy.maxPerDevice == 4, "four displays a device")
 check(DisplayPolicy.nextSlot(used: []) == 1, "the first slot is 1")
@@ -188,7 +188,7 @@ check(!DisplayPolicy.returns(k, now: CGRect(x: 88, y: 40, width: 403, height: 30
 check(!DisplayPolicy.returns(k, now: CGRect(x: 88, y: 40, width: 400, height: 303)), "taller: it stays")
 check(!DisplayPolicy.returns(k, now: nil), "closed: nothing goes back")
 k.fellTo = nil
-check(DisplayPolicy.returns(k, now: CGRect(x: 500, y: 500, width: 10, height: 10)), "not seen falling (Sill quit): it goes back")
+check(DisplayPolicy.returns(k, now: CGRect(x: 500, y: 500, width: 10, height: 10)), "not seen falling (Oriel quit): it goes back")
 check(!DisplayPolicy.returns(k, now: nil), "unless it closed")
 
 let p = DisplayPolicy.placed(k, on: display)

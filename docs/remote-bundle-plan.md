@@ -2179,7 +2179,7 @@ Verified after the fixes (this Mac, no device, Sill.app untouched, nothing poste
   21 (the other checks that compile DiscoveryPolicy.swift), `fence` 32 (its move home TLS to TLS,
   and again after its end-wait) and `away-wire` 9 (W1 re-anchored).
 - **By row, live** (a private iPad mini simulator, "Sill merge39", iOS 27.0, the app Debug signed ad
-  hoc and browsing `_silltest._tcp` alone; hosts `SillHost --synthetic --remote --pairing` with
+  hoc and browsing `_orieltest._tcp` alone; hosts `SillHost --synthetic --remote --pairing` with
   identities in test folders; host A paired at its TLS home door through its own Bonjour row, then run
   unadvertised, and rows carrying A's tag registered by `dns-sd` on lo0 under the test type), 29 of 29:
   A's row alone moved home 2 s after it was listed. A look-alike (A's tag at another host's TLS door,

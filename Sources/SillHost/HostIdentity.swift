@@ -194,7 +194,7 @@ package final class FileIdentityStore: IdentityStore {
         guard fd >= 0 else { throw IdentityStoreError("\(path) could not be opened (errno \(errno))") }
         guard flock(fd, LOCK_EX | LOCK_NB) == 0 else {
             close(fd)
-            throw IdentityStoreError("\(directory.path) is in use by another Sill host")
+            throw IdentityStoreError("\(directory.path) is in use by another Oriel host")
         }
         lock = fd
     }

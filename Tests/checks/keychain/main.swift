@@ -37,10 +37,10 @@ check("a real app ignores SILL_TEST_REMOTE_DIR (unentitled)",
 
 // Sill.app run with --synthetic is a test host: never a keychain, even if somehow entitled, and it
 // ignores SILL_TEST_REMOTE_DIR (only the bare binary takes the file store).
-check("Sill.app --synthetic → memory, never a keychain",
+check("Oriel.app --synthetic → memory, never a keychain",
       IdentityStorePlan.choose(bundled: true, synthetic: true, entitledAccessGroup: group, testRemoteDir: nil),
       .memory)
-check("Sill.app --synthetic ignores the test directory",
+check("Oriel.app --synthetic ignores the test directory",
       IdentityStorePlan.choose(bundled: true, synthetic: true, entitledAccessGroup: nil, testRemoteDir: "/tmp/x"),
       .memory)
 

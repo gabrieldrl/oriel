@@ -133,7 +133,7 @@ func afterSleepPolicy() {
           && redial(3, 10, fg: false, 1000) == (false, nil))
 
     let mini = "Mac mini"
-    let quiet = "Mac mini isn\u{2019}t answering. It may be asleep. Sill keeps trying, or tap it to try now."
+    let quiet = "Mac mini isn\u{2019}t answering. It may be asleep. Oriel keeps trying, or tap it to try now."
     let stopped = "Stopped trying to reach Mac mini. Tap it to try again."
     check("reconnectLine: the first three dials say Reconnecting, as before",
           (0...2).allSatisfy { P.reconnectLine(mac: mini, failed: $0, direct: false) == "Reconnecting to Mac mini\u{2026}" })

@@ -148,7 +148,7 @@ final class VirtualStage {
     /// 8192 px, its ceiling.
     static let minSide: CGFloat = 320
     static let maxSide: CGFloat = 4096
-    /// Fixed identity, so System Settings › Displays keeps one remembered "Sill" entry across runs
+    /// Fixed identity, so System Settings › Displays keeps one remembered "Oriel" entry across runs
     /// (the probe used serial 0xF00D and does not collide).
     static let vendorID: UInt32 = 0x5111, productID: UInt32 = 0x0001, serialNum: UInt32 = 1
 
@@ -526,7 +526,7 @@ final class VirtualStage {
         let t0 = Date()
         let d: VirtualDisplay
         do {
-            d = try VirtualDisplay(name: "Sill", widthPt: Int(env.width), heightPt: Int(env.height + menuInset), scale: 2,
+            d = try VirtualDisplay(name: "Oriel", widthPt: Int(env.width), heightPt: Int(env.height + menuInset), scale: 2,
                                    refreshHz: Double(refreshHz), vendorID: Self.vendorID, productID: Self.productID, serialNum: Self.serialNum)
         } catch {
             creationFailures += 1

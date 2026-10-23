@@ -38,7 +38,7 @@ automatically."
 ### In one paragraph
 
 Sill.app's Bonjour port speaks the remote door's TLS 1.3 with both keys pinned: the same
-identities, the same application protocols (`sill/1` for a session, `sill-pair/1` for pairing),
+identities, the same application protocols (`oriel/1` for a session, `oriel-pair/1` for pairing),
 the same trust list and the same pairing window. An unpaired device's tap on a Mac's row sends one
 "pair me" request: kind 19 with a new method, `ask`. Over the USB cable to an iPhone or iPad, while
 the Mac is unlocked and both ends agree that the connection is the cable (never an app on the Mac
@@ -299,8 +299,8 @@ Each such pairing is logged, listed as "over the USB cable" and shown in a notic
  device nearby ─▶│ HOME DOOR  TLS 1.3, both keys pinned; _sill._tcp, TXT r=<tag> p=1|0; ephemeral port  │
  Wi‑Fi, Direct,  │   before TLS: loopback · link-local (awdl0 too) · this Mac's own networks, else      │
  the USB cable   │   closed with no byte                                                                │
-                 │   sill/1: a paired key (any key while Require pairing is off) → the session          │
-                 │   sill-pair/1: one kind 19                                                           │
+                 │   oriel/1: a paired key (any key while Require pairing is off) → the session          │
+                 │   oriel-pair/1: one kind 19                                                           │
                  │     ask  → on the cable (both ends agree), unlocked: paired now (kind 20 ok "cable") │
                  │          → else: the pairing window opens (kind 20 "shown"), or "openOnMac" (always  │
                  │            for an ask from this Mac itself), "locked"                                │
@@ -392,7 +392,7 @@ seed, step 1's Results):
 {"ok":false,"reason":"openOnMac"}
 {"ok":false,"reason":"locked"}
 // then, on a second pairing connection to the same home door, exactly the remote path's kind 19
-{"v":1,"method":"qr","proof":"AyZAJqNTU5nSKEaHx6RZOf0K5dOeygR_8JSrCV_gNOo","name":"iPad","model":"iPad14,1"}
+{"v":1,"method":"qr","proof":"wEKyqYpWmaENNP2YpscNSZIReO67vfpX0kqNRZ8r3i4","name":"iPad","model":"iPad14,1"}
 // kind 22
 {"reason":"pairingRequired"}
 ```
@@ -433,19 +433,19 @@ device reads `p` from the result's record with the second form.
   service class, and `includePeerToPeer` as Direct Wireless says. A new overload
   `RemoteTLS.parameters(tls:tcp:peerToPeer:)` builds it; the remote door keeps its own.
 - **The device:** `RemoteTLS.options(identity:role: .client(alpn:), verify:queue:)` over its
-  home TCP options (no Nagle), `includePeerToPeer` for a Direct row only, SNI "sill".
+  home TCP options (no Nagle), `includePeerToPeer` for a Direct row only, SNI "oriel".
 
 **The Mac's verify block at home** (DoorPolicy.trusts; the home door's origins were checked before
 the connection started):
 
 | ALPN | Trusted when |
 |---|---|
-| `sill/1` | the key is paired, or Require pairing is off |
-| `sill-pair/1` | always |
+| `oriel/1` | the key is paired, or Require pairing is off |
+| `oriel-pair/1` | always |
 | anything else | never |
 
-**At `.ready`** (DoorPolicy.atReady): `sill/1` → the session, with the paired device's name and key
-on its route; `sill-pair/1` → exactly one kind 19 of at most 4 KiB within 10 s of the accept:
+**At `.ready`** (DoorPolicy.atReady): `oriel/1` → the session, with the paired device's name and key
+on its route; `oriel-pair/1` → exactly one kind 19 of at most 4 KiB within 10 s of the accept:
 `ask` to the ask rule (§4.6), `qr` and `code` to the pairing window. A refused connection is
 cancelled with no Sill byte, counted for the minute's summary.
 
@@ -490,9 +490,9 @@ in them.
 
 HostSettings.swift's rules, as for every payload since PR #13: JSON only; new fields optional; no
 enums on the wire (strings; an unknown value is skipped or, for `p`, read as "1"); never rename or
-retype a field. A later generation goes in the ALPN (`sill/2`, beside `sill/1` and `sill-pair/1`,
+retype a field. A later generation goes in the ALPN (`oriel/2`, beside `oriel/1` and `oriel-pair/1`,
 which every host offers for good), with `SillProtocol.current` (Compatibility.swift, main's since the
-update notice): protocol 1 is this door's `sill/1`, settled at the merge with main (Results, "The
+update notice): protocol 1 is this door's `oriel/1`, settled at the merge with main (Results, "The
 merge with main"). Pairing's own generation is `PairRequest.v`: a host answers any other than 1
 `closed` without counting a try (`DoorPolicy.pairing`), so a later method or proof format comes with
 a later `v`, never as a new method at 1, which a first-build host would judge as a wrong code and use
@@ -561,10 +561,10 @@ enum DoorPolicy {
 }
 ```
 
-| Door | Before start (origin) | Verify block, `sill/1` | Verify block, `sill-pair/1` | At `.ready` |
+| Door | Before start (origin) | Verify block, `oriel/1` | Verify block, `oriel-pair/1` | At `.ready` |
 |---|---|---|---|---|
-| home | loopback, lan, direct; vpn and internet refused with no byte | paired, or Require pairing off | always | `sill/1`: the session (checked again); `sill-pair/1`: one kind 19 of `ask`, `qr` or `code` |
-| remote | loopback, lan, vpn; internet only with internet access; direct never | paired | a window the remote door takes proofs for is open (was: any window) | as today: unpaired → refused; Remote Access off → goodbye `remoteOff`; 8 sessions → goodbye `busy`; `sill-pair/1`: `qr` or `code`, and `ask` answered `closed` without counting a try |
+| home | loopback, lan, direct; vpn and internet refused with no byte | paired, or Require pairing off | always | `oriel/1`: the session (checked again); `oriel-pair/1`: one kind 19 of `ask`, `qr` or `code` |
+| remote | loopback, lan, vpn; internet only with internet access; direct never | paired | a window the remote door takes proofs for is open (was: any window) | as today: unpaired → refused; Remote Access off → goodbye `remoteOff`; 8 sessions → goodbye `busy`; `oriel-pair/1`: `qr` or `code`, and `ask` answered `closed` without counting a try |
 
 **The ask rule**, first match wins (§4.6 applies it):
 1. the Mac is locked, or the console is another user's → `locked`;
@@ -778,7 +778,7 @@ enum CableLink {
   device-opened window closes cancelled on the Mac or stopped (five wrong codes), `AskLimits` makes
   that key and address quiet for 10 minutes; when it runs out, or its device withdraws it, nobody.
 - **Kind 19 "cancel"** (the security review, 2026-09-27): the device's Cancel on the home card, or a
-  new tap elsewhere, after the Mac answered its ask "shown", tells the Mac on a `sill-pair/1`
+  new tap elsewhere, after the Mac answered its ask "shown", tells the Mac on a `oriel-pair/1`
   connection pinned to the key that answered. The window closes, withdrawn (no quiet, "Pairing:
   ‹name› at ‹address› no longer needs its code; the window closed."), only when that very key's ask
   opened it and it is still the home door's alone: a window the Mac's user opened, or opened over
@@ -1093,7 +1093,7 @@ New attention items (first group, orange):
 | `iOSClient/SavedMacs.swift` | `homeTLS`, `revoked` (optional: older records decode) |
 | `iOSClient/StreamClient.swift` | one TLS builder for every home dial; `p` from each result; the session gate at the first window list; revoked |
 | `iOSClient/StreamClient+Remote.swift` | the ask; pairing through the row; the cable's ok; the goodbyes at home. As built (step 4): these live in a new `iOSClient/StreamClient+Home.swift` (`DeviceTLS`, `HomeDialer`, `HomeAsk`, the ask, the proofs at the home door, the session gate, how a home session ends); +Remote routes its scanner, outside links and ends to it |
-| `iOSClient/Info-Debug.plist` (new, step 4) | the Debug configuration's Info.plist: Info.plist plus `_silltest._tcp` (§7.9) |
+| `iOSClient/Info-Debug.plist` (new, step 4) | the Debug configuration's Info.plist: Info.plist plus `_orieltest._tcp` (§7.9) |
 | `iOSClient/AddMacCard.swift` | a home mode: the scanner, or the code alone (as built, step 5: `home`, the row's name) |
 | `iOSClient/ContentView.swift` | row words and hints; the card for a row; the harness contract |
 | `iOSClient/HostSettingsPanel.swift` | Away from home: "Paired"; Pair This ‹iPad›… only in an unpaired session (as built, step 5: `DiscoveryPolicy.awayFromHome`, pure) |
@@ -1169,9 +1169,9 @@ New attention items (first group, orange):
 
 | Row | A tap |
 |---|---|
-| saved, not revoked, TLS door | `sill/1` pinned to the saved key; connected at the first window list |
+| saved, not revoked, TLS door | `oriel/1` pinned to the saved key; connected at the first window list |
 | saved and revoked; unsaved with `p=1` | the ask (§7.5) |
-| unsaved, `p=0` | `sill/1` with any Mac key; nothing saved (the row reads "Not paired", §7.3) |
+| unsaved, `p=0` | `oriel/1` with any Mac key; nothing saved (the row reads "Not paired", §7.3) |
 | no `p`, DEBUG, not `homeTLS` | plain, as today |
 | no `p`, otherwise | nothing dialed; status "Mac mini runs an older Sill. Update Sill on the Mac to connect." |
 
@@ -1181,7 +1181,7 @@ New attention items (first group, orange):
 
 #### 7.5 Pairing at home (`StreamClient+Remote.swift`)
 
-1. **The ask.** A `sill-pair/1` connection to the row (its wired interface first for a Wired row,
+1. **The ask.** A `oriel-pair/1` connection to the row (its wired interface first for a Wired row,
    over IPv6 only: `NWProtocolIP.Options.version = .v6` on that dial, since the cable counts only
    over IPv6 link-local at both ends, and 41 of 41 sessions over the cable already were).
    For a saved, revoked Mac it pins the saved key (`askedKey` is that key): the Mac's key has not
@@ -1209,13 +1209,13 @@ New attention items (first group, orange):
    Then a pinned session on the row.
 3. **`shown`.** The connect screen unfolds the home card for that row (§7.8): the scanner, or
    after Enter Code Instead the code alone.
-   - A scanned link whose key is `askedKey`: a second `sill-pair/1` connection to the row, pinned
+   - A scanned link whose key is `askedKey`: a second `oriel-pair/1` connection to the row, pinned
      to that key, kind 19 `qr` with the proof from the link's secret. A link with another key: the
      home rows with `p`, each dialed pinned to the link's key, one at a time (the Mac whose code it
      is answers; a look-alike that answered the ask cannot, so the scan still pairs the real Mac),
      then, none answering, today's pairing through the link's addresses. A device-opened window's
      link has none: "Nothing answered…".
-   - A typed code: `sill-pair/1` to the row pinned to `askedKey`, kind 19 `code` with the PBKDF2
+   - A typed code: `oriel-pair/1` to the row pinned to `askedKey`, kind 19 `code` with the PBKDF2
      proof; the check digit is checked first, as today.
    - Kind 20 ok with proof_M checked and `macID == MacID(fp)`: saved as the remote path saves,
      plus `homeTLS` and the Bonjour name; then a pinned session on the row.
@@ -1226,7 +1226,7 @@ New attention items (first group, orange):
 - **An outside link** (`onOpenURL`, after its confirmation) goes the same way: to the row whose
   asked key it names, else the home rows pinned to its key, then its addresses, as today.
 - **Pair This ‹iPad›…** (the panel's overlay; now only in an unpaired session while Require
-  pairing is off): the ask on a `sill-pair/1` connection of its own to the session's endpoint,
+  pairing is off): the ask on a `oriel-pair/1` connection of its own to the session's endpoint,
   pinned to the key the session saw, never claiming the cable (`askOverStream`), and the line under
   the overlay's title says what the Mac answered (`DiscoveryPolicy.overlayLine`): "Asking Mac mini
   for a code…", then "Mac mini is showing a code now." only for `shown`, else "Mac mini didn’t show
@@ -1342,11 +1342,11 @@ the code Mac mini shows." Esc, Cancel or the escape gesture fold it back to the 
 - `-SillForgetHomeTLS 1`: clears `homeTLS` on every saved Mac at launch, so the device dials an
   older Sill.app (another branch's build) plainly again (§3.4). DEBUG only, like every argument
   here.
-- `-SillServiceType _silltest._tcp`: the browsers look for that type instead of `_sill._tcp`, so a
+- `-SillServiceType _orieltest._tcp`: the browsers look for that type instead of `_sill._tcp`, so a
   test host registered with `SILL_TEST_SERVICE_TYPE` shows as a real row with its TXT record, and
   no real Mac is listed. The simulator enforces NSBonjourServices (H0's P5: a browse for a type
   the Info.plist does not declare fails with -65555 NoAuth, on every launch but the first after an
-  install), so the Debug configuration's Info.plist declares `_silltest._tcp` beside `_sill._tcp`
+  install), so the Debug configuration's Info.plist declares `_orieltest._tcp` beside `_sill._tcp`
   (a per-configuration plist or a Debug-only build step), and Release's declares `_sill._tcp`
   alone: H1 prints `NSBonjourServices` from both products.
 - `-SillCableTest 1`: this device's path counts as the cable for §7.5's check. The simulator has
@@ -1481,7 +1481,7 @@ the code Mac mini shows." Esc, Cancel or the escape gesture fold it back to the 
   the iOS Simulator control tool's `attach` (each records or drives the screen at a higher priority
   than Sill's encoder); photos with `simctl io screenshot` only, taps and text through that tool
   without its panel.
-- Registrations only under `_silltest._tcp`; in the simulator `-SillServiceType _silltest._tcp` on
+- Registrations only under `_orieltest._tcp`; in the simulator `-SillServiceType _orieltest._tcp` on
   every launch, `-SillConnect` ones included, so no real Mac is ever a row to tap or to reconnect
   to. AWDL-on tests (H0's P1) under 20 s, and only after the same Sill.log check: AWDL takes the
   Mac's radio off its channel while it is on.
@@ -1496,7 +1496,7 @@ the code Mac mini shows." Esc, Cancel or the escape gesture fold it back to the 
 **Test tools.** `Scripts/sillclient.py` gains, each checked before it connects: `--pair-ask[=cable]`
 (kind 19 `ask`, with `cable: true` given `=cable`; prints kind 20), `--then-code=FILE` (after `shown`, reads the code from FILE and
 pairs over the same door: the CLI's printed code saved by the harness, or the bare app's
-`$SILL_TEST_REMOTE_DIR/pairing.code`), `--pair-hold=S` (a `sill-pair/1` connection that sends
+`$SILL_TEST_REMOTE_DIR/pairing.code`), `--pair-hold=S` (a `oriel-pair/1` connection that sends
 nothing for S seconds: a pairing connection still pending) and
 `--expect-pair=ok|cable|shown|openOnMac|locked|closed`. `--host=fe80::…%en0` (existing) reaches the
 stand-ins.
@@ -1505,19 +1505,19 @@ stand-ins.
 
 | # | Check | Pass when |
 |---|---|---|
-| H0 | **Preflight** (no commit). The base's commit (origin/main at the branch point: `cea195c` or later; its host sources are `b50e224`'s); `git archive` it to `$SP/base` and build it. Baselines: `SillHost --synthetic` idle 35 s; with `sillclient.py PORT 5 desktop`; both with `--direct-wireless`, and with `--remote`; the bare app's and the bundle's `-SillRenderPreviews`; the counts of the policy, ledger, fence, remote-rules, AddressList/PairingWindow, OriginPolicy and ClientLink checks. **Probes:** P1, a TLS NWListener registered as `_silltest._tcp` with TXT `r` and `p`: `dns-sd -L` reads both; setting its `service` again with `p` changed shows within 2 s with no "(2)"; the same with `includePeerToPeer` (under 20 s) leaves nothing on awdl0's index. P2, this plan's `cable-probe.swift` on the build machine: with a device on the cable the chain matches the Decision's table; without one no interface is a cable. P3, TLS against plain TCP on loopback through NWConnection: 200 MB each way, and 60 s of 14-byte records every 30 ms; CPU per MB and per record at both ends. P4, the base's `sillclient.py` against a TLS listener: what bytes it gets and when it sees EOF. P5, the simulator app with `-SillServiceType _silltest._tcp` lists a test registration (its Info.plist declares only `_sill._tcp` in NSBonjourServices; should the simulator enforce that, a DEBUG-only declaration, never in Release's plist). P6, `sysctl net.inet.ip.check_interface` recorded (1 on 2026-09-25; the cable rule no longer leans on it) | Files exist; every probe answers, or the plan changes first |
+| H0 | **Preflight** (no commit). The base's commit (origin/main at the branch point: `cea195c` or later; its host sources are `b50e224`'s); `git archive` it to `$SP/base` and build it. Baselines: `SillHost --synthetic` idle 35 s; with `sillclient.py PORT 5 desktop`; both with `--direct-wireless`, and with `--remote`; the bare app's and the bundle's `-SillRenderPreviews`; the counts of the policy, ledger, fence, remote-rules, AddressList/PairingWindow, OriginPolicy and ClientLink checks. **Probes:** P1, a TLS NWListener registered as `_orieltest._tcp` with TXT `r` and `p`: `dns-sd -L` reads both; setting its `service` again with `p` changed shows within 2 s with no "(2)"; the same with `includePeerToPeer` (under 20 s) leaves nothing on awdl0's index. P2, this plan's `cable-probe.swift` on the build machine: with a device on the cable the chain matches the Decision's table; without one no interface is a cable. P3, TLS against plain TCP on loopback through NWConnection: 200 MB each way, and 60 s of 14-byte records every 30 ms; CPU per MB and per record at both ends. P4, the base's `sillclient.py` against a TLS listener: what bytes it gets and when it sees EOF. P5, the simulator app with `-SillServiceType _orieltest._tcp` lists a test registration (its Info.plist declares only `_sill._tcp` in NSBonjourServices; should the simulator enforce that, a DEBUG-only declaration, never in Release's plist). P6, `sysctl net.inet.ip.check_interface` recorded (1 on 2026-09-25; the cable rule no longer leans on it) | Files exist; every probe answers, or the plan changes first |
 | H1 | Builds: `swift build -c release`; iOS Debug and Release for the simulator, Debug for the iPad (build only) | Only the known warnings |
 | H2 | **The CLI byte for byte:** H0's runs on the new build, masked and sorted | Identical. `--pairing` adds exactly its two lines (§5, §4.11), plus two per ask (the core's ask line and the CLI's code line); `--print-cable` exits 0 |
 | H3 | **Pure checks**, each with mutants caught: `DoorPolicy` (every row of §4.2: both doors, each origin, each ALPN, Require pairing on and off, paired or not, a window or not, the ask rule's six steps in order: step 2 only with the Mac's rule, `cable: true` and no other key of the device, step 4 for loopback and every one of this Mac's own addresses, and the TEST ONLY skip only on a test host, §4.3); `CableLink` (fixtures: this Mac's en14 and anri0 → a cable; anpi0 and en4 (device mode), en1 (Thunderbolt), en0 (Wi‑Fi), bridge0 → not; a Realtek USB Ethernet adapter (0x0BDA) → not; Apple's USB Ethernet Adapter (0x05AC, "Apple USB Ethernet Adapter") → not; an iPhone (0x05AC, "iPhone") → a cable; another Mac in device mode → not; no product name, no NCM interface → not; a routed source on a cable interface → not; a source that is one of this Mac's own addresses on en14, fe80 or 169.254 (the Simulator's, 2026-09-24) → not; any IPv4 source → not; no serial → not; `deviceID` stable, 22 characters, never the serial); `AskLimits` (one window; 10 minutes of quiet by key and by address; 3 in 10 minutes; expiry and a stop count as unused; the test override); `HomeDoorTXT` (build, parse, an unknown value → required); the device's `rowWord`, `homeDial` and `onCable` (every row of §7.3 and §7.4, DEBUG and Release, `homeTLS`, revoked; fe80 scoped to en2 or anpi0 carrying only link-local addresses → the cable; the same interface with a DHCP or SLAAC address (a USB Ethernet adapter) → not, and its row "Not paired"; the Mac's address one of this device's own → not; IPv4 link-local, Wi‑Fi, AWDL, loopback → not); `SavedMacs` and `PairedDevice` (the new fields; records without them decode) | All pass |
-| H4 | **The home door up:** `SILL_TEST_SERVICE_TYPE=_silltest._tcp SillHost --synthetic --pairing` | Its two lines; `dns-sd -t 3 -L "Sill test <pid>" _silltest._tcp local` shows `r` and `p=1`; one listener for its PID (`lsof -p`), no remote door; without `--pairing`, H2 holds |
-| H5 | **Refusals at the home door:** the base's `sillclient.py` (plain); `--tls` with an unpaired key on `sill/1`; `--tls` with another ALPN; `SILL_TEST_ORIGIN=vpn`. And `SillHost --print-cable` (read-only) with the iPad plugged in, if it is | Plain: closed within 100 ms, the 7-byte TLS alert and EOF, no Sill byte (H0's P4), counted "from an older Sill"; an HTTP request (`curl http://127.0.0.1:PORT/`): counted "unpaired", no menu item; five plain tries from one address in 10 s, then a paired `--tls` session from it: admitted at once (no backoff, §4.4); unpaired: ready, then a read error (-9825), no Sill byte; another ALPN: the handshake fails; vpn: closed before TLS; one summary line. `--print-cable` names en14 and anri0 as the iPad's cable |
-| H6 | **Pairing at home:** `--pair-ask --then-code=…` with the printed code; again with `--pair-url`; then `sill/1` with the same identity | `shown`, and the CLI's ask line; ok with a valid proof_M, over the home door; the session's catalog 2, 16, 18, 4…, 5, 14 and frames. On the bare app with Remote Access off, `-remotePort 0` and `SILL_TEST_ASK_FROM_THIS_MAC=1`, a device-opened window adds no listener to its PID, its `pairing.url` has no `a`, and `pairing.code` is written within 0.5 s of the ask, while `-SillPairAfter`'s window adds the remote door; without the variable the same ask gets `openOnMac` (it comes from this Mac) and no `pairingRequest` in the status. With a device-opened window up, `-SillPairAfter` makes it the remote door's: the remote door's listener appears for the PID, `pairing.url` is written again with the same secret and an `a`, and `--pair-url` over the remote door pairs |
+| H4 | **The home door up:** `SILL_TEST_SERVICE_TYPE=_orieltest._tcp SillHost --synthetic --pairing` | Its two lines; `dns-sd -t 3 -L "Sill test <pid>" _orieltest._tcp local` shows `r` and `p=1`; one listener for its PID (`lsof -p`), no remote door; without `--pairing`, H2 holds |
+| H5 | **Refusals at the home door:** the base's `sillclient.py` (plain); `--tls` with an unpaired key on `oriel/1`; `--tls` with another ALPN; `SILL_TEST_ORIGIN=vpn`. And `SillHost --print-cable` (read-only) with the iPad plugged in, if it is | Plain: closed within 100 ms, the 7-byte TLS alert and EOF, no Sill byte (H0's P4), counted "from an older Sill"; an HTTP request (`curl http://127.0.0.1:PORT/`): counted "unpaired", no menu item; five plain tries from one address in 10 s, then a paired `--tls` session from it: admitted at once (no backoff, §4.4); unpaired: ready, then a read error (-9825), no Sill byte; another ALPN: the handshake fails; vpn: closed before TLS; one summary line. `--print-cable` names en14 and anri0 as the iPad's cable |
+| H6 | **Pairing at home:** `--pair-ask --then-code=…` with the printed code; again with `--pair-url`; then `oriel/1` with the same identity | `shown`, and the CLI's ask line; ok with a valid proof_M, over the home door; the session's catalog 2, 16, 18, 4…, 5, 14 and frames. On the bare app with Remote Access off, `-remotePort 0` and `SILL_TEST_ASK_FROM_THIS_MAC=1`, a device-opened window adds no listener to its PID, its `pairing.url` has no `a`, and `pairing.code` is written within 0.5 s of the ask, while `-SillPairAfter`'s window adds the remote door; without the variable the same ask gets `openOnMac` (it comes from this Mac) and no `pairingRequest` in the status. With a device-opened window up, `-SillPairAfter` makes it the remote door's: the remote door's listener appears for the PID, `pairing.url` is written again with the same secret and an `a`, and `--pair-url` over the remote door pairs |
 | H7 | **The cable, by its stand-in:** `SILL_TEST_CABLE_INTERFACE=en0` and `SILL_TEST_ASK_FROM_THIS_MAC=1`, the client on the Mac's own `fe80::…%en0` | `--pair-ask=cable` → ok, `method "cable"`, the line, the notice hook, `cableDevice` in `paired.json`; `--pair-ask` without `cable` → `shown`; a second key → `shown` (the same device, serial TEST); the first key again → ok; on the bare app, the first removed (`-SillUnpairAfter`), then the second → ok; `SILL_TEST_LOCKED=1` → `locked`; a 127.0.0.1 client → `shown` (not link-local); without `SILL_TEST_CABLE_INTERFACE`, the same `fe80::…%en0` client → `shown` (this Mac's own address) |
-| H7b | **The real rule against this Mac's own addresses**, only while an iPhone or iPad is on the cable (`SillHost --print-cable` says so; skipped and recorded otherwise): `SILL_TEST_SERVICE_TYPE=_silltest._tcp SillHost --synthetic --pairing`, no TEST ONLY variable; `--pair-ask=cable` from this Mac's own `fe80::…%en14` (or `%anri0`) and from its 169.254 address on en14 | `shown` both (the CLI's window is open), never ok, nothing in `paired.json`: what the Simulator and any app on the Mac get. The connections stay inside this Mac; nothing crosses the cable |
+| H7b | **The real rule against this Mac's own addresses**, only while an iPhone or iPad is on the cable (`SillHost --print-cable` says so; skipped and recorded otherwise): `SILL_TEST_SERVICE_TYPE=_orieltest._tcp SillHost --synthetic --pairing`, no TEST ONLY variable; `--pair-ask=cable` from this Mac's own `fe80::…%en14` (or `%anri0`) and from its 169.254 address on en14 | `shown` both (the CLI's window is open), never ok, nothing in `paired.json`: what the Simulator and any app on the Mac get. The connections stay inside this Mac; nothing crosses the cable |
 | H8 | **The ask's limits,** on the bare app with `-SillCancelPairingAfter`, `SILL_TEST_ASK_QUIET=5` and `SILL_TEST_ASK_FROM_THIS_MAC=1` (its clients are on this Mac), from two sources: `127.0.0.1` and this Mac's `fe80::…%en0` | After a device-opened window is cancelled, that key and that address get `openOnMac` for 5 s, another key from the other address a window; a window stopped by five wrong codes quiets its asker the same way; three windows opened and closed, then the fourth ask `openOnMac`; `pairingRequest` in the status; one line per ask |
 | H9 | **TLS cost:** 45 s at 60 fps synthetic (the 60 s rule above) with `sillclient --stats`: the CLI's plain door; the TLS door with §8's tick rule; the TLS door without it | TLS with the rule within +0.5 percentage points of plain (host CPU, `ps`, release) and median frame age within 1 ms; the other run and P3's figures recorded in the Results |
 | H10 | **Require pairing,** on the bare app with `SILL_TEST_SERVICE_TYPE`: `-SillSetAfter '3 requirePairing=0; 10 requirePairing=1'` | `p` 1 → 0 → 1 in `dns-sd -L`, no "(2)"; an unpaired `--tls` session admitted between 3 and 10 s, then goodbye `pairingRequired` and EOF within 1 s of 10 s; a paired session streams throughout; one Settings line each; the same port |
-| H11 | **Remove:** a paired home session and a paired remote one (the bare app with `-remoteAccess YES -remotePort 0`), then `-SillUnpairAfter` | Goodbye `removed` on both doors within 1 s; "Removed …; closed 2 connections."; the next `sill/1` refused in the handshake |
+| H11 | **Remove:** a paired home session and a paired remote one (the bare app with `-remoteAccess YES -remotePort 0`), then `-SillUnpairAfter` | Goodbye `removed` on both doors within 1 s; "Removed …; closed 2 connections."; the next `oriel/1` refused in the handshake |
 | H12 | **Direct Wireless over TLS:** `SILL_TEST_PEER_TO_PEER_INTERFACE=en0`, a paired TLS client and a pending pairing connection (`--pair-hold=8`) from the Mac's `fe80::…%en0` | Direct Wireless off: the client disconnected with the existing line and the pending pairing connection cancelled; `p` still in the TXT record after the replacement; the same port |
 | H13 | **Fail closed:** the bare app with `SILL_TEST_REMOTE_DIR` holding a damaged `paired.json` (an unreadable directory is only ignored: AppModel falls back to an in-memory identity, and FileIdentityStore sets 0700 again) | No listener; `homeDoor` unavailable in the status; its log line |
 | H14 | **The remote door, again:** the remote plan's H6–H13, H15 and H17 against this build (Remote Access on; the bare app with `-remotePort 0`) | As before; with a window the Mac's user opened, an `ask` there is answered `closed` with no try counted (without one the remote door refuses every pairing connection in its handshake, as today) |
@@ -1533,7 +1533,7 @@ its `attach`).
 | # | Check |
 |---|---|
 | S1 | **The photo matrix:** every new connect case at 1000x710, 710x1000, 500x710, 710x500, 402x874, 874x402 and 375x667; the home card at the four Duo sizes and at `content_size accessibility-extra-large` (reset afterwards); the two settings cases at the Duo sizes. Nothing crosses y = 500 at 710x1000; "Not paired" and "Update Sill" are never truncated; the title never moves sideways; the card goes side by side under 520 pt. Send Noah the sheet |
-| S2 | **A real row:** `SILL_TEST_SERVICE_TYPE=_silltest._tcp SillHost --synthetic --pairing` and the normal app with `-SillServiceType _silltest._tcp`: the row "Sill test ‹pid›" reads "Not paired"; a tap, and the CLI prints the ask's line; the printed code typed into the card → paired, streaming; relaunched, the row reads its method word and connects pinned, with no ask. With an iPhone or iPad on the Mac's cable the row reads "Wired" (the simulator sees this Mac's en14) and the tap still gets the card, never a pairing by itself |
+| S2 | **A real row:** `SILL_TEST_SERVICE_TYPE=_orieltest._tcp SillHost --synthetic --pairing` and the normal app with `-SillServiceType _orieltest._tcp`: the row "Sill test ‹pid›" reads "Not paired"; a tap, and the CLI prints the ask's line; the printed code typed into the card → paired, streaming; relaunched, the row reads its method word and connects pinned, with no ask. With an iPhone or iPad on the Mac's cable the row reads "Wired" (the simulator sees this Mac's en14) and the tap still gets the card, never a pairing by itself |
 | S3 | **The cable:** the host with `SILL_TEST_CABLE_INTERFACE=en0 … --pairing`, the app with `-SillConnect fe80::…%en0:P -SillHomeDoor paired -SillCableTest 1`: paired with no card, "Paired with … over the cable.", streaming. Without `-SillCableTest` the device asks without `cable` and gets the card (the CLI's window is open), never a pairing by itself: the Mac pairs by itself only for an ask that claims the cable (§4.2). The device's own refusal of a proof-less ok it did not ask for needs a Mac that sends one: a stand-in (a swiftc tool over `RemoteTLS.options` in the server role, on a test port, answering every ask with ok and `method: "cable"`), without `-SillCableTest`: "Pairing didn’t finish…", nothing saved |
 | S4 | **Moves over TLS,** after S3's pairing (the one saved Mac, §7.9): `-SillMoveTest 1` and `to:` this Mac's `fe80::…%en0`, and PR #12's `-SillPathTest` cases (merged: up to the cable at this Mac's `fe80::…%en14` while a device is plugged in, down to Wi‑Fi, the connection cut, a loose cable), with `-SillHomeDoor paired`: each move's connection pinned, "Client connected" per hop on the host, the fence and the hold as before; a key removed mid-session ends its move as a failed one |
 | S5 | **The ends:** the bare app's `-SillUnpairAfter` while connected → "Mac mini removed this iPad. Tap it to pair again." and "Not paired"; `requirePairing` 0 → 1 with an unpaired session → "Mac mini now asks devices to pair…" |
@@ -1764,7 +1764,7 @@ with only the old `StreamClient` capture warning.
 
 **P1, the TXT record** (`$SP/probe`: one swiftc tool over StreamProtocol's own RemoteTLS,
 RemoteIdentity and StreamMessage; `$SP/p1`). A TLS 1.3 NWListener with RemoteTLS's server options
-over the home door's TCP options, registered as `_silltest._tcp` "Sill probe ‹pid›" with TXT `r`
+over the home door's TCP options, registered as `_orieltest._tcp` "Sill probe ‹pid›" with TXT `r`
 and `p=1`; 3 s after ready its `service` is set again with `p=0` and a fresh `r`, 4 s later with
 `p=1` and the same `r`; cancelled at 11 s.
 - The update is in place. `dns-sd -B` saw one Add per interface at the start and one Rmv per
@@ -1839,14 +1839,14 @@ Main's device reads the 7 bytes and EOF as its 14-byte header read ending short 
 so, and §4.4 counts only -9836 as "from an older Sill" (-9858 is never a Sill build).
 
 **P5, the simulator and NSBonjourServices** (`$SP/p5`). The `-SillServiceType` argument does not
-exist before step 4, so a scratch copy of this branch's iOS app browsed `_silltest._tcp` in place of
+exist before step 4, so a scratch copy of this branch's iOS app browsed `_orieltest._tcp` in place of
 `_sill._tcp`, its Info.plist unchanged (only `_sill._tcp`), on a simulator of its own ("iPad
 home-pairing H0", `8E83D7DE-94BD-4608-BEAB-8E8C66D28EC0`, iOS 27.0, shut down after), while the
 probe registered "Sill probe ‹pid›". The first launch after each of two installs listed it
 ("Sill probe 15413 … Wired, seen on anri0, lo0, en0, en14": the simulator browses through this
 Mac, so the iPad on the cable makes it "Wired"); both later launches got "Browse failed: -65555:
 NoAuth" and no row (`connect.png` and `connect4.png` with the row, `connect2.png` and
-`connect3.png` without). The simulator enforces it, so §7.9 now puts `_silltest._tcp` in the Debug
+`connect3.png` without). The simulator enforces it, so §7.9 now puts `_orieltest._tcp` in the Debug
 configuration's NSBonjourServices only.
 
 **P6.** `net.inet.ip.check_interface` 1 and `net.inet6.ip6.check_interface` 1 (macOS 27.0,
@@ -2008,14 +2008,14 @@ PID; no code in any core line.
 the base's `sillclient.py` reads EOF at once, 0 frames; "1 from an older Sill (not TLS)". (b)
 `curl http://127.0.0.1:PORT/`: 000 in 1.7 ms, "1 unpaired". (c) Five plain tries from 127.0.0.1,
 each the alert, then the ask, the code and a session from the same address, admitted at once with
-the real 300 s backoff. (d) An unpaired key on `sill/1`: TLS up, then certificate_unknown on the
+the real 300 s backoff. (d) An unpaired key on `oriel/1`: TLS up, then certificate_unknown on the
 first read, no Sill message, "1 unpaired". (e) ALPN `h2`: the handshake fails, "1 unpaired". (f)
 `SILL_TEST_ORIGIN=vpn`: closed with no byte in 0.9 ms, "1 through a VPN". One summary line each.
 `--print-cable` names en14 and anri0 as the cable to the iPad (plug-in 4854277126715).
 
 **H6** (the CLI's part). The ask → `shown`; the code → ok with a proof_M that checks; the core's
 ask line and the CLI's "Pairing: H6 iPad (sillclient) asked; code …"; "Paired … from 127.0.0.1,
-with the code."; the same by the link (`--pair-url`, pinned to `k`); then `sill/1` with the first
+with the code."; the same by the link (`--pair-url`, pinned to `k`); then `oriel/1` with the first
 identity: pinned, catalog `2 16 18 4×119 5 16 2 14`, 330 frames in 6 s; the codes and QR secrets
 only in main.swift's offer lines.
 
@@ -2102,7 +2102,7 @@ swap's fallbacks on the final code: all pass. Run ahead of step 3's bare-app gat
   "over the USB cable".
 - HG: a plain Sill message sets the status's `olderDeviceAt`; an HTTP request does not.
 - HH (H11's core, `--pairing --remote`): Remove sends goodbye `removed` to the key's home session
-  and its remote one, "Removed Both (sillclient); closed 2 connections.", and its next `sill/1` is
+  and its remote one, "Removed Both (sillclient); closed 2 connections.", and its next `oriel/1` is
   refused in the handshake.
 - The CLI with `--pairing` and a damaged `paired.json` in `SILL_TEST_REMOTE_DIR`: "Home door
   unavailable: Sill couldn’t use its key in the test directory … (… is damaged).", no listener,
@@ -2222,7 +2222,7 @@ once each, and one "Require pairing: disconnecting Stranger at 127.0.0.1:…, wh
 
 **H11** (`-remoteAccess YES -remotePort 0`). Goodbye `removed` on the home and the remote session,
 0.11 s after `-SillUnpairAfter`, then EOF; "Removed Both (sillclient); closed 2 connections."; the
-next `sill/1` refused in the handshake.
+next `oriel/1` refused in the handshake.
 
 **H13** (a damaged `paired.json`). No listener for the PID and the app still running; "Home door
 unavailable: Sill couldn’t use its key in the test directory … (… is damaged)."; the menu: the card
@@ -2312,7 +2312,7 @@ step 4's sections and their mutant drivers pointed at this tree), the simulator 
 `sgates-final.out`) and the builds' logs. Every host ran with `SILL_TEST_SOFTWARE_ENCODER=1` but the
 base's (S6, which has no such hook), which ran on the hardware encoder only while Noah's Sill.log said
 idle; one host at a time, each under 90 s, stopped by its PID. The simulator is this plan's own ("iPad
-home-pairing H0"); the app browsed only `_silltest._tcp`; photos with `simctl io screenshot` only, and no
+home-pairing H0"); the app browsed only `_orieltest._tcp`; photos with `simctl io screenshot` only, and no
 tap, UI test, recording or panel.
 
 **What landed.**
@@ -2343,7 +2343,7 @@ tap, UI test, recording or panel.
   pair this ‹iPad›.", no reconnect; -9808 on a pinned dial → the other rows the tag names, pinned, then
   the remote path's wrong-Mac words (none for a row taken by name alone). A goodbye `removed` on a remote
   session revokes the record too.
-- The ask: `sill-pair/1` to the row as a tap dials it (its wired interface first, IPv6 only, then the
+- The ask: `oriel-pair/1` to the row as a tap dials it (its wired interface first, IPv6 only, then the
   row as listed after 2.5 s or at once), pinned to a revoked Mac's saved key, else any key; the device's
   cable check at `.ready` (`onCable` over the path's address, its scope and getifaddrs; the DEBUG
   console's "home: cable: …"); kind 19 `ask` with `cable: true` only then; kind 20 within 15 s, judged by
@@ -2362,14 +2362,14 @@ tap, UI test, recording or panel.
 - Pure: DiscoveryPolicy's `HomeTrust`, `pin`, `sessionTrust`, `trust(_:readyWith:)`, `homeEnd`,
   `nextPinnedRow`, `askAnswer`, `linkRows` and `HomeCopy`; SavedMacs' `seenOverTLS`, `revoking` and
   `forgettingHomeTLS`.
-- DEBUG: `-SillServiceType`, with `_silltest._tcp` declared in the Debug configuration's own
+- DEBUG: `-SillServiceType`, with `_orieltest._tcp` declared in the Debug configuration's own
   `Info-Debug.plist` (Release's Info.plist declares `_sill._tcp` alone); `-SillHomeDoor`,
   `-SillForgetHomeTLS`, `-SillCableTest`; and for the gates, which drive no UI, `-SillTapRow`,
   `-SillHomeCode`, `-SillHomeLink`, `-SillOverlayCode` (§7.9).
 
 **H1.** iOS Debug for the simulator (signed ad hoc, for its keychain), Release for the simulator and
 Debug for `generic/platform=iOS` (build only, unsigned; the iPad was not touched): only the old
-`StreamClient` capture warning. `NSBonjourServices`: Debug `_sill._tcp`, `_silltest._tcp` (simulator and
+`StreamClient` capture warning. `NSBonjourServices`: Debug `_sill._tcp`, `_orieltest._tcp` (simulator and
 device products); Release `_sill._tcp`. No package source changed (`swift build -c release`: nothing to
 do).
 
@@ -2393,7 +2393,7 @@ origin 66, ClientLink 89, the protocol 188 and its 8 cross-checks): all pass. St
 not rerun: no host file changed.
 
 **S (simulator, `sgates-final.out`: 60 of 60 on the final build).**
-- S2: `SILL_TEST_SERVICE_TYPE=_silltest._tcp SillHost --synthetic --pairing` listed as "Sill test ‹pid›"
+- S2: `SILL_TEST_SERVICE_TYPE=_orieltest._tcp SillHost --synthetic --pairing` listed as "Sill test ‹pid›"
   (p=1); with Noah's iPad on this Mac's cable the simulator sees the Mac on anri0 and en14 too, so the
   unpaired row read "Wired", as S2 says it would (`notpaired.png`); the tap asked over anri0, the
   device's check said "cable: no, fe80::… is this device’s own address", the CLI printed its ask and code
@@ -2510,7 +2510,7 @@ phone sizes too). Content size set with `simctl ui … content_size` and put bac
 **H1.** iOS Debug for the simulator (signed ad hoc), Release for the simulator and Debug for
 `generic/platform=iOS` (unsigned, build only; the iPad was not touched): only the old `StreamClient`
 capture warning (now StreamClient.swift:2449). `NSBonjourServices`: Release `_sill._tcp`; Debug
-`_sill._tcp` and `_silltest._tcp`. `swift build -c release`: nothing to do (no package source changed).
+`_sill._tcp` and `_orieltest._tcp`. `swift build -c release`: nothing to do (no package source changed).
 
 **H3 and S7** (`$SP/out`). The device check 111 → 128: the panel's Away from home over all 16 inputs
 (a saved Mac always "Paired", Pair This ‹iPad›… only unpaired, never at a home door for a remote
@@ -2589,7 +2589,7 @@ ran everything again but the live gates. Nothing failed and no code changed.
   hoc), Release for the simulator and Debug for `generic/platform=iOS` with `CODE_SIGNING_ALLOWED=NO`,
   each with its own fresh DerivedData (the second session built them from the archive, so nothing was
   built in the worktree): only the old `StreamClient.swift:2449` capture warning. `NSBonjourServices`:
-  Debug `_sill._tcp` and `_silltest._tcp`, Release `_sill._tcp`; all three with
+  Debug `_sill._tcp` and `_orieltest._tcp`, Release `_sill._tcp`; all three with
   `ITSAppUsesNonExemptEncryption` false and `PrivacyInfo.xcprivacy`. None of the harness's arguments
   or cases (`SillConnectCase`, `SillHomeCode`, `SillTapRow`, `mockHomeTLS`, …) is in the Release binary.
 - H3, H17 and S7's strings, both sessions with the same counts: step 5's checks copied and run against
@@ -2622,7 +2622,7 @@ ran everything again but the live gates. Nothing failed and no code changed.
   that test listeners bind to loopback only: each host (the CLI with `--pairing`, the bare app) ran with
   an interposer (`loopback/loopback.dylib`, `DYLD_INSERT_LIBRARIES`) that binds its listeners to `::1`
   and refuses a listen anywhere else, `lsof` by its PID said `[::1]` alone before anything connected,
-  and the app dialed the real `_silltest._tcp` row's wired-test address (`-SillWiredTest ::1:PORT`), the
+  and the app dialed the real `_orieltest._tcp` row's wired-test address (`-SillWiredTest ::1:PORT`), the
   way a Wired row dials its cable. With Noah's iPad on this Mac's cable the unpaired row read "Wired";
   the tap asked, the card came up on `shown`, a wrong code gave "That code didn’t work… 4 tries left."
   and saved nothing, the right one paired at the home door and a pinned session streamed; a second
@@ -2662,7 +2662,7 @@ resolved by reading both sides.
 
 **What landed.**
 - The device gate in `Door`, one place for both TLS doors, as CLAUDE.md's Compatibility floor had
-  it for whichever of update-notice and this branch landed second. Once `.ready` admits a `sill/1`
+  it for whichever of update-notice and this branch landed second. Once `.ready` admits a `oriel/1`
   key (`DoorPolicy.atReady`), `Door.admitSession` hands the connection to `StreamServer.gate`: with
   the floor at "0" (every build) it registers at once, as before; above it the first message inside
   TLS must be a hello the floor admits, and any other device gets kind 22 "update" and is never
@@ -2708,13 +2708,13 @@ resolved by reading both sides.
   main's `-SillPrintMenuAfter` is among the timed hooks Sill.app itself ignores, while the update
   check's feed, version, interval and check-now arguments stay in the app (they bear on no door).
 - `SillProtocol` settled (Compatibility.swift, CLAUDE.md, docs/update-notice-plan.md §3.2, §4.6 and
-  open question 14): protocol 1 is 1.0's TLS home door with ALPN `sill/1`, as the remote door is;
+  open question 14): protocol 1 is 1.0's TLS home door with ALPN `oriel/1`, as the remote door is;
   pairing on the home door is no longer an example of what raises it; a later generation raises
-  both: `sill/2` is offered beside `sill/1` and `sill-pair/1`, which a host offers for good
+  both: `oriel/2` is offered beside `oriel/1` and `oriel-pair/1`, which a host offers for good
   (`RemoteTLS.serverALPNs`), never instead of them. (As first written here, "offered beside
-  `sill/1` while older peers are served": the security review's reading, 2026-09-27, was that it
-  lets a later host drop `sill/1` exactly when its floor refuses 1.0 devices, and a 1.0 device
-  hears kind 22 "update" only inside a `sill/1` session; without it, a failed handshake, -9838,
+  `oriel/1` while older peers are served": the security review's reading, 2026-09-27, was that it
+  lets a later host drop `oriel/1` exactly when its floor refuses 1.0 devices, and a 1.0 device
+  hears kind 22 "update" only inside a `oriel/1` session; without it, a failed handshake, -9838,
   "disconnected" and a redial for ever. Reworded, with the protocol check's case.)
 - This branch's pure checks in `Tests/checks`, and in CI's mutants matrix: `door`, `cable`,
   `asklimits`, `records`, `device`, `hometxt` and `home` are `door-policy`, `cable-link`,
@@ -2735,7 +2735,7 @@ host at a time, another session's host waited for first.
   tree from `git archive`); iOS Debug and Release for the simulator (signed ad hoc) and Debug for
   `generic/platform=iOS` with `CODE_SIGNING_ALLOWED=NO`, each with fresh DerivedData: only the old
   `StreamClient` capture warning (`StreamClient.swift:2572` now). The built Info.plists: Debug
-  `_sill._tcp` and `_silltest._tcp`, Release `_sill._tcp`, all with `ITSAppUsesNonExemptEncryption`
+  `_sill._tcp` and `_orieltest._tcp`, Release `_sill._tcp`, all with `ITSAppUsesNonExemptEncryption`
   false, version 0.5 (main's) and `PrivacyInfo.xcprivacy`; none of the harness's arguments is in the
   Release binary. The first iOS build of the merge failed on the pbxproj IDs above.
 - `Tests/checks/run-all.sh`: all 22 pass: addresses 41, ask-limits 27, cable-link 40, clientlink
@@ -2804,13 +2804,13 @@ below). Each fix is its own commit, with a check or a live run that fails before
 where one can.
 
 **The fixes** (the commits say how, and what each check counts):
-1. **The floor let a later host drop `sill/1`** (ae2e228): "`sill/2` offered beside `sill/1`
-   while older peers are served" is now "a host offers `sill/1` and `sill-pair/1` for good, a
-   later generation only beside them, and refuses a device too old for it inside a `sill/1`
+1. **The floor let a later host drop `oriel/1`** (ae2e228): "`oriel/2` offered beside `oriel/1`
+   while older peers are served" is now "a host offers `oriel/1` and `oriel-pair/1` for good, a
+   later generation only beside them, and refuses a device too old for it inside a `oriel/1`
    session with kind 22 "update"" (CLAUDE.md's floor, Compatibility.swift, RemoteTLS.swift, the
    update-notice plan); `RemoteTLS.serverALPNs`, the protocol check's case.
 2. **What 1.0 freezes of pairing** (d984273): the floor names the TXT keys `r` and `p`, a
-   `sill-pair/1` connection as one kind 19 and one kind 20, the methods and reasons, kind 19's
+   `oriel-pair/1` connection as one kind 19 and one kind 20, the methods and reasons, kind 19's
    `v` 1 and pairing never refused for age; a host answers a request of another `v` `closed` with
    no try counted; kind 20 gains an optional `message` a later host can give a reason this build
    does not know, which the device shows (§3.1, §3.5).
@@ -2837,7 +2837,7 @@ where one can.
 9. **An unsaved device's reconnect waited for ever at a door that now requires pairing**
    (85bb126): `DiscoveryPolicy.reconnectEnd` ends it with the goodbye's own words (§7.6).
 10. **Pair This ‹iPad›… said a code was showing when none was** (5551d5c): it asks on its own
-    `sill-pair/1` connection to the session's door and its line says what the Mac answered
+    `oriel-pair/1` connection to the session's door and its line says what the Mac answered
     (`DiscoveryPolicy.overlayLine`), spoken; its Cancel withdraws a code shown for it (§7.5).
 11. **The harness** (380f081): `-SillNoAutoDesktop 1`, and `-SillScanOverlay 1` over a live
     session, for the gates below.
@@ -2977,7 +2977,7 @@ Noah's Sill.app at each run.
   iOS Debug and Release for the simulator (signed ad hoc) and Debug for `generic/platform=iOS`
   (`CODE_SIGNING_ALLOWED=NO`), each with fresh DerivedData, only the old `StreamClient` capture
   warning (`StreamClient.swift:2861` now). Release's Info.plist declares `_sill._tcp` alone, the
-  Debug ones `_silltest._tcp` too; all three `ITSAppUsesNonExemptEncryption` false, version 0.5
+  Debug ones `_orieltest._tcp` too; all three `ITSAppUsesNonExemptEncryption` false, version 0.5
   (1), with `PrivacyInfo.xcprivacy`; none of the harness's arguments is in the Release binary.
 - Live, the merged CLI (`gates.py`, 23 of 23). M1, `--pairing --remote`: both doors on 127.0.0.1
   alone; the loopback and software-encoder lines once each and no "ignored" line; pairing by the
@@ -3049,7 +3049,7 @@ HostSettingsPanel, MockCatalog, StreamClient), each resolved by reading both sid
   rows), This iPad's gestures, then Take the Tour, last. The harness's contract (ContentView) and
   MockCatalog keep both sides' arguments and cases (the pairing settings cases take gestures, as
   every case but `legacy` does); sillclient.py both sides' flags.
-- `SillProtocol`'s comment and CLAUDE.md's floor: kinds 0–28 inside `sill/1` at both TLS doors,
+- `SillProtocol`'s comment and CLAUDE.md's floor: kinds 0–28 inside `oriel/1` at both TLS doors,
   with the menus' and the gestures' rules beside pairing's.
 - `Scripts/pacing` (#34's harness, which compiles the real StreamServer.swift): on the merge its new
   side no longer built (no `Door`, `DoorPolicy`, `HostIdentity` or `TrustBox`; `serve` wants the
@@ -3071,7 +3071,7 @@ Noah's Sill.app at each host's start.
   Debug and Release for the simulator and Debug for `generic/platform=iOS`, unsigned
   (`CODE_SIGNING_ALLOWED=NO`), with fresh DerivedData, only the old `StreamClient` capture warning
   (`StreamClient.swift:2989` now). Release's Info.plist declares `_sill._tcp` alone, the Debug ones
-  `_silltest._tcp` too; all three `ITSAppUsesNonExemptEncryption` false, with
+  `_orieltest._tcp` too; all three `ITSAppUsesNonExemptEncryption` false, with
   `PrivacyInfo.xcprivacy`; none of the harness's arguments is in the Release binary.
 - `Tests/checks/run-all.sh`: all 33 pass (295 s): addresses 41, ask-limits 34, cable-link 40,
   clientlink 89, compatibility 93, device-gate 58, dmg-layout 70, door-policy 128, encoder-mailbox
@@ -3186,8 +3186,8 @@ and each is fixed in a commit of its own theme (4889e62 to 553ad58, and this one
   Code Instead: a Mac opens no window for an ask from itself).
 - **Two slips in the docs** (62be05d): DEVELOPMENT.md put Pair This iPad… "at the end of its
   Settings panel" (it is in Away from home; the panel ends with This iPad's gestures and Take the
-  Tour); CLAUDE.md's floor had kinds 0–28 "inside `sill/1` at both doors", which took in 19 and 20,
-  a `sill-pair/1` connection's.
+  Tour); CLAUDE.md's floor had kinds 0–28 "inside `oriel/1` at both doors", which took in 19 and 20,
+  a `oriel-pair/1` connection's.
 - **Stale costs and timings** (553ad58): the checklist priced the mutants at fifteen jobs, two
   hours and $7.50 (32 jobs now; their scripts took 205 minutes here, so about four hours, some
   2,400 included minutes or $15 on a private repository) and called Saffsanity/sill private (public

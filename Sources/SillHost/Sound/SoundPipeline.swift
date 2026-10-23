@@ -221,7 +221,7 @@ final class TestTone: @unchecked Sendable {
 /// (`CATapMutedWhenTapped`: the Mac's speakers stay silent while Sill reads it, and play again the
 /// moment it stops, also if Sill hangs or is killed), in a private aggregate device whose IO proc
 /// pushes each buffer into the pipeline. macOS 14.2 and later; macOS asks once for System Audio
-/// Recording ("Sill would like to record…"), and while it is refused the tap hears silence.
+/// Recording ("Oriel would like to record…"), and while it is refused the tap hears silence.
 @available(macOS 14.2, *)
 final class SystemAudioTap {
     struct Failure: Error, CustomStringConvertible {
@@ -241,7 +241,7 @@ final class SystemAudioTap {
     init(pipeline: SoundPipeline, outputUID: String?) throws {
         let own = Self.processObject(pid: getpid())
         let description = CATapDescription(stereoGlobalTapButExcludeProcesses: own.map { [$0] } ?? [])
-        description.name = "Sill"
+        description.name = "Oriel"
         description.uuid = UUID()
         description.isPrivate = true
         description.muteBehavior = .mutedWhenTapped
@@ -253,7 +253,7 @@ final class SystemAudioTap {
         let sub: [String: Any] = [kAudioSubTapUIDKey: description.uuid.uuidString,
                                   kAudioSubTapDriftCompensationKey: true]
         var dict: [String: Any] = [
-            kAudioAggregateDeviceNameKey: "Sill",
+            kAudioAggregateDeviceNameKey: "Oriel",
             kAudioAggregateDeviceUIDKey: "com.gabrieldrl.sill.sound." + UUID().uuidString,
             kAudioAggregateDeviceIsPrivateKey: true,
             kAudioAggregateDeviceIsStackedKey: false,

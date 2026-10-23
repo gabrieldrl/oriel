@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The pacing harness's device: what the iPad's StreamClient does on a remote session, minus the
-pixels. TLS 1.3 with a client certificate and ALPN sill/1 (or plain TCP with --plain) to
+pixels. TLS 1.3 with a client certificate and ALPN oriel/1 (or plain TCP with --plain) to
 127.0.0.1:PORT.
 - reads every message;
 - pings every 0.25 s (8-byte monotonic stamp, echoed by the host as a pong);
@@ -50,7 +50,7 @@ def context():
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
     ctx.load_cert_chain(CERT, KEY)
-    ctx.set_alpn_protocols(["sill/1"])
+    ctx.set_alpn_protocols(["oriel/1"])
     return ctx
 
 def msg(kind, payload=b""):

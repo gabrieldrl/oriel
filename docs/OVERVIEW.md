@@ -83,7 +83,7 @@ are bitrates per 60 fps: Low 4, Efficient 8, Balanced 15 (default), High 25,
 Pro 40, Ultra 80, Extreme 150 Mbps.
 
 **Network, doors and pairing.** The host has two "doors":
-- The **home door**: advertised over Bonjour as `_sill._tcp` (`_sillgdl._tcp` in this fork), TLS 1.3 with each
+- The **home door**: advertised over Bonjour as `_sill._tcp` (`_oriel._tcp` in this fork), TLS 1.3 with each
   end pinned to the other's key. Pairing at home is by "ask" (tap an unpaired
   Mac and it opens a pairing window), a QR code, a 12-digit code, or
   automatically over the USB cable. "Require pairing" is on by default. The CLI
@@ -99,8 +99,8 @@ keychain for the notarized download, the login keychain for self-built copies).
 Wi-Fi (AWDL) for a device that shares no network with the Mac.
 
 **Wire protocol.** Each message is a 14-byte header plus a payload; kinds are
-listed in `Sources/StreamProtocol/StreamMessage.swift`. ALPN `sill/1` for
-sessions, `sill-pair/1` for a one-shot pairing connection. Roughly:
+listed in `Sources/StreamProtocol/StreamMessage.swift`. ALPN `oriel/1` for
+sessions, `oriel-pair/1` for a one-shot pairing connection. Roughly:
 - Video: 0 parameter sets, 1 HEVC frame.
 - Catalog: 2 window list, 3 thumbnail, 4 app icon, 5 app list; 6 select source, 7 launch app.
 - Input and view: 8 input (pointer, scroll, key, text), 9 viewport, 15 window command, 28 trackpad gesture.
@@ -305,7 +305,7 @@ From `CLAUDE.md` "Conventions", "Decisions already made" and "Compatibility floo
 - **Don't add features the current milestone doesn't need**; v1 scope excluded hole punching, multi-window and layout customization (audio was also excluded, but upstream now has an audio beta in progress).
 - **Compatibility floor, in brief.** Shipped apps must keep working with each other across versions:
   - Never renumber or reuse a message kind; never rename or retype a field; new fields are optional; never add a case to an enum an older peer decodes.
-  - Keep the 14-byte header, ALPNs `sill/1` and `sill-pair/1` (a future `sill/2` goes beside them, never instead), the TLS home door with pairing, and the pairing methods and reasons as 1.0 has them.
+  - Keep the 14-byte header, ALPNs `oriel/1` and `oriel-pair/1` (a future `oriel/2` goes beside them, never instead), the TLS home door with pairing, and the pairing methods and reasons as 1.0 has them.
   - New capabilities are announced by the host (for example `WindowList.gestures`, `WindowList.clipboard`), and a device sends the new kind only to a host that advertised it.
   - A device that is too old is refused with a kind 22 "update" goodbye, never served something wrong. `SillProtocol.current` (1) rises only for a change an older peer can't skip.
 
@@ -322,8 +322,8 @@ discovery, and its Sill.app never offers upstream's releases as updates.
 | iOS bundle ID | `me.saffer.sill` | `com.gabrieldrl.sill` |
 | Mac bundle ID (and its `defaults` domain) | `me.saffer.sill.mac` | `com.gabrieldrl.sill.mac` |
 | Apple team | `9B2KKVM937` (Noah) | `JF8R4AVC2H` (Gabriel Lam, Personal Team) |
-| Bonjour service type | `_sill._tcp` | `_sillgdl._tcp` |
-| Pairing link scheme | `sill://pair` | `sillgdl://pair` |
+| Bonjour service type | `_sill._tcp` | `_oriel._tcp` |
+| Pairing link scheme | `sill://pair` | `oriel://pair` |
 | Update feed / release repo | Saffsanity/sill | gabrieldrl/sill |
 | Keychain tags, pasteboard and menu identifiers | `me.saffer.sill.*` | `com.gabrieldrl.sill.*` |
 

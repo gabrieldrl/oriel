@@ -6,7 +6,7 @@ F = os.path.join(WT, "Sources/SillMenuBar/IdentityStorePlan.swift")
 MUTANTS = [
     ("bare binary reaches the real-app branch",
      "if synthetic || !bundled {", "if synthetic && !bundled {"),
-    ("Sill.app --synthetic takes the file store",
+    ("Oriel.app --synthetic takes the file store",
      "if synthetic, !bundled, let dir = testRemoteDir, !dir.isEmpty { return .testDirectory(dir) }",
      "if !bundled, let dir = testRemoteDir, !dir.isEmpty { return .testDirectory(dir) }"),
     ("a non-synthetic bare binary takes the file store",

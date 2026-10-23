@@ -6,7 +6,7 @@ import StreamProtocol
 
 // Remote access on the device (docs/remote-access-plan.md §7): pairing, saved Macs, remote dials,
 // the session gate (a remote session is connected at its first window list), kinds 18, 20 and 22,
-// the reconnect order after a loss, and sillgdl://pair links. Main thread unless a function says
+// the reconnect order after a loss, and oriel://pair links. Main thread unless a function says
 // otherwise; the stored state lives in StreamClient.swift.
 
 /// Pairing as the Add a Mac card and the overlay show it.
@@ -80,10 +80,10 @@ enum PairingProblem: Equatable {
         case .expired: return "This code expired. Choose Pair iPhone or iPad… on your Mac for a new one."
         case .proofFailed(let host):
             return "Pairing didn’t finish: the Mac at \(host) couldn’t show it knows the code. Pair from the same network as your Mac, or scan the code instead."
-        case .nothingAnswered(let host): return "Nothing answered at \(host). Check the address, and that Sill is open on your Mac."
-        case .notSill(let host): return "Something answered at \(host), but it isn’t Sill, or its Sill is too old to pair."
-        case .localNetwork(let host): return "To reach \(host), allow Local Network for Sill in Settings."
-        case .notALink: return "That’s not a Sill code."
+        case .nothingAnswered(let host): return "Nothing answered at \(host). Check the address, and that Oriel is open on your Mac."
+        case .notSill(let host): return "Something answered at \(host), but it isn’t Oriel, or its Oriel is too old to pair."
+        case .localNetwork(let host): return "To reach \(host), allow Local Network for Oriel in Settings."
+        case .notALink: return "That’s not a Oriel code."
         case .noKey(let reason): return "This \(StreamClient.deviceWord) couldn’t make its key (\(reason))."
         case .homeStopped(let mac): return DiscoveryPolicy.HomeCopy.stopped(mac: mac)
         case .homeExpired(let mac): return DiscoveryPolicy.HomeCopy.expired(mac: mac)
@@ -104,15 +104,15 @@ enum RemoteCopy {
         let at = candidate?.display ?? "its address"
         switch failure {
         case .wrongMac:
-            return "This isn’t the \(mac) this \(device) paired with. If Sill was set up again on it, forget it here and pair again."
+            return "This isn’t the \(mac) this \(device) paired with. If Oriel was set up again on it, forget it here and pair again."
         case .revoked:
-            return "\(mac) no longer accepts this \(device). Pair it again from Sill’s Settings on the Mac."
+            return "\(mac) no longer accepts this \(device). Pair it again from Oriel’s Settings on the Mac."
         case .remoteOff:
             return "\(mac) turned off Remote Access."
         case .busy:
             return "\(mac) is already serving 8 devices."
         case .refused:
-            return "\(mac) answered, but Sill isn’t accepting remote connections there. Check that Sill is open and Remote Access is on. If you changed its port, connect at home once."
+            return "\(mac) answered, but Oriel isn’t accepting remote connections there. Check that Oriel is open and Remote Access is on. If you changed its port, connect at home once."
         case .vpnOff:
             let name = candidate.flatMap { vpnLabel($0) }
             return name.map { "\($0) looks off on this \(device). Turn it on, then tap \(mac)." }
@@ -122,9 +122,9 @@ enum RemoteCopy {
             return RemoteDialPolicy.isTailscaleName(host) ? "This \(device) can’t look up \(host). Is Tailscale on?"
                                                         : "This \(device) can’t look up \(host)."
         case .localNetwork:
-            return "To reach \(at), allow Local Network for Sill in Settings."
+            return "To reach \(at), allow Local Network for Oriel in Settings."
         case .notSill:
-            return "Something answered at \(at), but it isn’t Sill. Your home’s internet address may have changed."
+            return "Something answered at \(at), but it isn’t Oriel. Your home’s internet address may have changed."
         case .noAnswer:
             if let c = candidate, c.kind == MacAddress.internet, !c.isName {
                 return "\(mac) didn’t answer at \(at). If your home’s internet address changed, connect at home once to update it, or add an address name on the Mac."
@@ -185,7 +185,7 @@ extension StreamClient {
         savedSightings.since[macID] = nil
         savedSightings.leftAt[macID] = nil
         persistSavedMacs()
-        status = "Forgot \(name). It still lists this \(Self.deviceWord) until you remove it in Sill’s Settings on the Mac."
+        status = "Forgot \(name). It still lists this \(Self.deviceWord) until you remove it in Oriel’s Settings on the Mac."
     }
 
     /// The card's Cancel while a pairing dial runs: it stops, nothing is saved. The home card's too:
@@ -583,7 +583,7 @@ extension StreamClient {
     /// carried on by one (StreamClient.rescue) and stays connected until it takes over, or until it
     /// fails and the session's end brings the reconnect here. After goodbye `quit`, a row listed
     /// since before the loss is the registration that is going (it outlives the goodbye by about a
-    /// second): it is left alone for DiscoveryPolicy.quitWait, and the words "‹Mac› quit Sill…"
+    /// second): it is left alone for DiscoveryPolicy.quitWait, and the words "‹Mac› quit Oriel…"
     /// stay meanwhile; the row listed again (Sill is back), or still listed after that, is taken as
     /// above.
     @discardableResult
@@ -788,10 +788,10 @@ extension StreamClient {
         return ParsedAddress(host: pick.host, port: pick.port, kind: pick.isIPv6 ? .ipv6 : (pick.isName ? .name : .ipv4)).text
     }
 
-    /// A sillgdl://pair link from outside the app: shown for confirmation, never acted on by itself (a
+    /// A oriel://pair link from outside the app: shown for confirmation, never acted on by itself (a
     /// poster or a message could otherwise add a look-alike "Mac" that collects keystrokes).
     func handleOpenURL(_ url: URL) {
-        guard url.scheme?.lowercased() == "sillgdl" else { return }
+        guard url.scheme?.lowercased() == "oriel" else { return }
         switch PairLink.parse(url.absoluteString) {
         case .success(let link):
             pendingLink = link
