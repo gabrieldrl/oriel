@@ -63,12 +63,15 @@ enum DoorPolicy {
     /// The TLS handshake's verify block: trust is the key and the application protocol, nothing
     /// else. `sill/1` for a paired key, and at home for any key while Require pairing is off;
     /// `sill-pair/1` always at home (an ask needs no window), and at the remote door only while a
-    /// window it takes proofs for is open; anything else never.
+    /// window it takes proofs for is open; `sill-bg/1` (the background link) for a paired key alone,
+    /// at either door; anything else never.
     static func trusts(_ door: Door, alpn: String?, _ t: Trust) -> Bool {
         guard t.hasKey else { return false }
         switch alpn {
         case RemoteTLS.sessionALPN?:
             return door == .home ? t.paired || !t.requirePairing : t.paired
+        case RemoteTLS.backgroundALPN?:
+            return t.paired
         case RemoteTLS.pairingALPN?:
             return door == .home ? true : t.remotePairingOpen
         default:
@@ -84,6 +87,9 @@ enum DoorPolicy {
         /// A pairing connection: read exactly one kind 19 (at most 4 KiB, within the admission
         /// deadline), then treat it as `pairing(_:method:version:)` says.
         case pairing
+        /// A background link (docs/background-plan.md): handed to the BackgroundServer, never a
+        /// stream session.
+        case background
         /// A paired key the door does not serve now: this goodbye ("remoteOff", "busy"), then close.
         case goodbye(String)
         /// Cancelled with no Sill byte, counted under this word in the minute's summary ("unpaired").
@@ -109,6 +115,11 @@ enum DoorPolicy {
             return .session
         case (.remote, RemoteTLS.pairingALPN?):
             return t.remotePairingOpen ? .pairing : .refuse("unpaired")
+        case (.home, RemoteTLS.backgroundALPN?):
+            return t.paired ? .background : .refuse("unpaired")
+        case (.remote, RemoteTLS.backgroundALPN?):
+            guard t.paired else { return .refuse("unpaired") }
+            return t.remoteAccess ? .background : .goodbye(Goodbye.remoteOff)
         default:
             return .refuse("unpaired")
         }

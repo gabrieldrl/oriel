@@ -16,7 +16,7 @@ func json<T: Encodable>(_ x: T) -> String { String(decoding: try! sorted.encode(
 
 check(StreamMessageKind.curtain.rawValue == 52 && StreamMessageKind(rawValue: 52) == .curtain, "kind 52 is the curtain")
 check(StreamMessage.parseHeader(Data([52]) + Data(count: 9) + Data([0, 0, 0, 2]))?.kind == .curtain, "its header parses")
-check(StreamMessageKind(rawValue: 51) == .displayThumbnail && StreamMessageKind(rawValue: 53) == nil, "51 is still a picture, 53 free")
+check(StreamMessageKind(rawValue: 51) == .displayThumbnail && StreamMessageKind(rawValue: 53) == .agents, "51 is still a picture, 53 the agents'")
 check(json(CurtainControl(on: true)) == #"{"on":true}"#, "on: \(json(CurtainControl(on: true)))")
 check(json(CurtainControl(on: false)) == #"{"on":false}"#, "off")
 check(json(CurtainControl(on: false, problem: CurtainControl.accessibility)) == #"{"on":false,"problem":"accessibility"}"#, "refused, and why")

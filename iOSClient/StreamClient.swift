@@ -719,7 +719,10 @@ final class StreamClient: ObservableObject {
         /// The endpoint dialed (the DEBUG move and path tests start from it).
         var endpoint: NWEndpoint? = nil
     }
-    var session: Session?
+    var session: Session? {
+        // A Mac learned once connected (a verified kind 18, a pairing over the stream) connects too.
+        didSet { if connected, session?.macID != oldValue?.macID { MacLinks.shared.join(session?.macID) } }
+    }
 
     /// The row a session at home was dialed from.
     struct HomeRow: Equatable {
@@ -1740,6 +1743,7 @@ final class StreamClient: ObservableObject {
         // home card never comes back for it with the connect screen.
         cancelHomeAsk(idleStatus: false)
         connected = true
+        MacLinks.shared.join(session?.macID)   // its background link (docs/background-plan.md)
         askedNearby = false
         connectedAt = Date()
         pinRefusedRows = []
@@ -1800,7 +1804,7 @@ final class StreamClient: ObservableObject {
 
     /// This device's hello (kind 23): its version, build, protocol and name, built once. DEBUG:
     /// `-SillHelloVersion <v>` replaces the version, for a host's device floor under test.
-    private static let helloPayload: Data = {
+    static let helloPayload: Data = {
         var version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         #if DEBUG
         if let v = UserDefaults.standard.string(forKey: "SillHelloVersion"), !v.isEmpty { version = v }

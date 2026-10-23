@@ -93,6 +93,16 @@ public enum StreamMessageKind: UInt8 {
                              // every few seconds to a subscribed device
     case curtain = 52        // both ways: JSON CurtainControl (Curtain.swift) — the device's on or off, the
                              // host's answer with its state; only with a host whose window list says `curtain`
+    // The background link (Background.swift; docs/background-plan.md), ALPN sill-bg/1 only: never on a
+    // stream session.
+    case agents = 53         // host → device: JSON AgentReport (Agents.swift) — the Mac's coding agents, their
+                             // usage and sessions, one per kind 54
+    case agentQuery = 54     // device → host: JSON AgentQuery
+    case linkJoin = 55       // device → host: JSON LinkJoin — this device's registration, after its hello and at
+                             // every change; the Mac keeps it until a kind 57
+    case linkState = 56      // host → device: JSON LinkState — the answer to a kind 55
+    case linkLeave = 57      // device → host: JSON LinkLeave — Disconnect: forget this device; the Mac closes the link
+    case agentEvent = 58     // host → device: JSON AgentEvent — an agent's turn ended, while the link is up
     case unknown = 255       // never sent: what parseHeader yields for a kind this build does not know
 }
 

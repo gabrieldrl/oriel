@@ -8,14 +8,17 @@ import StreamProtocol
 /// MacProbe, docs/reachable-plan.md); and Connect, which connects by the best way (nearby when it
 /// is listed there, else remotely at its saved addresses, as a tap on the picture does), its
 /// chevron a menu of every route: the nearby row and each saved address, with whether it answered
-/// the last check. The card's own menu has Forget. Above them the status line (not the idle
-/// "Looking for Macs…"); at the bottom, Add a Mac, a quick-control pill, whose sheet is the old connect
-/// screen (ConnectScreen) on its pairing card, with the nearby Macs not yet paired under it. The
+/// the last check. A Mac still connected (MacLinks: its stream closed, not disconnected) has View in
+/// Connect's place, and Disconnect. The card's own menu has Forget. Above them the status line (not
+/// the idle "Looking for Macs…"); at the bottom, Add a Mac, a quick-control pill, whose sheet is the
+/// old connect screen (ConnectScreen) on its pairing card, with the nearby Macs not yet paired under
+/// it, and Settings (SettingsScreen). The
 /// same sheet comes up by itself when a tap's ask makes a Mac show its code, and for an outside
 /// pairing link. `-SillClassicScreen 1` shows the old connect screen in its place (ContentView).
 struct HomeScreen: View {
     @ObservedObject var client: StreamClient
     @ObservedObject private var desktops = MacDesktops.shared
+    @ObservedObject private var links = MacLinks.shared
     @Environment(\.scenePhase) private var scenePhase
 
     private enum Sheet: Identifiable {
@@ -24,6 +27,7 @@ struct HomeScreen: View {
         /// The home card for a tap's ask, or an outside link's confirmation: what ConnectScreen
         /// shows by itself.
         case pairing
+        case settings
         var id: Self { self }
     }
     @State private var sheet: Sheet?
@@ -58,22 +62,29 @@ struct HomeScreen: View {
                     cards(in: geo.size)
                 }
                 Spacer(minLength: 16)
-                AddMacPill { sheet = .add }
-                    .padding(.bottom, 24)
+                HStack(spacing: 14) {
+                    AddMacPill { sheet = .add }
+                    SettingsButton { sheet = .settings }
+                }
+                .padding(.bottom, 24)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(Color.black.ignoresSafeArea())
         .sheet(item: $sheet) { which in
-            ConnectScreen(client: client, adding: which == .add)
-                .overlay(alignment: .topTrailing) {
-                    Button("Done") { sheet = nil }
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Palette.accent)
-                        .padding(20)
-                }
-                .background(Color.black.ignoresSafeArea())
-                .preferredColorScheme(.dark)
+            if which == .settings {
+                SettingsScreen(client: client)
+            } else {
+                ConnectScreen(client: client, adding: which == .add)
+                    .overlay(alignment: .topTrailing) {
+                        Button("Done") { sheet = nil }
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(Palette.accent)
+                            .padding(20)
+                    }
+                    .background(Color.black.ignoresSafeArea())
+                    .preferredColorScheme(.dark)
+            }
         }
         // A tap's ask makes the Mac show its code, or a pairing link came in: the card for it.
         .onChange(of: client.homeAsk) { _, ask in if ask?.phase == .shown, sheet == nil { sheet = .pairing } }
@@ -202,11 +213,36 @@ struct HomeScreen: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// Connect, by the best way; the chevron's menu, by any one of them.
-    private func connectButton(_ mac: SavedMac, row: FoundMac?) -> some View {
+    /// Connect, by the best way; the chevron's menu, by any one of them. A Mac still connected: View,
+    /// and Disconnect beside it.
+    @ViewBuilder private func connectButton(_ mac: SavedMac, row: FoundMac?) -> some View {
+        let connected = links.isConnected(mac.macID)
+        HStack(spacing: 8) {
+            if connected {
+                Button { links.disconnect(mac.macID) } label: {
+                    Text("Disconnect")
+                        .font(.system(size: 14, weight: .semibold))
+                        .lineLimit(1)
+                        .fixedSize()
+                        .foregroundStyle(Color.red)
+                        .padding(.horizontal, 16)
+                        .frame(height: 38)
+                        .background(Capsule().fill(Color.red.opacity(0.18)))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint("Ends the connection; nothing runs for this \(StreamClient.deviceWord) on the Mac.")
+            }
+            routeButton(mac, row: row, word: connected ? "View" : "Connect")
+        }
+    }
+
+    private func routeButton(_ mac: SavedMac, row: FoundMac?, word: String) -> some View {
         HStack(spacing: 0) {
             Button { connect(mac) } label: {
-                Text("Connect")
+                Text(word)
+                    .lineLimit(1)
+                    .fixedSize()
                     .font(.system(size: 14, weight: .semibold))
                     .padding(.leading, 16)
                     .padding(.trailing, 12)
@@ -340,7 +376,11 @@ struct HomeScreen: View {
     }
 
     @ViewBuilder private func menu(_ mac: SavedMac) -> some View {
-        Button { connect(mac) } label: { Label("Connect", systemImage: "play.display") }
+        let connected = links.isConnected(mac.macID)
+        Button { connect(mac) } label: { Label(connected ? "View" : "Connect", systemImage: "play.display") }
+        if connected {
+            Button(role: .destructive) { links.disconnect(mac.macID) } label: { Label("Disconnect", systemImage: "xmark") }
+        }
         Button(role: .destructive) {
             MacDesktops.shared.forget(mac.macID)
             client.forget(mac.macID)
@@ -363,6 +403,23 @@ struct HomeScreen: View {
                 .multilineTextAlignment(.center)
         }
         .padding(.horizontal, Self.margin)
+    }
+}
+
+/// Settings, a round quick control beside Add a Mac.
+private struct SettingsButton: View {
+    let onTap: () -> Void
+
+    var body: some View {
+        Image(systemName: "gearshape")
+            .font(QuickControlStyle.iconFont)
+            .foregroundStyle(Color.white)
+            .quickCircle()
+            .onTapGesture { onTap() }
+            .accessibilityElement()
+            .accessibilityLabel("Settings")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { onTap() }
     }
 }
 

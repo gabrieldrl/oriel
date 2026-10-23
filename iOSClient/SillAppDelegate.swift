@@ -1,15 +1,33 @@
 import UIKit
+import UserNotifications
 
-/// The app delegate SwiftUI gives `SillApp` (`@UIApplicationDelegateAdaptor`): it implements nothing
-/// but `buildMenu(with:)`, which SwiftUI's own delegate calls for each build of a menu system, to put
-/// the Mac's menus in the iPad's menu bar (docs/menu-bar-plan.md §7.4). SwiftUI keeps its own handling
-/// of scenes and of `sillgdl://` links (ContentView's `onOpenURL`).
+/// The app delegate SwiftUI gives `SillApp` (`@UIApplicationDelegateAdaptor`): the push token and the
+/// notifications' delegate (MacLinks, AgentAlerts), and `buildMenu(with:)`, which SwiftUI's own
+/// delegate calls for each build of a menu system, to put the Mac's menus in the iPad's menu bar
+/// (docs/menu-bar-plan.md §7.4). SwiftUI keeps its own handling of scenes and of `sillgdl://` links
+/// (ContentView's `onOpenURL`).
 ///
 /// Nothing is inserted on an iPhone, before iPadOS 26 (there the main menu only feeds the ⌘ list of
 /// key commands, and the Mac's menus have none), while the app has more than one window (MacMenuHub:
 /// nothing says which window's session the bar's choices would reach), or when the window's session
 /// has no menus.
 final class SillAppDelegate: UIResponder, UIApplicationDelegate {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        UNUserNotificationCenter.current().delegate = AgentAlerts.shared
+        _ = MacLinks.shared
+        return true
+    }
+
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        MacLinks.shared.gotPushToken(deviceToken)
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        #if DEBUG
+        print("links: no push token: \(error.localizedDescription)")
+        #endif
+    }
+
     override func buildMenu(with builder: UIMenuBuilder) {
         super.buildMenu(with: builder)
         guard builder.system == .main else { return }

@@ -267,6 +267,9 @@ package final class StreamCoordinator {
     let displays: ExtendedDisplays
     /// The Mac's screen off and its own input away while a device works it (kind 52).
     let curtain: MacCurtain
+    /// The background links and their features (docs/background-plan.md): the agents' reports and
+    /// their notifications, off every stream session.
+    let background: BackgroundServer
     /// TEST ONLY. `SILL_TEST_MENU_PID=<pid>` on a --synthetic host: the test pattern's menus are that
     /// process's (the gates' fixture, Scripts/menufixture.swift), read and pressed through the same
     /// code, never activated (the Desktop's rule). Nil otherwise; `testMenuLine` is what `start`
@@ -335,6 +338,9 @@ package final class StreamCoordinator {
                                     available: synthetic || (appKitLoop && VirtualDisplay.checkPrivateAPI().isEmpty))
         // Its black windows are AppKit's: Sill.app, or a synthetic host's state alone.
         curtain = MacCurtain(server: server, synthetic: synthetic, available: synthetic || appKitLoop)
+        background = BackgroundServer(macName: macName, macID: remote?.identity?.macID, synthetic: synthetic)
+        background.add(AgentsFeature(background: background, synthetic: synthetic))
+        server.background = background
         let hook = Self.testMenuHook(synthetic: synthetic)
         testMenuPID = hook.pid
         testMenuLine = hook.line

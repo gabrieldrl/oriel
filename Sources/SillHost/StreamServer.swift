@@ -133,6 +133,9 @@ final class StreamServer {
 
     /// The network queue: both doors, their connections, the verify blocks and the timers.
     let queue: DispatchQueue
+    /// Where both TLS doors hand a background link (`sill-bg/1`, docs/background-plan.md). Set once,
+    /// before the doors open.
+    var background: BackgroundServer?
     private var clients: [ObjectIdentifier: Client] = [:]
     private var lastParameterSets: Data?
     /// A client was admitted (home door at `.ready`, remote door once paired and checked), with

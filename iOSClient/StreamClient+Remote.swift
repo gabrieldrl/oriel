@@ -176,9 +176,10 @@ extension StreamClient {
         if !savedMacsSeeded { UserDefaults.standard.set(SavedMacs.encode(savedMacs), forKey: SavedMacs.defaultsKey) }
     }
 
-    /// Forget: the record only. The Mac lists this device until it is removed there, and the
-    /// status line says so.
+    /// Forget: the record, and the connection (MacLinks, which says its leave first). The Mac lists
+    /// this device until it is removed there, and the status line says so.
     func forget(_ macID: String) {
+        MacLinks.shared.forget(macID)
         let name = savedMac(macID) != nil ? displayName(macID) : (macs.first { $0.macID == macID }?.name ?? "the Mac")
         if reconnect?.macID == macID { reconnect = nil }
         savedMacs.removeAll { $0.macID == macID }
@@ -413,6 +414,7 @@ extension StreamClient {
         reconnect = nil
         cancelHomeAsk(idleStatus: false)      // as at home (markConnected): no ask is left for the connect screen
         connected = true
+        MacLinks.shared.join(s.macID)   // its background link (docs/background-plan.md)
         remoteRoute = r
         askedNearby = false
         connectedAt = Date()

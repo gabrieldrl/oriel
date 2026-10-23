@@ -37,7 +37,7 @@ struct DesktopScreen: View {
     @State private var ripple: CGFloat = 0
     /// The session's first look: the screen fades in.
     @State private var shown = false
-    /// Disconnect was tapped: the ripple runs out, then the session ends. Nothing takes a touch meanwhile.
+    /// Close was tapped (or held): the ripple runs out, then the session ends. Nothing takes a touch meanwhile.
     @State private var leaving = false
 
     /// The shape until the first frame gives the Mac's own: a 14-inch MacBook Pro's 3024×1964.
@@ -150,7 +150,7 @@ struct DesktopScreen: View {
                 .onGeometryChange(for: CGSize.self, of: { $0.size }) { size in
                     if panelSize != size { panelSize = size }
                 }
-            QuickControls(client: client, trackpadInput: $trackpadInput, onDisconnect: leave,
+            QuickControls(client: client, trackpadInput: $trackpadInput, onLeave: leave,
                           appsOpen: appsOpen, onApps: { appsOpen.toggle() },
                           displaysOpen: displaysOpen, onDisplays: { displaysOpen.toggle() },
                           keyboardShown: keyboardShown, onKeyboard: { overlay.toggleKeyboard() },
@@ -173,11 +173,14 @@ struct DesktopScreen: View {
                       height: max(screenSize.height - top - 24 - 16 - QuickControlStyle.height, 0))
     }
 
-    /// Disconnect: the ripple runs out from the picture's centre, then the session ends and the
-    /// connect screen comes back.
-    private func leave() {
+    /// Close, or Disconnect: the ripple runs out from the picture's centre, then the session ends and
+    /// the home screen comes back. Disconnect also ends the Mac's connection (MacLinks), so nothing
+    /// runs for this device there; Close leaves it connected.
+    private func leave(disconnect: Bool) {
         guard !leaving else { return }
         leaving = true
+        let macID = client.session?.macID
+        if disconnect, let macID { MacLinks.shared.disconnect(macID) }
         pillFocus.closeOpen()
         appsOpen = false
         keyRowOpen = false

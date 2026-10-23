@@ -8,8 +8,8 @@ import StreamProtocol
 /// (DisplaySizeControl); Apps in the middle (AppsPill), with Displays
 /// beside it (DisplaysPill); at the trailing edge Touch or Trackpad, the
 /// Mac’s sound (MacSoundControl), typing (TypingControl: the keyboard and the key row), its clipboard (ClipboardControl), its
-/// screen off (CurtainControl) and Disconnect. The settings
-/// controls and Disconnect are below; the sound and the clipboard have files of their own.
+/// screen off (CurtainControl) and Close (CloseControl: a tap closes, a hold disconnects). The settings
+/// controls and Close are below; the sound and the clipboard have files of their own.
 ///
 /// The three settings are the Mac's own, as its menu sets them: one stream serves every device, so
 /// they apply to all of them, and Sill.app keeps them for later sessions. A device away from home
@@ -18,8 +18,9 @@ struct QuickControls: View {
     @ObservedObject var client: StreamClient
     /// Touch or trackpad input (DesktopScreen's).
     @Binding var trackpadInput: Bool
-    /// Disconnect's tap: the screen's ripple, then the session's end (DesktopScreen).
-    let onDisconnect: () -> Void
+    /// Close's tap (false) or hold (true, Disconnect): the screen's ripple, then the session's end
+    /// (DesktopScreen).
+    let onLeave: (_ disconnect: Bool) -> Void
     /// The Apps pill (AppsPill): lit while the Apps sheet is up, and its tap.
     let appsOpen: Bool
     let onApps: () -> Void
@@ -62,7 +63,7 @@ struct QuickControls: View {
             if client.hostHasCurtain {
                 CurtainControl(client: client)
             }
-            DisconnectControl(client: client, onDisconnect: onDisconnect)
+            CloseControl(client: client, onLeave: onLeave)
         }
         .frame(height: QuickControlStyle.height)
     }
@@ -93,20 +94,67 @@ private struct CurtainControl: View {
     }
 }
 
-/// Disconnect, on a tap: a close mark in red on a red tint. The screen ripples, then disconnects.
-private struct DisconnectControl: View {
+/// Close and Disconnect, one close mark in red on a red tint (docs/background-plan.md). A tap closes
+/// the stream and leaves the Mac connected (its background link goes on); held for `hold` seconds,
+/// red sweeps across it from the leading edge and the Mac is disconnected. Let go sooner than
+/// `tapLimit` is a tap; later, before the sweep is done, nothing.
+private struct CloseControl: View {
     @ObservedObject var client: StreamClient
-    let onDisconnect: () -> Void
+    let onLeave: (_ disconnect: Bool) -> Void
+
+    static let hold: Double = 2
+    static let tapLimit: Double = 0.5
+
+    @State private var pressedAt: Date?
+    /// The sweep: 0 to 1 over `hold`.
+    @State private var sweep: CGFloat = 0
+    @State private var done = false
+    @State private var timer: Task<Void, Never>?
 
     var body: some View {
+        let pressed = pressedAt != nil
         Image(systemName: "xmark")
             .font(QuickControlStyle.iconFont)
-            .foregroundStyle(Color.red)
+            .foregroundStyle(pressed ? Color.white : Color.red)
             .quickCircle(Color.red.opacity(0.18))
-            .onTapGesture { onDisconnect() }
+            .background {
+                GeometryReader { geo in
+                    Rectangle()
+                        .fill(Color.red)
+                        .frame(width: geo.size.width * sweep)
+                }
+                .clipShape(Circle())
+            }
+            .gesture(DragGesture(minimumDistance: 0)
+                .onChanged { _ in press() }
+                .onEnded { _ in release() })
+            .sensoryFeedback(.impact(weight: .heavy), trigger: done)
             .accessibilityElement()
-            .accessibilityLabel(client.macName.isEmpty ? "Disconnect" : "Disconnect from \(client.macName)")
+            .accessibilityLabel(client.macName.isEmpty ? "Close" : "Close \(client.macName)")
+            .accessibilityHint("Stays connected. Hold for 2 seconds to disconnect.")
             .accessibilityAddTraits(.isButton)
+            .accessibilityAction { onLeave(false) }
+            .accessibilityAction(named: "Disconnect") { onLeave(true) }
+    }
+
+    private func press() {
+        guard pressedAt == nil, !done else { return }
+        pressedAt = Date()
+        withAnimation(.linear(duration: Self.hold)) { sweep = 1 }
+        timer = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(Self.hold))
+            guard !Task.isCancelled else { return }
+            done = true
+            onLeave(true)
+        }
+    }
+
+    private func release() {
+        guard !done, let at = pressedAt else { return }
+        timer?.cancel()
+        pressedAt = nil
+        withAnimation(.easeOut(duration: 0.2)) { sweep = 0 }
+        if Date().timeIntervalSince(at) < Self.tapLimit { onLeave(false) }
     }
 }
 

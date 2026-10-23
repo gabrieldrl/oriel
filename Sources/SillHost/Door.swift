@@ -250,6 +250,12 @@ final class Door {
         case .pairing:
             guard let fp else { refuse(id, "unpaired"); c.cancel(); return }
             readPairRequest(id, c, fp)
+        case .background:
+            // A connected Mac's background link (docs/background-plan.md): never a stream session.
+            guard let fp, let p = pending.removeValue(forKey: id), let background = server.background else { c.cancel(); return }
+            p.deadline?.cancel()
+            forgive(p.source)
+            background.serve(c, fingerprint: fp, name: t.paired[fp], queue: queue)
         case .goodbye(let reason):
             // A paired key the door does not serve now: it proved itself, so its source starts clean.
             // Closed with a FIN and a drain (`closeWithGoodbye`): the device has sent its hello by

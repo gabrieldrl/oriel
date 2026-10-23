@@ -58,6 +58,18 @@ block), so each card reads "Online · Wi‑Fi", "Online · Tailscale" or "Offlin
 2026-10-22: this fork won't be compatible with later Sill releases, so the compatibility floor below
 doesn't bind changes like these. Its device tests are in the plan.
 
+**Connected Macs, a background link, and agents that notify (in progress on `dev`;
+`docs/background-plan.md`, `docs/agents-plan.md`).** ✕ closes the stream and leaves the Mac
+connected; held 2 s (a red sweep) it disconnects; a connected Mac's home card has View and
+Disconnect. Each connected Mac has a link at ALPN `sill-bg/1` (kinds 55–58; 53 and 54, the agents'
+report and query, go there only) and keeps the device's registration until its Disconnect; Settings
+(the home screen's gear) › Agents: notify when a Claude Code or Codex turn ends, per Mac, pushed by
+the Mac through APNs. Mac: `Sources/SillHost/Background/` (BackgroundPolicy pure,
+`Tests/checks/background`; PushSender), `Agents/` (AgentsFeature, AgentWatch). Device:
+`iOSClient/Background/` (MacLinks, BackgroundLink, AgentAlerts), Desktop/SettingsScreen. Pushing needs
+a paid Developer Program team (JF8R4AVC2H is free): the entitlement is out, the sender kept (the
+plan). Untested on a device. The agent screens are to be built on MacLinks.
+
 **Extended displays (in progress on `dev`; `docs/displays-plan.md`).** A Displays pill beside Apps
 opens a sheet of Primary, up to 4 of this device's own displays (CGVirtualDisplay, serials stable per
 device so macOS keeps their arrangement) and Add Display; a tap streams one. Disconnect takes the

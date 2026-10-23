@@ -39,7 +39,7 @@ for o in origins {
 
 // MARK: The verify block
 
-let alpns: [String?] = [session, pairing, nil, "h2", "sill/2", "SILL/1", ""]
+let alpns: [String?] = [session, pairing, "sill-bg/1", nil, "h2", "sill/2", "SILL/1", ""]
 func allTrusts() -> [T] {
     var out: [T] = []
     for bits in 0..<64 {
@@ -52,6 +52,7 @@ func trustOracle(_ door: D.Door, _ alpn: String?, _ t: T) -> Bool {
     guard t.hasKey else { return false }
     if alpn == "sill/1" { return door == .home ? (t.paired || !t.requirePairing) : t.paired }
     if alpn == "sill-pair/1" { return door == .home ? true : t.remotePairingOpen }
+    if alpn == "sill-bg/1" { return t.paired }
     return false
 }
 var vb = 0, vbOK = 0
@@ -59,7 +60,7 @@ for door in [D.Door.home, .remote] { for a in alpns { for t in allTrusts() {
     vb += 1
     if D.trusts(door, alpn: a, t) == trustOracle(door, a, t) { vbOK += 1 } else { print("  verify \(door) \(a ?? "nil") \(t)") }
 } } }
-check("verify block: \(vbOK) of \(vb) combinations (2 doors × 7 ALPNs × 64 trusts) match §4.2's table", vb == vbOK)
+check("verify block: \(vbOK) of \(vb) combinations (2 doors × 8 ALPNs × 64 trusts) match §4.2's table", vb == vbOK)
 check("verify, home sill/1: a paired key", D.trusts(.home, alpn: session, T(paired: true)))
 check("verify, home sill/1: an unpaired key with Require pairing on is refused", !D.trusts(.home, alpn: session, T(paired: false, requirePairing: true)))
 check("verify, home sill/1: any key while Require pairing is off", D.trusts(.home, alpn: session, T(paired: false, requirePairing: false)))
@@ -88,6 +89,10 @@ func readyOracle(_ door: D.Door, _ alpn: String?, _ t: T, _ n: Int) -> D.AtReady
         if n >= 8 { return .goodbye("busy") }
         return .session
     case (.remote, "sill-pair/1"?): return t.remotePairingOpen ? .pairing : .refuse("unpaired")
+    case (.home, "sill-bg/1"?): return t.paired ? .background : .refuse("unpaired")
+    case (.remote, "sill-bg/1"?):
+        if !t.paired { return .refuse("unpaired") }
+        return t.remoteAccess ? .background : .goodbye("remoteOff")
     default: return .refuse("unpaired")
     }
 }

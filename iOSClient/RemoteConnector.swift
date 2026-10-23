@@ -22,6 +22,8 @@ final class RemoteConnector {
     enum Mode {
         case session(pin: Data)
         case pairing(pin: Data?)
+        /// A background link (`sill-bg/1`, docs/background-plan.md), pinned as a session is.
+        case background(pin: Data)
     }
 
     struct Winner {
@@ -120,8 +122,12 @@ final class RemoteConnector {
             startNext()
             return
         }
-        let alpn = sequential ? RemoteTLS.pairingALPN : RemoteTLS.sessionALPN
-        let pin: Data? = { switch mode { case .session(let p): return p; case .pairing(let p): return p } }()
+        let alpn: String = { switch mode {
+            case .session: return RemoteTLS.sessionALPN
+            case .pairing: return RemoteTLS.pairingALPN
+            case .background: return RemoteTLS.backgroundALPN
+        } }()
+        let pin: Data? = { switch mode { case .session(let p), .background(let p): return p; case .pairing(let p): return p } }()
         // The whole of trust: the pin, or on the typed pairing path any P-256 key (nil is no P-256).
         // The one TLS builder every connection to a Mac goes through (DeviceTLS).
         let others: [Data] = { if case .session = mode { return successors[candidate.key] ?? [] }; return [] }()
@@ -156,7 +162,7 @@ final class RemoteConnector {
             }
             let c = attempt.connection
             c.stateUpdateHandler = nil
-            let fp: Data? = RemoteTLS.peerFingerprint(c) ?? { if case .session(let p) = mode { return p }; return nil }()
+            let fp: Data? = RemoteTLS.peerFingerprint(c) ?? { switch mode { case .session(let p), .background(let p): return p; case .pairing: return nil } }()
             guard let fp else { c.cancel(); onFailed?(Failed(failure: .notSill, candidate: attempt.candidate)); return }
             onWinner?(Winner(connection: c, candidate: attempt.candidate, fingerprint: fp,
                              usedTunnel: c.currentPath?.usesInterfaceType(.other) ?? false))

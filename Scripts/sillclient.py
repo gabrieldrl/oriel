@@ -92,6 +92,13 @@ The clipboard (kind 32; docs/clipboard-plan.md). Each kind 32 received is printe
                      LAST in it is the last display a kind 49 listed, as --pick=display:last@T is
   --raw52=JSON@T     this literal kind 52 payload T seconds in: {"on":true}, {"on":false} (the Mac's screen
                      off, docs/curtain-plan.md); each kind 52 is printed, and the window list's curtain=
+  --link             with --identity: the background link instead of a session (ALPN sill-bg/1,
+                     docs/background-plan.md): the hello, a kind 55 join, a kind 54 agents query (the
+                     answer printed as a summary per agent), pings every 15 s, and every kind 58 (an agent's
+                     finished turn) printed, for the run's seconds
+  --link-notify      with --link: the join asks for agent notifications (the Mac watches while it holds)
+  --link-push=HEX    with --link: the join's push token (environment development, topic com.gabrieldrl.sill)
+  --link-leave       with --link: a kind 57 at the end (Disconnect: the Mac forgets this device)
   --raw32=JSON@T     this literal kind 32 payload T seconds in (split on the last @), as written:
                      {"stop":true} ends the subscription
   --expect=clipboard=TEXT  (with --expect's other keys, or alone) at exit, the last kind 32's text;
@@ -160,7 +167,7 @@ INPUT = ("move", "tap", "key", "input")
 # What --gesture may send: TrackpadGesture's six names (Gesture.swift). Anything else goes with --raw28.
 GESTURES = ("swipeUp", "swipeDown", "swipeLeft", "swipeRight", "pinch", "spread")
 VALUED = ("host", "device", "big-payload", "flood", "identity", "pair-url", "pair-code", "pin", "hello", "hello-delay", "then-code",
-          "pair-hold", "expect-pair", "pair-v", "expect-menus")
+          "pair-hold", "expect-pair", "pair-v", "expect-menus", "link-push")
 PAIR_RESULTS = ("ok", "cable", "shown", "openOnMac", "locked", "closed", "code", "busy", "expired", "stopped")
 # Sends that read or press the host's menus: only against a host started with the fixture's pid.
 MENU_SENDS = ("fetch", "press", "raw25", "raw27")
@@ -335,6 +342,58 @@ def read_message(s, timeout):
         if not c: return None
         payload += c
     return kind, payload
+def print_agents(payload, t0):
+    """A kind 53 (AgentReport) as a summary per agent."""
+    try:
+        rep = json.loads(payload)
+        print(f"  agents at {time.time()-t0:.3f}s: {len(payload)} bytes, answering={rep.get('answering')}")
+        for p in rep.get("providers", []):
+            u = p.get("usage") or {}
+            lim = ", ".join(f"{l['name']} {l['usedPercent']:g}%" for l in u.get("limits", []))
+            print(f"    {p['id']}: installed={p['installed']} version={p.get('version')} sessions={len(p.get('sessions', []))}"
+                  f"{' more' if p.get('more') else ''} usage=[{lim}] problem={p.get('usageProblem')}")
+            for x in p.get("sessions", [])[:3]:
+                print(f"      {x['title'][:60]!r} {x.get('project','')} {x.get('model','')} running={x.get('running', False)}")
+    except Exception as e:
+        print(f"  agents at {time.time()-t0:.3f}s: unreadable ({e})")
+def run_link(pin):
+    """The background link (docs/background-plan.md) for `dur` seconds, then the leave if asked."""
+    try:
+        s, _ = tls_connect("sill-bg/1", pin)
+    except (OSError, ssl.SSLError) as e:
+        print(f"TLS refused: {e}"); sys.exit(0 if expect_tls_fail else 1)
+    t0 = time.time()
+    s.sendall(msg(23, json.dumps({"appVersion": "1.0", "protocol": 1, "device": device or "sillclient"}).encode()))
+    join = {"token": 1, "features": {"agentsNotify": "--link-notify" in flags}}
+    if valued("link-push"):
+        join["push"] = {"token": valued("link-push"), "environment": "development", "topic": "com.gabrieldrl.sill"}
+    s.sendall(msg(55, json.dumps(join).encode())); print(f"  sent join {json.dumps(join)}")
+    s.sendall(msg(54, json.dumps({"token": 2, "days": 7, "usage": True}).encode())); print("  sent agents query (7 days)")
+    next_ping = t0 + 15
+    while time.time() - t0 < dur:
+        if time.time() >= next_ping:
+            s.sendall(msg(10, struct.pack(">d", time.time()))); next_ping += 15
+        try:
+            m = read_message(s, 0.5)
+        except socket.timeout:
+            continue
+        except (OSError, ssl.SSLError) as e:
+            print(f"  link ended at {time.time()-t0:.3f}s: {e}"); return
+        if m is None:
+            print(f"  link closed by the Mac at {time.time()-t0:.3f}s"); return
+        kind, payload = m
+        if kind == 56: print(f"  linkState at {time.time()-t0:.3f}s: {payload.decode(errors='replace')}")
+        elif kind == 53: print_agents(payload, t0)
+        elif kind == 58: print(f"  agentEvent at {time.time()-t0:.3f}s: {payload.decode(errors='replace')}")
+        elif kind == 11: print(f"  pong at {time.time()-t0:.3f}s")
+        else: print(f"  kind {kind} at {time.time()-t0:.3f}s ({len(payload)} bytes)")
+    if "--link-leave" in flags:
+        s.sendall(msg(57, b"{}")); print("  sent leave")
+        try:
+            print("  the Mac closed the link" if read_message(s, 3) is None else "  the Mac sent more after the leave")
+        except (OSError, ssl.SSLError, socket.timeout) as e:
+            print(f"  after the leave: {e}")
+    s.close()
 def verify_macinfo(payload, pin):
     """kind 18: the signature with openssl over the exact info bytes, the Mac ID against the key,
     and the key against the pin when there is one. Returns (verified, info dict)."""
@@ -502,7 +561,7 @@ try:
             if not body: raise ValueError(f"--{name} needs a value")
             if name in ("big-payload", "flood") and number(body, f"--{name}") < 1: raise ValueError(f"--{name} must be at least 1")
         elif a not in ("--junk", "--stats", "--tls", "--expect-tls-fail", "--menus", "--pointer", "--no-select", "--pair-ask", "--clipboard", "--sound", "--displays",
-                       "--pair-ask=cable", "--pair-cancel") and not a.startswith(("--fps=", "--expect=")):
+                       "--pair-ask=cable", "--pair-cancel", "--link", "--link-notify", "--link-leave") and not a.startswith(("--fps=", "--expect=")):
             raise ValueError(f"unknown flag {a!r}")
     events.sort(key=lambda e: (e[0], e[1]))
     expect = next((pairs(a[9:], EXPECT_KEYS, "--expect") for a in flags if a.startswith("--expect=")), None)
@@ -519,7 +578,8 @@ try:
     then_code = valued("then-code"); expect_pair = valued("expect-pair")
     pair_v = number(valued("pair-v"), "--pair-v") if valued("pair-v") is not None else 1
     pair_hold = number(valued("pair-hold"), "--pair-hold", float) if valued("pair-hold") else None
-    tls = ("--tls" in flags or valued("pair-url") is not None or valued("pair-code") is not None or pair_ask or pair_cancel
+    link_mode = "--link" in flags
+    tls = (link_mode or "--tls" in flags or valued("pair-url") is not None or valued("pair-code") is not None or pair_ask or pair_cancel
            or pair_hold is not None)
     identity_dir = valued("identity")
     pair_url = valued("pair-url"); pair_code = valued("pair-code"); pin_arg = valued("pin")
@@ -627,6 +687,8 @@ if tls:
     elif pair_url: mac_pin = link["fp"]
     else: print("sillclient.py: no saved Mac in --identity; pair first or give --pin", file=sys.stderr); sys.exit(2)
     if dur <= 0: sys.exit(0)
+    if link_mode:
+        run_link(mac_pin); sys.exit(0)
     try:
         s, _ = tls_connect("sill/1", mac_pin)
     except (OSError, ssl.SSLError) as e:
