@@ -1,208 +1,42 @@
-# Sill (personal fork)
+# Oriel
 
-> **This is an unofficial, personal fork** of [Sill](https://github.com/Saffsanity/sill) by
-> Noah Saffer, used under the [Apache License 2.0](LICENSE). It is not affiliated with or endorsed
-> by the Sill project. "Sill" and its icon belong to their owner. For the official apps, the
-> download, support and tips, go to [getsill.app](https://getsill.app) and
-> [Saffsanity/sill](https://github.com/Saffsanity/sill).
->
-> This fork builds under its own identifiers (bundle IDs `com.gabrieldrl.sill` and
-> `com.gabrieldrl.sill.mac`, Bonjour service `_oriel._tcp`, pairing links `oriel://`), so it never discovers or replaces
-> the official apps. Changes from upstream are in this repository's history from commit `80cb797`
-> onward. [docs/OVERVIEW.md](docs/OVERVIEW.md) is a short guide to the code and to how this fork
-> differs. No builds of this fork are distributed: build it from source (below).
+Your Mac's windows, on your iPhone and iPad.
 
-Any window from your Mac, on your iPhone and iPad.
-
-Sill shows a window from your Mac, or the whole desktop, on your iPhone or
-iPad. You use it there with touch, a trackpad, a keyboard or Apple Pencil.
-Sill for Mac captures the window, encodes it as HEVC video and sends it to the
-Sill app on your device. Your taps, clicks, scrolls and keys go back to your
-Mac. Your Mac and your device connect on the same network, over a USB cable,
-with Direct Wireless Connection when they share no network, or through your
-own VPN, such as Tailscale, with Remote Access. There is no account and no
-server in between.
-
-[![CI](https://github.com/gabrieldrl/sill/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/gabrieldrl/sill/actions/workflows/ci.yml)
-
-This fork is source only: build both apps yourself (below). The official Sill
-for Mac and Sill for iPhone and iPad are free from
-[getsill.app](https://getsill.app) and the App Store; they are upstream's, and
-they don't connect to this fork's builds.
-
-## Screenshots
-
-These are the iPad screenshots from the App Store; on iPhone and iPhone Duo,
-Sill has layouts of its own.
-
-| [!["Your Mac, on your iPad." The Mac's Weather app on an iPad held sideways, under Sill's bar of window thumbnails and buttons.](design/screenshots/ipad-1.jpg)](design/screenshots/ipad-1.jpg) | [!["Laptop mode." An iPad held upright, with the Mac's Clock app on top and Sill's bar, a row of keys and a trackpad below it.](design/screenshots/ipad-2.jpg)](design/screenshots/ipad-2.jpg) | [!["Sharp and smooth." Sill's Settings panel on an iPad held upright, with the Mac's Quality, Resolution and Frame Rate settings.](design/screenshots/ipad-3.jpg)](design/screenshots/ipad-3.jpg) |
-| :---: | :---: | :---: |
-| [!["Pair once. Private always." Sill's Connect to a Mac screen on an iPad, with a Mac listed as Wired and Add a Mac below it.](design/screenshots/ipad-4.jpg)](design/screenshots/ipad-4.jpg) | [!["Launch any Mac app." Sill's Apps list on an iPad held sideways, with a search field, the apps open now and every app installed on the Mac.](design/screenshots/ipad-5.jpg)](design/screenshots/ipad-5.jpg) | [!["Every window, one tap away." On an iPad held sideways, a window's thumbnail held in Sill's bar shows Close, Minimize and Full Screen.](design/screenshots/ipad-6.jpg)](design/screenshots/ipad-6.jpg) |
+Oriel streams any window from your Mac, or the whole desktop, to your iPhone or iPad, and sends
+your touches, trackpad and keys back. The Mac and the device connect directly, over your Wi‑Fi, a
+USB cable or your own VPN such as Tailscale. There's no account, no server and no subscription.
 
 ## Requirements
 
-- A Mac with Apple silicon, on macOS 27 or later.
-- An iPhone or iPad with iOS 27 or iPadOS 27 or later.
-- On your Mac, Sill asks for Screen Recording, to show your windows, and
-  Accessibility, to click, scroll and type for you and to move and size the
-  window it shows. On macOS 15 or later, also allow Local Network. On your
-  iPhone or iPad, Sill asks for Local Network, to find your Mac, and for the
-  camera when you scan your Mac's pairing code (you can type the code
-  instead).
-- Your Mac and your device on the same network, joined by a USB cable, or near
-  each other with Direct Wireless Connection on. Away from home, your own VPN,
-  such as Tailscale, with Remote Access on.
+- A Mac with Apple silicon, on macOS 27 or later
+- An iPhone or iPad on iOS 27 or later
 
-## How it works
+## Install
 
-- **Sill for Mac** lives in the menu bar. When your device picks a window, or
-  the whole desktop, Sill captures it with ScreenCaptureKit and encodes it as
-  HEVC with VideoToolbox, on the hardware video encoder in your Mac (or, while
-  that is busy, in software). It captures nothing while no device is connected.
-- **The picture** goes over an encrypted connection (TLS 1.3) straight to the
-  Sill app on your iPhone or iPad, which decodes and shows it. When the
-  encoder or the link falls behind, Sill drops frames rather than queue them,
-  so the picture stays current.
-- **Your input** goes back the same way: taps and clicks, scrolls with
-  momentum, the on-screen trackpad, keys and typed text, and Apple Pencil as
-  the pointer. Sill for Mac turns it into mouse and keyboard events, which
-  needs Accessibility. A keyboard attached to your device types on your Mac as
-  soon as the picture shows, Esc included, and a trackpad or a mouse scrolls
-  the window under its pointer. Three fingers swipe and pinch as on a Mac's
-  trackpad: Mission Control, App Exposé, the Spaces, Apps and Show Desktop,
-  through the keyboard shortcuts your Mac has for them.
-- **On iPhone**, held upright, the picture is on top with buttons, keys and a
-  trackpad below. Larger Picture, in the settings panel, gives a window's
-  picture the room of the window thumbnails, down to where the keyboard comes
-  up; the Desktop keeps the usual layout. A window keeps its own shape until
-  you set its text size with Aa, or turn on the virtual display; then your Mac
-  makes it fill the taller picture.
-- **The clipboard** goes both ways while Share Clipboard is on, in both apps:
-  text you copy on your Mac is ready to paste on your device, and Paste in
-  Sill sends what you copied on your device to your Mac's clipboard, where you
-  press ⌘V. Sill never reads your device's clipboard by itself, and copies a
-  password manager marks as concealed stay on your Mac.
-- **On iPhone Duo**, Sill follows the hinge: open it flat and your Mac fills
-  the inner display; half open, the picture is above the fold with a trackpad
-  and keys below; closed, Sill runs on the cover display. Nothing you touch
-  sits on the fold.
-- **The menus** of the app you use reach your device too: in the iPad's own
-  menu bar on iPadOS 26 or later, and behind the Menus button in Sill's bar.
-  Sill for Mac reads each menu from the app as you open it and chooses the
-  item you pick, through Accessibility. When someone moves the mouse at your
-  Mac, your device shows the pointer where it is.
-- **Nearby**, your device finds your Mac with Bonjour on your local network.
-  Over a USB cable, your Mac shows as Wired and the connection uses the cable.
-  With no shared network, Direct Wireless Connection (off by default) connects
-  over peer-to-peer Wi-Fi, the way AirDrop does.
-- **Pairing**: you pair each iPhone or iPad with your Mac once. Tap your Mac on
-  the device, and your Mac shows a code: scan it, or type its 12 digits. Over
-  a USB cable the device pairs by itself. From then on each end knows the
-  other's key, and every connection, nearby or away, is pinned to those keys.
-  In Sill's Settings on your Mac, Devices lists the devices you paired, and
-  you can remove any of them there.
-- **Away from home**, Remote Access (off by default) lets the devices you
-  paired reach your Mac through your own VPN or a port you forward on your
-  router; a device learns how the next time it connects at home with Remote
-  Access on. A device away from home gets a quality of its own, Low at Standard
-  resolution until you pick another there or in Sill's settings, so a slow
-  connection never starts at your home quality; your home quality comes back
-  as soon as a device at home connects. When your device comes home and your
-  network lists your Mac, the session moves to your network by itself.
-- **When the link can't keep up**, Sill for Mac notices that it is holding
-  frames back and tells your device, which says so over the picture and, in
-  its Settings, offers a quality the link can carry.
-- **Text size**: Aa on your device resizes the window you stream on your Mac,
-  through Accessibility, so its text shows at the size you pick, and keeps it
-  at that size while it streams. The window goes back to its own size and
-  place when Sill stops showing it: you pick another window or the Desktop,
-  your last device disconnects, or you quit Sill. If you moved it on your Mac
-  meanwhile, it keeps its new place.
-- **The virtual display** (off by default) moves a window you stream onto a
-  display of its own on your Mac, so it keeps updating when other windows
-  cover it. It uses a private macOS API, which is one reason Sill for Mac comes
-  from the website and not from the Mac App Store.
+**Mac:** download `Oriel.dmg` from [Releases](https://github.com/gabrieldrl/oriel/releases/latest)
+and drag Oriel to Applications. It isn't notarized yet, so the first time it's blocked: open
+System Settings › Privacy & Security and click Open Anyway.
 
-Good to know: Sill shows one window, or the whole desktop, at a time, and it
-does not play sound from your Mac. The clipboard carries text only, up to 256
-KB at a time, and only between apps that both have it. Your Mac needs to be
-awake, with Sill open. Sill may not be able to wake it. After a restart Sill
-opens only once someone logs in, with Launch at Login on. Only the iPhones and
-iPads you paired can connect, unless you turn off Require pairing in Settings
-› Devices; then any device on your network can, still encrypted. Pairing at
-home came with Sill for Mac 0.4.0 and Sill for iPhone and iPad 0.5 (2), and
-each needs the other: the iPhone and iPad app shows an older Sill for Mac as
-"Update Sill", and an older iPhone and iPad app can't connect to Sill for Mac
-0.4.0 or later at home. Since 0.5.1 the two apps share one version number for
-each release. With Sill for Mac 0.3.1 or earlier, connections on your local
-network, over the cable and over Direct Wireless Connection are not encrypted,
-and anything that reaches your Mac there can connect without pairing: update
-it.
+**iPhone and iPad:** build it from source (below).
 
-## Tips
+## Build from source
 
-Sill is free, with no ads, no tracking and no subscription. If it is useful to
-you, tip its author through [GitHub Sponsors](https://github.com/sponsors/Saffsanity)
-(upstream's; this fork takes no tips).
-
-## Building from source
-
-You need a Mac with Xcode (Sill is built with Xcode 27; the iPhone and iPad
-app needs Xcode 27.1 or later, for the iPhone Duo's hinge and fold), selected
-as the active developer directory, with its license accepted.
-
-Sill for Mac, from the repository's folder:
+Mac app:
 
 ```
 Scripts/make-app.sh --install --open
 ```
 
-This builds Sill.app with SwiftPM, signs it with your Apple Development
-identity, replaces /Applications/Sill.app and opens it. If that was the Sill
-for Mac you downloaded, grant Screen Recording and Accessibility again and
-pair each device again: the download keeps its key and paired devices in the
-data-protection keychain, which only a Developer ID build with the project's
-provisioning profile reads, and a build of your own keeps them in your login
-keychain. Without `--install` it only builds `.build/Sill.app`. With no Apple
-Development identity it signs ad hoc, and then Screen Recording and
-Accessibility have to be granted again after every build.
+iPhone and iPad app: open `iOSClient/Sill.xcodeproj`, pick your team and a bundle ID of your own,
+and run it on your device.
 
-For work on the host itself, `swift run -c release SillHost` runs the same
-host on the command line, with one difference: unless you add `--pairing`, its
-home door is plain and open, with no pairing and no encryption, and any device
-on your network can connect to it, so run it only while developing. The App
-Store's Sill for iPhone and iPad never dials such a door ("Update Sill"); a
-Debug build from this repository can ([docs/DEVELOPMENT.md](docs/DEVELOPMENT.md),
-Pairing at home). With `--synthetic` it streams a test pattern with no Screen
-Recording needed.
+[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) has everything else.
 
-The iPhone and iPad app:
+## Credits
 
-1. Open `iOSClient/Sill.xcodeproj`.
-2. In the Sill target's Signing & Capabilities, pick your team, and change the
-   bundle identifier `com.gabrieldrl.sill` to one of your own.
-3. Run it on an iPhone or iPad on the same network as your Mac, and tap your
-   Mac. The first time, a Sill for Mac built from this repository asks you to
-   pair: scan the code it shows, or connect the device with a USB cable.
-
-[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) has the rest: every command-line
-flag, the test tools and the simulator harness, permissions and how to reset
-them, Remote Access, troubleshooting and releases.
-
-## Contributing
-
-This is a personal fork. Issues about this fork's own changes are welcome
-here. Anything about Sill itself belongs
-[upstream](https://github.com/Saffsanity/sill/issues). The fork keeps
-upstream's conventions ([docs/OVERVIEW.md](docs/OVERVIEW.md), "Rules worth
-keeping"): Swift and Apple frameworks only, no third-party dependencies,
-nothing that needs a server, and latency before picture quality.
-`Tests/checks/run-all.sh` runs the same pure checks as CI, in about five
-minutes and with no device. Please report a security problem privately, as
-[SECURITY.md](SECURITY.md) says, not in a public issue.
+Oriel is built on [Sill](https://github.com/Saffsanity/sill) by Noah Saffer. It isn't affiliated
+with or endorsed by the Sill project.
 
 ## License
 
-Sill is licensed under the [Apache License 2.0](LICENSE).
-Copyright 2026 Noah Saffer. Modifications in this fork copyright 2026
-Gabriel Lam, under the same license.
+[Apache License 2.0](LICENSE). Copyright 2026 Noah Saffer; modifications copyright 2026 Gabriel Lam.

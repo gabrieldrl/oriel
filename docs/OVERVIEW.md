@@ -311,7 +311,7 @@ From `CLAUDE.md` "Conventions", "Decisions already made" and "Compatibility floo
 
 ## 8. Fork notes
 
-This fork is owned by GitHub user **gabrieldrl** (`origin` = gabrieldrl/sill;
+This fork is owned by GitHub user **gabrieldrl** (`origin` = gabrieldrl/oriel;
 the original is the `upstream` remote, Saffsanity/sill). It uses its own bundle
 IDs, signing team, Bonjour service type and update feed, so its builds can be
 installed beside the official Sill without sharing permissions, keychain items or
@@ -324,7 +324,7 @@ discovery, and its Sill.app never offers upstream's releases as updates.
 | Apple team | `9B2KKVM937` (Noah) | `JF8R4AVC2H` (Gabriel Lam, Personal Team) |
 | Bonjour service type | `_sill._tcp` | `_oriel._tcp` |
 | Pairing link scheme | `sill://pair` | `oriel://pair` |
-| Update feed / release repo | Saffsanity/sill | gabrieldrl/sill |
+| Update feed / release repo | Saffsanity/sill | gabrieldrl/oriel |
 | Keychain tags, pasteboard and menu identifiers | `me.saffer.sill.*` | `com.gabrieldrl.sill.*` |
 
 What that means in practice:
@@ -336,7 +336,7 @@ What that means in practice:
   `Scripts/release.sh` and `Scripts/release-ios.sh` won't work until you join the paid Apple
   Developer Program.
 - **The update check needs a release.** Sill.app reads
-  `api.github.com/repos/gabrieldrl/sill/releases/latest` without signing in (the repo is public).
+  `api.github.com/repos/gabrieldrl/oriel/releases/latest` without signing in (the repo is public).
   The check stays quiet until the repo has a release.
 - **The Mac app installs to `~/Applications`, beside the official one.** The official Sill.app is in
   `/Applications` on this Mac, so the dev loop is

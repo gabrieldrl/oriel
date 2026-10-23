@@ -9,7 +9,7 @@ usage: sillfeed.py PORT [flags...]      (PORT 0: any free port; the first line s
   --no-etag          send no ETag
   --draft            "draft": true
   --prerelease       "prerelease": true
-  --html-url URL     the release page (default https://github.com/gabrieldrl/sill/releases/tag/TAG)
+  --html-url URL     the release page (default https://github.com/gabrieldrl/oriel/releases/tag/TAG)
   --body JSON        this body instead of the release (sent as written)
   --big N            a body of N bytes (a JSON string padded to N): more than 1 MB is refused
   --slow S           wait S seconds before answering (the check gives up after 10)
@@ -57,8 +57,8 @@ def etag(body):
 def release_body():
     if cfg["body"] is not None: return cfg["body"].encode()
     tag = cfg["tag"]
-    page = cfg["htmlurl"] or f"https://github.com/gabrieldrl/sill/releases/tag/{tag}"
-    d = {"url": f"https://api.github.com/repos/gabrieldrl/sill/releases/1", "html_url": page, "id": 1, "tag_name": tag,
+    page = cfg["htmlurl"] or f"https://github.com/gabrieldrl/oriel/releases/tag/{tag}"
+    d = {"url": f"https://api.github.com/repos/gabrieldrl/oriel/releases/1", "html_url": page, "id": 1, "tag_name": tag,
          "target_commitish": "main", "name": f"Sill {tag.lstrip('vV')}", "draft": cfg["draft"], "prerelease": cfg["prerelease"],
          "published_at": "2026-09-25T12:00:00Z", "assets": [], "body": "Release notes."}
     b = json.dumps(d).encode()

@@ -7,7 +7,7 @@ body:
       value: >-
         This is an unofficial fork: report a problem with the official Sill
         [upstream](https://github.com/Saffsanity/sill/issues). A security problem? Please don't
-        report it here: [SECURITY.md](https://github.com/gabrieldrl/sill/security/policy) says how
+        report it here: [SECURITY.md](https://github.com/gabrieldrl/oriel/security/policy) says how
         to report it privately.
   - type: textarea
     id: what

@@ -26,7 +26,7 @@
 # `xcrun notarytool store-credentials` (a dry run only warns when it is missing).
 # docs/release-checklist.md says how to get both, and what to do with the zip.
 #
-# --publish makes the release in SILL_RELEASE_REPO, by default gabrieldrl/sill: the one repository
+# --publish makes the release in SILL_RELEASE_REPO, by default gabrieldrl/oriel: the one repository
 # whose releases every Oriel.app's update check reads (Sources/SillMenuBar/UpdatePolicy.swift,
 # `feed`). A release anywhere else can be downloaded, but no Oriel.app offers it, and the script
 # warns before it builds and again as it publishes.
@@ -57,7 +57,7 @@
 # - --publish checks origin's tag before it builds: `gh release create` makes a tag the release's
 #   repository lacks from its default branch's tip, so the release (and its source archives) would
 #   name another commit than the one built, and pushing the real tag later would be refused. In
-#   gabrieldrl/sill it also passes --verify-tag, so gh itself refuses a tag that isn't there. In
+#   gabrieldrl/oriel it also passes --verify-tag, so gh itself refuses a tag that isn't there. In
 #   the release workflow the commit checked out is origin's tag, so there the local tag is checked
 #   (SILL_RELEASE_TAG) and origin is not asked: its checkout keeps no credentials.
 set -euo pipefail
@@ -77,11 +77,11 @@ usage: Scripts/release.sh [--dry-run | --publish | --check-tag]
       notarytool and prints the rest.
   --publish
       after the checks, creates the GitHub Release v<version> in $SILL_RELEASE_REPO
-      (default gabrieldrl/sill) with Oriel.dmg, Oriel.zip and their .sha256 files, the names the
+      (default gabrieldrl/oriel) with Oriel.dmg, Oriel.zip and their .sha256 files, the names the
       site links.
       Before building, it checks that gh reaches that repository and the release isn't there yet,
       and refuses unless origin has the tag v<version> and it names HEAD (git push origin
-      v<version>). Every Oriel.app's update check reads only gabrieldrl/sill's releases: one
+      v<version>). Every Oriel.app's update check reads only gabrieldrl/oriel's releases: one
       published anywhere else can be downloaded, but no Oriel.app offers it.
   --check-tag
       only checks that $SILL_RELEASE_TAG is v<version> of Packaging/Info.plist (and, when the tag
@@ -238,7 +238,7 @@ remote_tag_problem() {
 
 # The one repository whose releases every Oriel.app's update check reads
 # (Sources/SillMenuBar/UpdatePolicy.swift, `feed`).
-feed_repo=gabrieldrl/sill
+feed_repo=gabrieldrl/oriel
 
 # Whether $1, a repository as gh takes it ([HOST/]OWNER/REPO, or its URL), is `feed_repo`.
 is_feed_repo() {

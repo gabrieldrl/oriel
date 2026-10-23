@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: Report a security problem privately
-    url: https://github.com/gabrieldrl/sill/security/policy
+    url: https://github.com/gabrieldrl/oriel/security/policy
     about: Never in a public issue. SECURITY.md says how.
   - name: Something about the official Sill
     url: https://github.com/Saffsanity/sill/issues

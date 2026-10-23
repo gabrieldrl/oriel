@@ -10,7 +10,7 @@ func check(_ ok: Bool, _ what: @autoclosure () -> String, line: Int = #line) {
 typealias P = UpdatePolicy
 let v03 = SillVersion("0.3.0")!, v04 = SillVersion("0.4")!
 let now = Date(timeIntervalSince1970: 1_790_265_600)
-let page = "https://github.com/gabrieldrl/sill/releases/tag/v0.4.0"
+let page = "https://github.com/gabrieldrl/oriel/releases/tag/v0.4.0"
 func body(_ tag: Any? = "v0.4.0", html: Any? = page, draft: Any? = false, prerelease: Any? = false) -> Data {
     var d: [String: Any] = ["name": "x", "assets": []]
     if let tag { d["tag_name"] = tag }
@@ -33,7 +33,7 @@ var (o, s) = interpret(ok(body()))
 check(o == .newer(offer04), "200 newer: \(o)")
 check(s == P.Stored(lastCheck: now, etag: "W/\"e1\"", latestTag: "v0.4.0", latestURL: page), "200 newer stores all four: \(s)")
 // 200, published, not newer (same, older, and the running version written with its build).
-(o, s) = interpret(ok(body("v0.3.0", html: "https://github.com/gabrieldrl/sill/releases/tag/v0.3.0")))
+(o, s) = interpret(ok(body("v0.3.0", html: "https://github.com/gabrieldrl/oriel/releases/tag/v0.3.0")))
 check(o == .upToDate(tag: "v0.3.0") && s.latestTag == "v0.3.0" && s.lastCheck == now, "200 same: \(o)")
 check(interpret(ok(body("0.2.9")), running: v03).0 == .upToDate(tag: "0.2.9"), "an older release")
 check(interpret(ok(body("v0.3.0")), running: SillVersion("0.3.0 (85)")!).0 == .upToDate(tag: "v0.3.0"), "0.3.0 (85) against v0.3.0")
@@ -124,7 +124,7 @@ check(inRange, "the next check is 24 h to 24 h 30 min after the last")
 
 // Feeds and pages.
 for (u, want) in [("http://127.0.0.1:8080/latest", true), ("https://127.0.0.1/x", true), ("http://[::1]:9/latest", true), ("http://localhost:1/", true),
-                  ("http://LOCALHOST:1/", true), ("http://127.0.0.2/", false), ("https://api.github.com/repos/gabrieldrl/sill/releases/latest", false),
+                  ("http://LOCALHOST:1/", true), ("http://127.0.0.2/", false), ("https://api.github.com/repos/gabrieldrl/oriel/releases/latest", false),
                   ("ftp://127.0.0.1/x", false), ("http://localhost.evil.example/", false), ("http://127.0.0.1.nip.io/", false),
                   ("file:///tmp/feed.json", false), ("http://192.168.1.2/", false)] {
     check(P.isLocalFeed(URL(string: u)!) == want, "isLocalFeed(\(u)) == \(want)")
@@ -132,7 +132,7 @@ for (u, want) in [("http://127.0.0.1:8080/latest", true), ("https://127.0.0.1/x"
 check(P.redirectAllowed(URL(string: "https://api.github.com/repositories/1/releases/latest")!), "a redirect within api.github.com")
 check(!P.redirectAllowed(URL(string: "http://api.github.com/x")!) && !P.redirectAllowed(URL(string: "https://api.github.com.evil.example/x")!)
       && !P.redirectAllowed(URL(string: "https://github.com/x")!) && !P.redirectAllowed(URL(string: "http://127.0.0.1/x")!), "redirects elsewhere refused")
-check(P.feed.absoluteString == "https://api.github.com/repos/gabrieldrl/sill/releases/latest", "the feed")
+check(P.feed.absoluteString == "https://api.github.com/repos/gabrieldrl/oriel/releases/latest", "the feed")
 
 // Words.
 let t: (Date) -> String = { _ in "15:42" }

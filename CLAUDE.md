@@ -4,7 +4,7 @@ Open-source, free app that streams individual Mac app windows to iPhone and iPad
 (designed for iPhone Duo first), with a free Mac companion. Tip jar, no
 subscription, no servers. Read `docs/BRIEF.md` before doing product-level work.
 
-**This checkout is gabrieldrl's public fork** (origin gabrieldrl/sill, public on GitHub, so anything
+**This checkout is gabrieldrl's public fork** (origin gabrieldrl/oriel, public on GitHub, so anything
 pushed there is visible to everyone; upstream Saffsanity/sill, fetch only: its push URL is `DISABLE`).
 Start with `docs/OVERVIEW.md`: what Sill is, the repository map, how it works, the build, and the
 fork's own identifiers (bundle IDs `com.gabrieldrl.sill[.mac]`, team JF8R4AVC2H, Bonjour
