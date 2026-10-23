@@ -85,7 +85,8 @@ streaming; it holds the
 virtual display, frame rate, quality and resolution controls, Direct Wireless
 Connection, Remote Access… and Pair iPhone or iPad… (see Pairing at home and
 Remote access below), Launch at Login, Permissions, Show Log… and Settings…
-(⌘,). Settings › Devices lists the paired devices, with Require pairing.
+(⌘,). Settings has three tabs (docs/settings-simple-plan.md): General, Devices
+(the paired devices) and Permissions.
 Changes apply at once; a change to a streaming setting restarts the current
 stream for a moment. Opening Sill.app while it runs (Finder,
 Spotlight) shows Settings, which is also where Quit Sill is when the menu bar
@@ -600,7 +601,7 @@ picture.
 
 ## Direct Wireless Connection
 
-Direct Wireless Connection (Settings › General, and the status menu) lets an
+Direct Wireless Connection (the device's Settings panel) lets an
 iPhone or iPad connect when it is near the Mac but shares no Wi-Fi network with
 it, the way AirDrop does: Sill then also advertises over, and accepts
 connections from, peer-to-peer Wi-Fi (AWDL). It is off by default, also after
@@ -653,7 +654,9 @@ paired for Remote Access connects at home with no further step.
 - **Settings › Devices** on the Mac lists the paired devices, how each paired
   and when and how it last connected, with Remove (the device can no longer
   connect: "Mac mini removed this iPad. Tap it to pair again.") and rename
-  (double-click). **Require pairing** is on by default. Off, any device at
+  (double-click). **Require pairing** is always on in Oriel.app, with no
+  switch: a Mac that had it off turns it back on at launch. The CLI and the
+  bare binary can still turn it off (`-requirePairing NO`); off, any device at
   home, and any app on the Mac, connects without pairing, still encrypted;
   turned on again, it disconnects the devices that are not paired ("Mac mini
   now asks devices to pair."). Sill keeps it beside the paired devices in the
@@ -690,10 +693,10 @@ port forward on your router. There is no Sill server: the iPhone or iPad dials
 the Mac itself. It is off until you turn it on, and only devices you paired can
 connect (TLS 1.3, each end pinned to the other's key).
 
-1. On the Mac: Sill › Settings › Remote Access, turn on Remote access. Sill
-   listens on TCP port 7455 (Change… picks another) and lists the addresses a
-   device will use: your Tailscale address and its MagicDNS name, another VPN,
-   this network's address.
+1. On the Mac: nothing to turn on. Remote Access is always on in Oriel.app
+   (a Mac that had it off turns it back on at launch); it listens on TCP port
+   7455 and Settings › General's Remote Access lists the VPNs it sees (the
+   port shows there, with Change…, only while another app holds it).
 2. Pair each device once, at home or away (a device already paired at home is
    paired for this too): Pair iPhone or iPad… in the Sill menu shows a QR code
    and a 12-digit code for five minutes. On the device, tap Add a Mac… at the
@@ -750,7 +753,7 @@ log says "Away from home: …"; a device at home connected at the same time
 brings the home quality back for every device ("Home quality again: …"). A
 device away that picks a Quality or Resolution sets the away pair, never the
 home one; Sill.app saves both (`awayBitrate` and `awayCaptureScale` beside
-`bitrate` and `captureScale`), Settings › Streaming shows both, and the menu's
+`bitrate` and `captureScale`; Settings has no Streaming tab), and the menu's
 Quality says "Away from home now: …" while the away pair runs. The device's
 Settings panel says which runs ("Away: Low · Standard"). A device away also
 asks for 60 fps even if its screen shows 120, which halves what the Mac sends.

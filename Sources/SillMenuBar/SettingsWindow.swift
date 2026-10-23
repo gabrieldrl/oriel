@@ -2,18 +2,17 @@ import AppKit
 import SwiftUI
 import SillHostCore
 
-/// The Settings window's tabs, in the toolbar's order.
+/// The Settings window's tabs, in the toolbar's order. Streaming, Virtual Display and Remote Access
+/// are gone (docs/settings-simple-plan.md): each device sets how it streams, and Remote Access is
+/// always on, in General. A saved tab of theirs opens General.
 enum SettingsTab: String, CaseIterable {
-    case general, devices, streaming, virtualDisplay, permissions, remoteAccess
+    case general, devices, permissions
 
     var title: String {
         switch self {
         case .general: "General"
         case .devices: "Devices"
-        case .streaming: "Streaming"
-        case .virtualDisplay: "Virtual Display"
         case .permissions: "Permissions"
-        case .remoteAccess: "Remote Access"
         }
     }
 
@@ -21,10 +20,7 @@ enum SettingsTab: String, CaseIterable {
         switch self {
         case .general: "gearshape"
         case .devices: "ipad.and.iphone"
-        case .streaming: "play.rectangle"
-        case .virtualDisplay: "display"
         case .permissions: "lock.shield"
-        case .remoteAccess: "globe"
         }
     }
 }

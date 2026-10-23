@@ -174,6 +174,6 @@ check(pane(result: .noRelease, offer: offer04).line == "Couldn’t check: GitHub
 check(pane(offer: offer04, lastCheck: last) == P.Pane(line: "Oriel 0.4 is available.", releasePage: URL(string: page)!, canCheck: true, resultID: 3), "pane: offered, Open Release Page…")
 check(pane(hasVersion: false) == P.Pane(line: "This build of Oriel has no version number, so it can’t check.", canCheck: false, resultID: 3), "pane: no version")
 check(pane(lastCheck: last, testPattern: true) == P.Pane(line: "Oriel doesn’t check for updates in test pattern mode.", canCheck: false, resultID: 3), "pane: test pattern")
-check(P.footnote.contains("GitHub sees this Mac’s IP address and which version of Oriel it has; nothing else is sent."), "the footnote says what is sent")
+check(P.footnote.contains("GitHub sees only this Mac’s IP address and Oriel’s version."), "the footnote says what is sent")
 print("\(checks) checks, \(failures) failed")
 exit(failures == 0 ? 0 : 1)

@@ -27,15 +27,6 @@ final class AppModel {
     /// The Settings tab on screen, nil while Settings is closed: the panes that poll run only
     /// while theirs is visible.
     var visibleSettingsTab: SettingsTab?
-    /// The last Require pairing change the identity store did not keep, for the Devices pane.
-    private(set) var requirePairingProblem: RequirePairingProblem?
-
-    /// A Require pairing change that was not saved: what was asked, and why not.
-    struct RequirePairingProblem: Equatable {
-        var wanted: Bool
-        var reason: String
-    }
-
     /// Sill.app itself, not the bare SillMenuBar binary: an app bundle's executable, which runs with
     /// Sill's Screen Recording and Accessibility grants. It honours no TEST ONLY variable or `-Sill…After`
     /// hook that bears on who gets in or what pairing needs (docs/home-pairing-plan.md §4.3, §6.6):
@@ -99,6 +90,12 @@ final class AppModel {
                 // unavailable, not the app (docs/home-pairing-plan.md §6.1).
                 let remote = makeRemoteAccess()
                 settings.config.requirePairing = launchRequirePairing(remote)
+                // Always on in Oriel.app, like Require pairing (no switch in Settings): a Mac that
+                // turned it off before gets it back, saved.
+                if Self.bundled, !settings.config.remoteAccess {
+                    settings.config.remoteAccess = true
+                    print("Remote Access: back on.")
+                }
                 // The window lists carry this Sill's version, when it has one (the bare binary's
                 // "dev" does not parse): later devices can tell which Mac to update.
                 let c = try StreamCoordinator(config: settings.config, synthetic: synthetic, appKitLoop: true, remote: remote,
@@ -215,38 +212,43 @@ final class AppModel {
         return nil
     }
 
-    /// Require pairing at launch, from the identity store beside the trust list: on when it was
-    /// never saved (an existing install comes up on), and never from UserDefaults, where any process
-    /// of this user could turn it off (docs/home-pairing-plan.md §6.5). The bare binary also takes
-    /// `-requirePairing YES|NO` and saves it in its own store (memory, or the test directory);
-    /// Sill.app ignores the argument with a line.
+    /// Require pairing at launch. Oriel.app always requires it (Settings has no switch for it any
+    /// more, docs/settings-simple-plan.md): a Mac that turned it off before comes back on, saved
+    /// beside the trust list, and the argument is ignored with a line. The bare binary reads it from
+    /// the identity store (on when never saved), never from UserDefaults, where any process of this
+    /// user could turn it off (docs/home-pairing-plan.md §6.5), and also takes `-requirePairing
+    /// YES|NO`, saved in its own store (memory, or the test directory).
     private func launchRequirePairing(_ remote: RemoteAccess) -> Bool {
         let stored = remote.storedRequirePairing()
         let defaults = UserDefaults.standard
-        guard defaults.object(forKey: "requirePairing") != nil else { return stored }
         if Self.bundled {
-            print("requirePairing ignored: Oriel.app keeps Require pairing with its paired devices, never in its defaults or arguments; change it in Settings › Devices.")
-            return stored
+            if defaults.object(forKey: "requirePairing") != nil {
+                print("requirePairing ignored: Oriel.app always requires pairing.")
+            }
+            if !stored {
+                // On for this run whatever the keychain says; saved so the next launch agrees.
+                let problem = remote.saveRequirePairing(true)
+                print("Require pairing: back on" + (problem.map { ", for this run (the keychain didn’t keep it: \($0))" } ?? "") + ".")
+            }
+            return true
         }
+        guard defaults.object(forKey: "requirePairing") != nil else { return stored }
         let wanted = defaults.bool(forKey: "requirePairing")
         // Off only once saved; on in any case (the safe side).
         if remote.saveRequirePairing(wanted) != nil, !wanted { return stored }
         return wanted
     }
 
-    /// Settings › Devices' Require pairing (and the bare binary's -SillSetAfter): saved with the
-    /// trust list first, then applied through `settings.config`, the one path to the host (the TXT
-    /// record's `p`, and a goodbye to every unpaired device when it turns on). Turning it off takes
-    /// effect only once saved: a save that fails leaves it on, with the keychain line in the pane.
-    /// Turning it on always takes effect, for this run at least.
+    /// The bare binary's -SillSetAfter requirePairing (Oriel.app has no switch for it): saved with
+    /// the trust list first, then applied through `settings.config`, the one path to the host (the
+    /// TXT record's `p`, and a goodbye to every unpaired device when it turns on). Turning it off
+    /// takes effect only once saved: a save that fails leaves it on, with a line. Turning it on
+    /// always takes effect, for this run at least.
     func setRequirePairing(_ on: Bool) {
-        guard on != settings.config.requirePairing else { requirePairingProblem = nil; return }
-        guard let remote else { return }
+        guard on != settings.config.requirePairing, let remote else { return }
         if let problem = remote.saveRequirePairing(on) {
-            requirePairingProblem = RequirePairingProblem(wanted: on, reason: problem)
+            print("Require pairing: the keychain didn’t keep \(on ? "on" : "off") (\(problem)).")
             guard on else { return }
-        } else {
-            requirePairingProblem = nil
         }
         settings.config.requirePairing = on
     }

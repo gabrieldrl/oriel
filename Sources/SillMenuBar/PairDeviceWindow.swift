@@ -99,7 +99,7 @@ private struct LivePairDeviceView: View {
             PairDeviceView(offer: offer, status: status, remoteAccess: model.settings.config.remoteAccess,
                            actions: PairDeviceView.Actions(turnOn: { model.turnOnRemoteAccess() },
                                                            newCode: { model.pairDevice() },
-                                                           changePort: { model.showSettings?(.remoteAccess) },
+                                                           changePort: { model.showSettings?(.general) },   // General's Remote Access, while the port is taken
                                                            close: close))
                 // Remote Access turned off (or the pane's Cancel) closed the pairing: so does the window.
                 .onChange(of: status.pairing) { _, pairing in

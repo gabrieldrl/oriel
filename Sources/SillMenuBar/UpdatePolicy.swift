@@ -326,5 +326,5 @@ enum UpdatePolicy {
     }
 
     /// The pane's footer.
-    static let footnote = "Once a day, Oriel asks GitHub whether a newer version is out. GitHub sees this Mac’s IP address and which version of Oriel it has; nothing else is sent. Oriel never downloads or installs anything by itself: a new version opens its page on GitHub, where you download it."
+    static let footnote = "Once a day, Oriel asks GitHub for a new version. GitHub sees only this Mac’s IP address and Oriel’s version."
 }

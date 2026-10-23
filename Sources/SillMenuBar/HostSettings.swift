@@ -18,15 +18,16 @@ import SillHostCore
 /// save writes only the keys a change touched. Launch at login is not stored here: SMAppService
 /// is its source of truth (LoginItem.swift).
 ///
-/// Remote Access, its port and the internet switch are the Mac's alone: they come from here (the
-/// menu, the Remote Access pane, -SillSetAfter), never from a device. The trust list, the keys and
+/// Remote Access and its port are the Mac's alone: they come from here (always on in Oriel.app,
+/// AppModel.start; the port from General's Remote Access while another app holds it; -SillSetAfter),
+/// never from a device. The trust list, the keys and
 /// Require pairing never live here: any process of the same user can write these defaults
 /// (KeychainIdentityStore; docs/home-pairing-plan.md §6.5). `config.requirePairing` only carries
 /// the stored value to the host (AppModel.setRequirePairing), and `save(changedFrom:)` never writes it.
 ///
 /// Away from home (docs/remote-bundle-plan.md §5): the away quality is saved under its own keys,
 /// `awayBitrate` and `awayCaptureScale`, never over `bitrate` and `captureScale`; a device away sets
-/// it, and so does Settings › Streaming's "Away from home" section. Until the first change the keys do
+/// it (Settings has no Streaming tab: docs/settings-simple-plan.md). Until the first change the keys do
 /// not exist (`defaults read … awayBitrate` says so), which is how Low · Standard reads.
 ///
 /// `updateCheck` (automatic update checks) is here too, outside HostConfig: it moves no listener and

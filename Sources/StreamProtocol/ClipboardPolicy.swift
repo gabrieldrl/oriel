@@ -388,23 +388,23 @@ public enum ClipboardPolicy {
         }
 
         // Sill for Mac's Settings › General, under Share clipboard with devices.
-        /// Its footnote (found in review: it said a password manager's copies stay, where only those it
-        /// marks as concealed do, and "theirs here" read as if a device's copies came by themselves).
-        public static let macFootnote = "Text you copy here can be pasted on a connected iPhone or iPad, and text sent from one with Paste becomes this Mac’s. Copies a password manager marks as concealed stay on this Mac."
+        /// Its footnote, short (docs/settings-simple-plan.md): "Passwords" are the copies a password
+        /// manager marks as concealed, which never leave (ClipboardPolicy's concealed rule).
+        public static let macFootnote = "Text copied on this Mac or a device can be pasted on the other. Passwords stay on this Mac."
         /// Under it while macOS does not allow every read (MacAccess): why what is copied here stays.
         public static func macAccessWarning(_ access: MacAccess) -> String? {
             switch access {
             case .allowed: return nil
-            case .notAsked, .asks: return "macOS asks before Oriel reads the clipboard, so what you copy here stays on this Mac."
-            case .denied: return "macOS doesn’t let Oriel read the clipboard, so what you copy here stays on this Mac."
+            case .notAsked, .asks: return "macOS asks before Oriel reads the clipboard, so copies stay on this Mac."
+            case .denied: return "macOS doesn’t let Oriel read the clipboard, so copies stay on this Mac."
             }
         }
         /// …what to do about it, beside `macAccessButton`.
         public static func macAccessHint(_ access: MacAccess) -> String? {
             switch access {
             case .allowed: return nil
-            case .notAsked: return "Click Allow in System Settings: macOS asks about Oriel once, then Privacy & Security opens, where you set Oriel to Allow under Paste from Other Apps. Text a device sends with Paste still arrives."
-            case .asks, .denied: return "Set Oriel to Allow under Paste from Other Apps in Privacy & Security. Text a device sends with Paste still arrives."
+            case .notAsked: return "Click Allow in System Settings, then set Oriel to Allow under Paste from Other Apps."
+            case .asks, .denied: return "Set Oriel to Allow under Paste from Other Apps."
             }
         }
         public static let macAccessButton = "Allow in System Settings…"

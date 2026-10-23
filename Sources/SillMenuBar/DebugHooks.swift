@@ -174,7 +174,7 @@ enum DebugHooks {
                     print("SillSetAfter \(parts[0]) s: \(changes.joined(separator: ", "))")
                     model.settings.config = config    // one assignment: several keys, one apply
                     if let updateCheck { model.settings.updateCheck = updateCheck }
-                    // Through the identity store first, as the Devices pane's switch goes.
+                    // Through the identity store first (AppModel.setRequirePairing).
                     if let requirePairing { model.setRequirePairing(requirePairing) }
                 }
             }
@@ -309,7 +309,7 @@ enum DebugHooks {
                 $0.rawValue.lowercased().hasPrefix(word) || $0.title.lowercased().replacingOccurrences(of: " ", with: "").hasPrefix(word)
             }
             guard matches.count == 1, let tab = matches.first else {
-                print("SillSettingsAfter: “\(parts[1])” is no step: a tab (general, devices, streaming, virtual display, permissions, remote access, or the start of one), close, report, end or height=<points>")
+                print("SillSettingsAfter: “\(parts[1])” is no step: a tab (general, devices, permissions, or the start of one), close, report, end or height=<points>")
                 return nil
             }
             return (parts[0], delay, .tab(tab))
@@ -359,12 +359,12 @@ enum DebugHooks {
         try? FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
         let appearances: [(String, NSAppearance.Name)] = [("light", .aqua), ("dark", .darkAqua)]
 
-        // The Devices and Remote Access panes are drawn in each of their states below instead of
-        // live (the model has no host here, so they would only ever show "off" and nothing paired).
+        // The Devices pane and General's Remote Access are drawn in each of their states below
+        // instead of live (the model has no host here, so they would only ever show nothing paired).
         // General's update section is fixed at "Not checked yet.", whatever an earlier run stored;
         // its states are drawn alone below.
         let neverChecked = updatePaneSamples()[0].pane
-        for tab in SettingsTab.allCases where tab != .remoteAccess && tab != .devices {
+        for tab in SettingsTab.allCases where tab != .devices {
             for (name, appearance) in appearances {
                 render(SettingsPane(tab: tab, model: model, previewUpdates: neverChecked, previewClipboardAccess: .allowed)
                         .background(Color(nsColor: .windowBackgroundColor)),
@@ -372,8 +372,7 @@ enum DebugHooks {
             }
         }
         for sample in devicesPaneSamples() {
-            let pane = DevicesPane(status: sample.status, requirePairing: .constant(sample.requirePairing),
-                                   requirePairingProblem: nil, actions: DevicesPane.Actions(), now: previewNow)
+            let pane = DevicesPane(status: sample.status, actions: DevicesPane.Actions())
                 .formStyle(.grouped)
                 .frame(width: 520)
                 .background(Color(nsColor: .windowBackgroundColor))
@@ -406,8 +405,7 @@ enum DebugHooks {
             }
         }
         for sample in remotePaneSamples() {
-            let pane = RemoteAccessPane(status: sample.status, remoteAccess: .constant(sample.status.remoteAccess), port: 7455,
-                                        actions: RemoteAccessPane.Actions())
+            let pane = Form { RemoteAccessSection(status: sample.status, port: 7455) }
                 .formStyle(.grouped)
                 .frame(width: 520)
                 .background(Color(nsColor: .windowBackgroundColor))
@@ -762,13 +760,11 @@ extension DebugHooks {
     struct DevicesPaneSample {
         var name: String
         var status: RemoteStatus
-        var requirePairing = true
     }
 
-    /// pane-devices-{required,off,empty,unavailable}: three devices, one paired over the USB cable
-    /// and seen over Wi-Fi at home, one by QR code and seen through Tailscale yesterday, one by
-    /// code and never connected; Require pairing off (its warning); nothing paired yet; the
-    /// keychain unusable (no home door).
+    /// pane-devices-{paired,empty,unavailable}: three devices, one paired over the USB cable and
+    /// seen over Wi-Fi at home, one by QR code and seen through Tailscale yesterday, one by code and
+    /// never connected; nothing paired yet; the keychain unusable (no home door).
     static func devicesPaneSamples() -> [DevicesPaneSample] {
         let now = previewNow
         let ipad = PairedDeviceSummary(id: "ipad", keyPrefix: "5KD2Q7", name: "iPad (iPad14,1)", model: "iPad14,1",
@@ -780,8 +776,7 @@ extension DebugHooks {
         let pro = PairedDeviceSummary(id: "ipadpro", keyPrefix: "H4MZ8T", name: "iPad (iPad17,4)", model: "iPad17,4",
                                       pairedAt: now.addingTimeInterval(-3_600), method: PairRequest.code)
         return [
-            DevicesPaneSample(name: "required", status: RemoteStatus(paired: [ipad, iphone, pro], homeDoor: .pairingRequired)),
-            DevicesPaneSample(name: "off", status: RemoteStatus(paired: [ipad, iphone], homeDoor: .open), requirePairing: false),
+            DevicesPaneSample(name: "paired", status: RemoteStatus(paired: [ipad, iphone, pro], homeDoor: .pairingRequired)),
             DevicesPaneSample(name: "empty", status: RemoteStatus(homeDoor: .pairingRequired)),
             DevicesPaneSample(name: "unavailable",
                               status: RemoteStatus(identityProblem: keychainProblem,
@@ -794,7 +789,7 @@ extension DebugHooks {
         var status: RemoteStatus
     }
 
-    /// pane-remote-{off,tailscale,notconnected,novpn,inuse,keychain}.
+    /// pane-remote-{tailscale,notconnected,novpn,inuse,keychain}: General's Remote Access section.
     static func remotePaneSamples() -> [RemotePaneSample] {
         let now = previewNow
         let ipad = PairedDeviceSummary(id: "ipad", keyPrefix: "5KD2Q7", name: "iPad (iPad14,1)", model: "iPad14,1",
@@ -809,7 +804,6 @@ extension DebugHooks {
                          lanAddress: "192.168.1.20", paired: paired)
         }
         return [
-            RemotePaneSample(name: "off", status: RemoteStatus(lanAddress: "192.168.1.20", paired: [ipad])),
             RemotePaneSample(name: "tailscale", status: on(tailscaleAddresses)),
             RemotePaneSample(name: "notconnected", status: on(wifi, vpnDown: ["Tailscale"], paired: [ipad])),
             RemotePaneSample(name: "novpn", status: on(wifi, paired: [])),
