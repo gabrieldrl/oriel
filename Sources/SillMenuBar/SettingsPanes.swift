@@ -77,7 +77,7 @@ func withoutFullStop(_ text: String) -> String {
 // MARK: General
 
 /// Launch at login, the Mac's name, the clipboard, the update check, Remote Access (always on: what
-/// it needs, and the VPNs it sees), sleep, and Quit. Nothing about how a stream looks: each device
+/// it needs, and the VPNs it sees), sleep, Contact and Quit. Nothing about how a stream looks: each device
 /// sets that for itself.
 private struct GeneralPane: View {
     let model: AppModel
@@ -134,12 +134,25 @@ private struct GeneralPane: View {
                 }
             }
             Section {
-                // A way out when the status item is hidden (a crowded menu bar, the notch).
-                Button("Quit Oriel") { NSApp.terminate(nil) }
+                // A way out when the status item is hidden (a crowded menu bar, the notch), and a way
+                // to write to the developer (Mail, or whatever app handles mailto).
+                HStack {
+                    Button("Contact") { if let url = Self.feedbackMail { NSWorkspace.shared.open(url) } }
+                    Button("Quit Oriel") { NSApp.terminate(nil) }
+                }
             } footer: {
                 Footnote("Oriel \(AppModel.version) (\(AppModel.build))")
             }
         }
+    }
+
+    /// A new message to the developer, its subject naming this version.
+    private static var feedbackMail: URL? {
+        var mail = URLComponents()
+        mail.scheme = "mailto"
+        mail.path = "g@gdrl.dev"
+        mail.queryItems = [URLQueryItem(name: "subject", value: "Oriel \(AppModel.version) (\(AppModel.build)) feedback")]
+        return mail.url
     }
 
     private var networkName: String {

@@ -12,7 +12,8 @@ Gabriel's ask: Settings becomes General, Devices and Permissions, with short tex
   - Remote Access: the VPNs this Mac has and what to do. The port shows only while another app
     holds it, with Change….
   - Sleep, with Open Energy Settings….
-  - Quit Oriel, with the version under it.
+  - Contact (a new mail to g@gdrl.dev, its subject naming the version) beside Quit Oriel, with the
+    version under them.
 - **Devices:** the paired devices, each with Remove (unpairs it) and a hidden double-click rename.
   It has no Require pairing switch and no Pair iPhone or iPad… button: pairing starts on the device,
   over the USB cable by itself, or with a code the Mac shows when the device asks.
