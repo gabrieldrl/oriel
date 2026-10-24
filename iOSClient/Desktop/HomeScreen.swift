@@ -33,6 +33,9 @@ struct HomeScreen: View {
     /// A card's shape until its Mac's picture gives its own: a 14-inch MacBook Pro's display.
     private static let aspect: CGFloat = 3024.0 / 1964.0
     private static let margin: CGFloat = 24
+    private static let phone = UIDevice.current.userInterfaceIdiom == .phone
+    /// On a phone, how much of the next card shows at the screen's edge.
+    private static let peek: CGFloat = 36
     /// The outline's room around the picture.
     private static let inset: CGFloat = 12
     /// How often the Macs not nearby are checked while this screen shows.
@@ -131,19 +134,36 @@ struct HomeScreen: View {
 
     /// One Mac: a big card in the middle. More: a row of smaller ones, scrolling sideways once they
     /// run past the screen's edge. Never so tall that the status line and the pill lose their room.
-    private func cards(in size: CGSize) -> some View {
+    /// On a phone every card is as wide as the screen gives, the next one peeking in at its edge,
+    /// and a swipe settles on a card.
+    @ViewBuilder private func cards(in size: CGSize) -> some View {
         let room = size.width - 2 * Self.margin
         let tallest = max(size.height - 220, 120) * Self.aspect
-        let width = min(saved.count == 1 ? min(room * 0.62, 620) : min(room * 0.4, 420), tallest)
-        return ScrollView(.horizontal) {
-            HStack(spacing: 32) {
-                ForEach(saved) { mac in card(mac, width: width) }
+        if Self.phone {
+            let width = min(saved.count == 1 ? room : room - Self.peek, tallest)
+            ScrollView(.horizontal) {
+                HStack(spacing: 16) {
+                    ForEach(saved) { mac in card(mac, width: width) }
+                }
+                .scrollTargetLayout()
+                .frame(minWidth: room)
             }
-            .padding(.horizontal, Self.margin)
-            .frame(minWidth: size.width)
+            .contentMargins(.horizontal, Self.margin, for: .scrollContent)
+            .scrollTargetBehavior(.viewAligned)
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
+        } else {
+            let width = min(saved.count == 1 ? min(room * 0.62, 620) : min(room * 0.4, 420), tallest)
+            ScrollView(.horizontal) {
+                HStack(spacing: 32) {
+                    ForEach(saved) { mac in card(mac, width: width) }
+                }
+                .padding(.horizontal, Self.margin)
+                .frame(minWidth: size.width)
+            }
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
         }
-        .scrollIndicators(.hidden)
-        .scrollBounceBehavior(.basedOnSize)
     }
 
     private func card(_ mac: SavedMac, width: CGFloat) -> some View {
