@@ -87,9 +87,15 @@ Access are always on in Oriel.app. Each stream's EncoderSpeedJudge switches its 
 speed while it falls behind and tries quality later (`docs/encoder-speed-plan.md`, `Tests/checks/
 encoder-speed`). Untested on a device with real load.
 
-**To do, remind Gabriel: layouts per device.** The new screen is laid out for an iPad held sideways
-only. Still to design (UX work, Gabriel's call): an iPad upright, a phone upright and sideways, and
-the iPhone Duo's poses (the classic StreamScreen and PortraitStreamScreen have each today).
+**The iPhone's layout (2026-10-24, `dev`).** DesktopScreen's `phoneLayout`. Upright: the Mac's name,
+ⓘ and Disconnect along the top (PhoneTopBar), the icons (PhoneControlBar: Settings, Apps, Displays,
+Keys, keyboard) in a row at the bottom, the sheets rising into the space under the picture, outlined.
+Sideways: no name; ⓘ and Disconnect atop a column of the icons at the left, the picture as tall as the
+screen. Settings (PhoneSheets): Resolution, Frame Rate, Quality and Touch/Trackpad laid out open
+(ChoiceTrack), the sound on its own row, then clipboard and screen off; Keys: the key row (KeyCaps).
+
+**To do, remind Gabriel: layouts per device.** Still to design (UX work, Gabriel's call): an iPad
+upright and the iPhone Duo's poses (the classic StreamScreen and PortraitStreamScreen have each today).
 
 Upstream's open device tests (clipboard, hardware keyboard, Larger Picture, window restore,
 reconnect after sleep, the Settings window, away from home, the Duo, and more) are listed in each

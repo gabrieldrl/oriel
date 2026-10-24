@@ -10,12 +10,20 @@ import SwiftUI
 /// it, or macOS refused). Open, after the slider, Play on Mac (a Mac whose list says `sound` 2): where
 /// the sound plays, this device while it plays here and a Mac, lit, while it plays on the Mac's own
 /// speakers; meanwhile the circle shows a laptop in place of the speaker, and the slider and mute
-/// still set the Mac's.
+/// still set the Mac's. `pinned` (the iPhone's settings sheet, PhoneSheets): always open, the slider
+/// as wide as the room it is given, never folding.
 struct MacSoundControl: View {
     @ObservedObject var client: StreamClient
+    let pinned: Bool
     @Environment(\.quickPillFocus) private var focus
     @State private var open = false
     @State private var fold: Task<Void, Never>?
+
+    init(client: StreamClient, pinned: Bool = false) {
+        self.client = client
+        self.pinned = pinned
+        _open = State(initialValue: pinned)
+    }
 
     private static let id = "Mac Sound"
     private static let sliderWidth: CGFloat = 188
@@ -41,7 +49,8 @@ struct MacSoundControl: View {
         HStack(spacing: open ? 8 : 0) {
             circle
             slider
-                .frame(width: open ? Self.sliderWidth : 0, height: QuickControlStyle.height, alignment: .leading)
+                .frame(width: pinned ? nil : open ? Self.sliderWidth : 0, height: QuickControlStyle.height, alignment: .leading)
+                .frame(maxWidth: pinned ? .infinity : nil, alignment: .leading)
                 .clipShape(Capsule())
                 .opacity(open ? 1 : 0)
                 .allowsHitTesting(open)
@@ -128,8 +137,8 @@ struct MacSoundControl: View {
             ZStack(alignment: .leading) {
                 Capsule().fill(QuickControlStyle.fill)
                 Rectangle().fill(Color.white).frame(width: filled)
-                speakers(Color.white)
-                speakers(Color.black)
+                speakers(Color.white, width: width)
+                speakers(Color.black, width: width)
                     .mask(alignment: .leading) { Rectangle().frame(width: filled) }
             }
             .contentShape(Capsule())
@@ -142,7 +151,7 @@ struct MacSoundControl: View {
         }
     }
 
-    private func speakers(_ color: Color) -> some View {
+    private func speakers(_ color: Color, width: CGFloat) -> some View {
         HStack {
             Image(systemName: "speaker.fill").font(.system(size: 13, weight: .semibold))
             Spacer(minLength: 0)
@@ -150,17 +159,18 @@ struct MacSoundControl: View {
         }
         .foregroundStyle(color)
         .padding(.horizontal, 16)
-        .frame(width: Self.sliderWidth, height: QuickControlStyle.height)
+        .frame(width: pinned ? width : Self.sliderWidth, height: QuickControlStyle.height)
     }
 
     private func openUp() {
-        guard !open else { return }
+        guard !open, !pinned else { return }
         open = true
         focus?.opened(Self.id) { close() }
     }
 
     private func armFold() {
         fold?.cancel()
+        if pinned { return }
         #if DEBUG
         if UserDefaults.standard.bool(forKey: "SillSoundOpen") { return }
         #endif
@@ -172,6 +182,7 @@ struct MacSoundControl: View {
 
     private func close() {
         fold?.cancel()
+        if pinned { return }
         open = false
         focus?.closed(Self.id)
     }

@@ -9,6 +9,8 @@ import SwiftUI
 /// its top edge up, the rest still under the picture's edge. With a `focusID`, open, it is the
 /// screen's open control (QuickPillFocus): a touch anywhere else puts it away, and another control
 /// opening closes it. Without one it stays up while the picture is used, until `open` goes false.
+/// Where it rises over black instead of a picture (the iPhone held upright, DesktopScreen), its
+/// outline is drawn as the picture's is (`\.risingSheetOutlined`).
 struct RisingSheet<Content: View>: View {
     @Binding var open: Bool
     /// The sheet's width at its sides (its base flares out past them).
@@ -19,6 +21,7 @@ struct RisingSheet<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
     @Environment(\.quickPillFocus) private var focus
+    @Environment(\.risingSheetOutlined) private var outlined
     /// How far up the sheet is drawn, following `open` in the sheet's own spring.
     @State private var expanded = false
 
@@ -33,6 +36,13 @@ struct RisingSheet<Content: View>: View {
             .clipShape(clip)
             .background {
                 SheetShape(flare: RisingSheetStyle.flare, topRadius: RisingSheetStyle.topRadius).fill(Color.black)
+                    .overlay {
+                        if outlined {
+                            SheetShape(flare: RisingSheetStyle.flare, topRadius: RisingSheetStyle.topRadius, closed: false)
+                                .stroke(Color.white.opacity(0.09), lineWidth: 1)
+                                .opacity(expanded ? 1 : 0)
+                        }
+                    }
                     .padding(.horizontal, -RisingSheetStyle.flare)
             }
             .contentShape(Rectangle())
@@ -66,6 +76,18 @@ enum RisingSheetStyle {
     static func width(over width: CGFloat) -> CGFloat { max(width - 2 * inset, 0) }
 }
 
+private struct RisingSheetOutlinedKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    /// Rising sheets here rise over black, not over the picture: their outline is drawn.
+    var risingSheetOutlined: Bool {
+        get { self[RisingSheetOutlinedKey.self] }
+        set { self[RisingSheetOutlinedKey.self] = newValue }
+    }
+}
+
 /// While a focused sheet is open, its frame to QuickPillFocus (the catcher's hole).
 private struct FocusFrame: ViewModifier {
     let id: String?
@@ -83,10 +105,12 @@ private struct FocusFrame: ViewModifier {
 
 /// The sheet's outline in its rect, whose sides lie `flare` in from the rect's: straight up from a
 /// base that curves out into the rect's bottom edge, as liquid meets a surface, to rounded top corners.
-/// A low sheet, early in its rise, flares and rounds less.
+/// A low sheet, early in its rise, flares and rounds less. Not `closed`, the base is left open (an
+/// outline to stroke).
 private struct SheetShape: Shape {
     let flare: CGFloat
     let topRadius: CGFloat
+    var closed = true
 
     func path(in rect: CGRect) -> Path {
         let left = rect.minX + flare, right = rect.maxX - flare
@@ -101,7 +125,7 @@ private struct SheetShape: Shape {
         path.addArc(tangent1End: CGPoint(x: right, y: rect.minY), tangent2End: CGPoint(x: right, y: rect.minY + r), radius: r)
         path.addLine(to: CGPoint(x: right, y: rect.maxY - f))
         path.addQuadCurve(to: CGPoint(x: right + f, y: rect.maxY), control: CGPoint(x: right, y: rect.maxY))
-        path.closeSubpath()
+        if closed { path.closeSubpath() }
         return path
     }
 }

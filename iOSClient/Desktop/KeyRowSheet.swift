@@ -3,10 +3,7 @@ import UIKit
 import StreamProtocol
 
 /// The key row, a RisingSheet over the picture: the keys a Mac needs that the on-screen keyboard
-/// does not offer. Escape, tab, the four modifiers, the four arrows and, while the whole Desktop
-/// streams, Spotlight (its panel is a Mac window of its own, so over a window it would do something
-/// unseen). A modifier stays lit until the next key, character or click uses it, or until it is
-/// tapped again (`latched`, which the picture's input spends too).
+/// does not offer (KeyCaps).
 ///
 /// It stays up while the picture is used, until the typing pill's key row column puts it away
 /// (QuickControls), or the Apps sheet takes its place (DesktopScreen).
@@ -16,6 +13,35 @@ struct KeyRowSheet: View {
     @Binding var latched: KeyModifiers
     /// The Mac's picture on screen, which the sheet rises over.
     let picture: CGSize
+
+    private static let vertical: CGFloat = 14
+    /// Clear of the sheet's rounded top corners.
+    private static let horizontal: CGFloat = 24
+
+    static let icon = "command"
+
+    var body: some View {
+        RisingSheet(open: $open, width: RisingSheetStyle.width(over: picture.width),
+                    height: KeyCaps.capHeight + 2 * Self.vertical) {
+            KeyCaps(client: client, latched: $latched)
+                .padding(.horizontal, Self.horizontal)
+                .padding(.vertical, Self.vertical)
+        }
+        // Put away, it holds nothing: a latch nobody can see would surprise the next tap.
+        .onChange(of: open) { _, isOpen in if !isOpen { latched = [] } }
+    }
+}
+
+/// The keys a Mac needs that the on-screen keyboard does not offer: Escape, tab, the four modifiers,
+/// the four arrows and, while the whole Desktop streams, Spotlight (its panel is a Mac window of its
+/// own, so over a window it would do something unseen). A modifier stays lit until the next key,
+/// character or click uses it, or until it is tapped again (`latched`, which the picture's input
+/// spends too). In one row (KeyRowSheet), or two, the arrows and Spotlight on the second (the
+/// iPhone's controls sheet, PhoneSheets).
+struct KeyCaps: View {
+    @ObservedObject var client: StreamClient
+    @Binding var latched: KeyModifiers
+    var rows = 1
 
     private enum Key {
         /// A key that types itself: the cap's text, its HID usage, its accessibility label.
@@ -41,31 +67,30 @@ struct KeyRowSheet: View {
         .arrow("chevron.right", HIDKey.rightArrow, "Right arrow"),
         .spotlight,
     ]
+    /// Where the second of two rows starts: the arrows.
+    private static let secondRow = 6
 
-    private static let capHeight: CGFloat = 44
-    private static let capSpacing: CGFloat = 8
-    private static let vertical: CGFloat = 14
-    /// Clear of the sheet's rounded top corners.
-    private static let horizontal: CGFloat = 24
+    static let capHeight: CGFloat = 44
+    static let capSpacing: CGFloat = 8
 
-    static let icon = "command"
+    /// Their height in `rows` rows.
+    static func height(rows: Int) -> CGFloat { CGFloat(rows) * capHeight + CGFloat(max(rows - 1, 0)) * capSpacing }
 
     private var shown: [Key] {
         client.active == .desktop ? Self.keys : Self.keys.filter { if case .spotlight = $0 { return false } else { return true } }
     }
 
     var body: some View {
-        RisingSheet(open: $open, width: RisingSheetStyle.width(over: picture.width),
-                    height: Self.capHeight + 2 * Self.vertical) {
-            HStack(spacing: Self.capSpacing) {
-                ForEach(shown.indices, id: \.self) { index in cap(shown[index]) }
+        let keys = shown
+        let lines = rows > 1 ? [Array(keys.prefix(Self.secondRow)), Array(keys.dropFirst(Self.secondRow))] : [keys]
+        VStack(spacing: Self.capSpacing) {
+            ForEach(lines.indices, id: \.self) { line in
+                HStack(spacing: Self.capSpacing) {
+                    ForEach(lines[line].indices, id: \.self) { index in cap(lines[line][index]) }
+                }
+                .frame(height: Self.capHeight)
             }
-            .frame(height: Self.capHeight)
-            .padding(.horizontal, Self.horizontal)
-            .padding(.vertical, Self.vertical)
         }
-        // Put away, it holds nothing: a latch nobody can see would surprise the next tap.
-        .onChange(of: open) { _, isOpen in if !isOpen { latched = [] } }
     }
 
     @ViewBuilder private func cap(_ key: Key) -> some View {

@@ -8,7 +8,7 @@ import StreamProtocol
 /// (DisplaySizeControl); Apps in the middle (AppsPill), with Displays
 /// beside it (DisplaysPill); at the trailing edge Touch or Trackpad, the
 /// Mac’s sound (MacSoundControl), typing (TypingControl: the keyboard and the key row), its clipboard (ClipboardControl), its
-/// screen off (CurtainControl) and Disconnect. The settings
+/// screen off (CurtainToggle) and Disconnect. The settings
 /// controls and Disconnect are below; the sound and the clipboard have files of their own.
 ///
 /// The three settings are the Mac's own, as its menu sets them: one stream serves every device, so
@@ -60,7 +60,7 @@ struct QuickControls: View {
             TypingControl(keyboardShown: keyboardShown, onKeyboard: onKeyboard, keyRowOpen: $keyRowOpen)
             ClipboardControl(client: client)
             if client.hostHasCurtain {
-                CurtainControl(client: client)
+                CurtainToggle(client: client)
             }
             DisconnectControl(client: client, onDisconnect: onDisconnect)
         }
@@ -71,7 +71,7 @@ struct QuickControls: View {
 /// The Mac's screen off, on a tap (StreamClient+Curtain): an open eye while the Mac shows its screen, a
 /// closed one, lit, while it is dark and its own keyboard and trackpad do nothing. Orange when the Mac
 /// could not (Sill may not control it: Accessibility).
-private struct CurtainControl: View {
+struct CurtainToggle: View {
     @ObservedObject var client: StreamClient
 
     var body: some View {
@@ -132,7 +132,7 @@ private struct TypingControl: View {
 /// An extended display's size, on a tap: Default (the room this screen gives the picture, as a new
 /// display gets) or Match Primary (the Mac's own display's size and scale). A round icon, and the
 /// system's menu with the current one ticked; the display is made again at the pick and keeps streaming.
-private struct DisplaySizeControl: View {
+struct DisplaySizeControl: View {
     @ObservedObject var client: StreamClient
     let display: ExtendedDisplay
     let room: CGSize
