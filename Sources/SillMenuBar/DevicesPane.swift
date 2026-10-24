@@ -11,20 +11,23 @@ struct LiveDevicesPane: View {
     var body: some View {
         DevicesPane(status: model.coordinator?.status.snapshot.remote ?? RemoteStatus(),
                     actions: DevicesPane.Actions(remove: { model.removeDevice($0) },
-                                                 rename: { model.renameDevice($0, to: $1) }))
+                                                 rename: { model.renameDevice($0, to: $1) },
+                                                 pair: { model.pairDevice() }))
     }
 }
 
 /// The Devices pane (docs/settings-simple-plan.md): the devices paired with this Mac (one trust list,
-/// at home and away), each with Remove. Pairing is always required in Oriel.app, so no switch, and
-/// it starts on the device (over the USB cable by itself, or a code this Mac shows when the device
-/// asks). Values in, actions out, so the previews can draw every state. Errors show inline, never in
-/// alerts.
+/// at home and away), each with Remove, and Pair New Device… (the pairing window and its code).
+/// Pairing is always required in Oriel.app, so no switch; it also starts on the device (over the USB
+/// cable by itself, or a code this Mac shows when the device asks). Values in, actions out, so the
+/// previews can draw every state. Errors show inline, never in alerts.
 struct DevicesPane: View {
     struct Actions {
         /// Nil when the device was removed; otherwise why it is still paired.
         var remove: (String) -> String? = { _ in nil }
         var rename: (String, String) -> Void = { _, _ in }
+        /// Pair New Device…: a pairing window, or the open one brought forward.
+        var pair: () -> Void = {}
     }
 
     let status: RemoteStatus
@@ -65,6 +68,11 @@ struct DevicesPane: View {
                                         }
                                     },
                                     rename: { actions.rename(device.id, $0) })
+                }
+                HStack {
+                    Spacer()
+                    Button("Pair New Device…", action: actions.pair)
+                        .disabled(unavailable != nil)
                 }
             } header: {
                 Text("Paired Devices")

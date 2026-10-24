@@ -15,8 +15,9 @@ Gabriel's ask: Settings becomes General, Devices and Permissions, with short tex
   - Contact (a new mail to g@gdrl.dev, its subject naming the version) beside Quit Oriel, with the
     version under them.
 - **Devices:** the paired devices, each with Remove (unpairs it) and a hidden double-click rename.
-  It has no Require pairing switch and no Pair iPhone or iPad… button: pairing starts on the device,
-  over the USB cable by itself, or with a code the Mac shows when the device asks.
+  It has no Require pairing switch. Pair New Device… (Gabriel, 2026-10-24) opens the pairing window
+  and its code; pairing also starts on the device, over the USB cable by itself, or with a code the
+  Mac shows when the device asks.
 - **Permissions:** Screen Recording and Accessibility, Local Network when devices can't find the
   Mac, and Relaunch once Screen Recording is given.
 
