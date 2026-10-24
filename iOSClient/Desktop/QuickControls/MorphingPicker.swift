@@ -78,8 +78,10 @@ struct MorphingPicker<Value: Hashable>: View {
                     accessibilityLabels: options.map { accessibilityLabelFor($0).isEmpty ? label($0) : accessibilityLabelFor($0) },
                     selectedIndex: selectedIndex, closedLabel: closedLabel, icon: icon(selection),
                     tappable: open && !settling,
-                    onFrame: { i, frame in if frames[i] != frame { frames[i] = frame } },
-                    onClosedSize: { if closedSize != $0 { closedSize = $0 } },
+                    onFrame: { i, frame in if !Self.near(frames[i], frame) { frames[i] = frame } },
+                    onClosedSize: { size in
+                        if !Self.near(CGRect(origin: .zero, size: closedSize), CGRect(origin: .zero, size: size)) { closedSize = size }
+                    },
                     onTap: { pick(options[$0]) })
             .contentShape(Capsule())
             .onTapGesture { openUp() }
@@ -96,6 +98,17 @@ struct MorphingPicker<Value: Hashable>: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1 + 1.5 * Self.slow) { pick(demo) }
             }
         #endif
+    }
+
+    /// Within half a point: the same frame, as far as the layout goes. The labels are measured after
+    /// rounding to the screen's pixels, and where the rounding falls follows the row's own place on
+    /// screen, which follows the thumb, which follows the frames: taking a change smaller than a pixel
+    /// moves the row again, for ever (a sixth of a point back and forth on an iPad, 100% of a core and
+    /// the screen frozen, 2026-10-24).
+    private static func near(_ a: CGRect?, _ b: CGRect) -> Bool {
+        guard let a else { return false }
+        return abs(a.minX - b.minX) < 0.5 && abs(a.minY - b.minY) < 0.5
+            && abs(a.width - b.width) < 0.5 && abs(a.height - b.height) < 0.5
     }
 
     private func openUp() {
