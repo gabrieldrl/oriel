@@ -93,6 +93,12 @@ public enum StreamMessageKind: UInt8 {
                              // every few seconds to a subscribed device
     case curtain = 52        // both ways: JSON CurtainControl (Curtain.swift) — the device's on or off, the
                              // host's answer with its state; only with a host whose window list says `curtain`
+    // The Mac's desktops (Desktops.swift; docs/desktops-plan.md).
+    case desktops = 53       // host → device: JSON DesktopList — each display's desktops and the one showing,
+                             // after a kind 54 subscribed and after every change
+    case desktopControl = 54 // device → host: JSON DesktopControl — `{}` subscribes; `display` and `id` switch.
+                             // Only to a host whose window list says `desktops` 1 or more
+    case desktopThumbnail = 55 // host → device: spaceID(8, BE) + JPEG, a desktop's picture taken while it showed
     case unknown = 255       // never sent: what parseHeader yields for a kind this build does not know
 }
 

@@ -115,6 +115,11 @@ final class ExtendedDisplays {
         return b
     }
 
+    /// `owner`'s displays, in their order (slot), as its Displays sheet lists them.
+    func owned(by owner: String) -> [UInt32] {
+        live.values.filter { $0.owner == owner }.sorted { $0.slot < $1.slot }.map(\.id)
+    }
+
     /// The CoreGraphics display of `id`.
     func displayID(_ id: UInt32) -> CGDirectDisplayID? {
         guard let d = live[id]?.display, d.displayID != 0 else { return nil }
@@ -407,22 +412,27 @@ final class ExtendedDisplays {
         thumbnails = nil
     }
 
+    /// Display `did`, small (480 points wide), as a JPEG, without the cursor or Sill's own windows (the
+    /// pairing code): a display's thumbnail, and a desktop's (HostDesktops).
+    static func shot(_ did: CGDirectDisplayID, in content: SCShareableContent) async -> Data? {
+        guard let d = content.displays.first(where: { $0.displayID == did }) else { return nil }
+        let own = content.applications.filter { $0.processID == WindowCatalog.ownPID }
+        let config = SCStreamConfiguration()
+        let width = 480.0
+        config.width = Int(width)
+        config.height = max(2, Int(width * Double(d.height) / Double(max(d.width, 1))))
+        config.showsCursor = false
+        let filter = SCContentFilter(display: d, excludingApplications: own, exceptingWindows: [])
+        guard let image = try? await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config) else { return nil }
+        return WindowCatalog.jpeg(image, quality: 0.6)
+    }
+
     private func sendThumbnails() async {
         guard !subscribers.isEmpty, CGPreflightScreenCaptureAccess(),
               let content = try? await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true) else { return }
-        let own = content.applications.filter { $0.processID == WindowCatalog.ownPID }
         var pictures: [UInt32: Data] = [:]
         func picture(_ id: UInt32, _ did: CGDirectDisplayID) async {
-            guard let d = content.displays.first(where: { $0.displayID == did }) else { return }
-            let config = SCStreamConfiguration()
-            let width = 480.0
-            config.width = Int(width)
-            config.height = max(2, Int(width * Double(d.height) / Double(max(d.width, 1))))
-            config.showsCursor = false
-            let filter = SCContentFilter(display: d, excludingApplications: own, exceptingWindows: [])
-            guard let image = try? await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config),
-                  let jpeg = WindowCatalog.jpeg(image, quality: 0.6) else { return }
-            pictures[id] = jpeg
+            if let jpeg = await Self.shot(did, in: content) { pictures[id] = jpeg }
         }
         await picture(0, CGMainDisplayID())
         for d in live.values {

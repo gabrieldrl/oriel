@@ -10,9 +10,9 @@ PATHS = {
     "CurtainPolicy.swift": "Sources/SillHost/Curtain/CurtainPolicy.swift",
 }
 MUTANTS = [
-    ("the kind at 53", "StreamMessage.swift", "case curtain = 52", "case curtain = 53"),
+    ("the kind at 60", "StreamMessage.swift", "case curtain = 52", "case curtain = 60"),
     ("the problem word", "Curtain.swift", 'public static let accessibility = "accessibility"', 'public static let accessibility = "access"'),
-    ("the list's curtain dropped", "Switcher.swift", "        self.curtain = curtain\n", ""),
+    ("the list's curtain dropped", "Switcher.swift", "self.curtain = curtain; self.desktops = desktops", "self.desktops = desktops"),
     ("Sill's own stopped", "CurtainPolicy.swift", "userData != marker && blocked.contains(type)", "blocked.contains(type)"),
     ("nothing stopped", "CurtainPolicy.swift", "userData != marker && blocked.contains(type)", "userData == marker && blocked.contains(type)"),
     ("everything stopped", "CurtainPolicy.swift", "userData != marker && blocked.contains(type)", "userData != marker"),

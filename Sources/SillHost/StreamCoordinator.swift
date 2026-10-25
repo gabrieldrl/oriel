@@ -156,8 +156,11 @@ package final class StreamCoordinator {
             cursorShapes.running = active != .none
             pointer.setGeometry(pointerGeometry(), fps: fps)   // also on a restart of the same source
             menuTargetChanged()                     // the menus' app follows the source (only for devices that asked)
+            if !synthetic { displayWake.hold(active != .none) }   // the display stays awake under a stream
         }
     }
+    /// The Mac's display woken for a pick and kept awake while anything streams (DisplayWake).
+    private let displayWake = DisplayWake()
     private var rectCache: (id: CGWindowID, rect: CGRect, at: CFAbsoluteTime)?
     private var pendingLaunch: String?
     private var switching = false
@@ -272,6 +275,9 @@ package final class StreamCoordinator {
     let displays: ExtendedDisplays
     /// The Mac's screen off and its own input away while a device works it (kind 52).
     let curtain: MacCurtain
+    /// The Mac's desktops for the devices' Displays sheets, and switching them (kinds 53 to 55,
+    /// HostDesktops; docs/desktops-plan.md).
+    let desktops: HostDesktops
     /// TEST ONLY. `SILL_TEST_MENU_PID=<pid>` on a --synthetic host: the test pattern's menus are that
     /// process's (the gates' fixture, Scripts/menufixture.swift), read and pressed through the same
     /// code, never activated (the Desktop's rule). Nil otherwise; `testMenuLine` is what `start`
@@ -340,6 +346,8 @@ package final class StreamCoordinator {
                                     available: synthetic || (appKitLoop && VirtualDisplay.checkPrivateAPI().isEmpty))
         // Its black windows are AppKit's: Sill.app, or a synthetic host's state alone.
         curtain = MacCurtain(server: server, synthetic: synthetic, available: synthetic || appKitLoop)
+        // A synthetic host reads and posts nothing on this Mac: desktops of its own.
+        desktops = HostDesktops(server: server, synthetic: synthetic, displays: displays)
         let hook = Self.testMenuHook(synthetic: synthetic)
         testMenuPID = hook.pid
         testMenuLine = hook.line
@@ -363,6 +371,11 @@ package final class StreamCoordinator {
         displays.onGone = { [weak self] id in Task { @MainActor in await self?.displayGone(id) } }
         displays.onRemade = { [weak self] id in Task { @MainActor in await self?.displayRemade(id) } }
         curtain.onCovered = { [weak self] in Task { @MainActor in await self?.curtainCovered() } }
+        desktops.postStep = { [weak self] step in self?.postSpaceStep(step) ?? false }
+        desktops.movePointer = { [pointer] point in
+            pointer.sillMoved()
+            CGWarpMouseCursorPosition(point)
+        }
         stage.onLost = { [weak self] in Task { @MainActor in await self?.stageLost() } }
         status.update { $0.synthetic = synthetic; $0.virtualDisplayOn = config.virtualDisplay; $0.hostVersion = hostVersion }
         // Every change of the snapshot re-publishes the devices' settings state (deduplicated, so
@@ -428,6 +441,7 @@ package final class StreamCoordinator {
                 self.sound.clientLeft(connection)
                 self.displays.clientLeft(connection)
                 self.curtain.clientLeft(connection)
+                self.desktops.clientLeft(connection)
                 self.releaseKeys(of: id)
                 self.status.update { $0.devices.removeAll { $0.id == id } }
                 // The last device at home left devices away behind: the away quality, at once.
@@ -1075,6 +1089,11 @@ package final class StreamCoordinator {
         case .curtain:
             // The Mac's screen off and its own input away (MacCurtain): on or off. No `await`.
             curtain.received(message.payload, from: connection, who: deviceName(connection))
+        case .desktopControl:
+            // The Mac's desktops (HostDesktops): a subscription, or a switch. Its owner as its displays'.
+            let who = deviceName(connection)
+            let owner = DisplayPolicy.owner(fingerprint: routes[ObjectIdentifier(connection)]?.fingerprint, name: who)
+            desktops.received(message.payload, from: connection, owner: owner, who: who)
         case .pressMenuItem:
             guard let r = Wire.decode(PressMenuItem.self, from: message.payload) else { return }
             // One of the Mac's menu items chosen from a device acts as a click on it would, and may
@@ -1376,6 +1395,15 @@ package final class StreamCoordinator {
         var describe = ""
         var title = ""                   // for the app's menu: "Safari — Apple Developer", "Whole Desktop"
         var kind = HostStatusSnapshot.Stream.Kind.window
+        // A sleeping display streams nothing: woken first, and the catalog read again once it is up
+        // (DisplayWake).
+        if !synthetic, source != .none, DisplayWake.asleep {
+            let awake = await displayWake.wake()
+            guard !shuttingDown else { active = .none; broadcastList(); return }
+            print(awake ? "The Mac's display was asleep: woke it for the stream."
+                        : "The Mac's display is asleep and did not wake; the stream may show nothing.")
+            if awake { await catalog.refreshWindows() }
+        }
         // An extended display streams once it is up (it may be coming back for a device that has just
         // subscribed); one that is not there gives the Mac's own display.
         var source = source
@@ -1456,7 +1484,10 @@ package final class StreamCoordinator {
                 describe = "a synthetic test pattern\(useSoftwareEncoder ? " (software encoder)" : "")"
                 title = "Test Pattern"; kind = .testPattern
             } else {
-                guard let d = catalog.display else { active = .none; broadcastList(); return }
+                guard let d = catalog.display else {
+                    print("The Mac's display is not in ScreenCaptureKit's list; nothing streams.")
+                    active = .none; broadcastList(); return
+                }
                 // Sill's own windows (Settings, Log, the pairing window with its code) never go out
                 // in a Desktop stream. Fixed here at pipeline start: a running SCStream is never
                 // reconfigured, so a host that can show a pairing code (remote access) looks for
@@ -2004,6 +2035,7 @@ package final class StreamCoordinator {
         shuttingDown = true
         sound.stop()
         displays.shutdown()
+        desktops.shutdown()
         curtain.shutdown()
         restoreFits(keeping: nil)
         stage.release()
@@ -2017,6 +2049,7 @@ package final class StreamCoordinator {
         injector.releaseAll()
         sound.stop()
         displays.shutdown()
+        desktops.shutdown()
         curtain.shutdown()
         restoreFits(keeping: nil)
     }
@@ -2392,6 +2425,17 @@ package final class StreamCoordinator {
         injector.chord(keyCode: keyCode, flags: flags)
     }
 
+    /// One step of a desktop switch (HostDesktops): the Mac's Move right or left a space, as the
+    /// gestures post it; false when that shortcut is off or has no key. A synthetic host steps by
+    /// itself and never comes here.
+    private func postSpaceStep(_ step: DesktopPolicy.Step) -> Bool {
+        guard !gesturesDry, !shuttingDown,
+              case .chord(_, _, let keyCode, let flags) = GestureChords.chord(for: step == .right ? .nextSpace : .previousSpace,
+                                                                             table: hotKeyTable()) else { return false }
+        injector.chord(keyCode: keyCode, flags: flags)
+        return true
+    }
+
     /// A device's input as `GestureChords` weighs it: whether it can close a view a gesture opened.
     static func gestureInput(_ event: InputEvent) -> GestureChords.Input {
         switch event {
@@ -2440,7 +2484,8 @@ package final class StreamCoordinator {
                                                       hostVersion: hostVersion, protocol: SillProtocol.current,
                                                       gestures: TrackpadGesture.generation, clipboard: clipboard.advertised,
                                                       sound: sound.advertised, displays: displays.advertised,
-                                                      showing: active.listed.showing, curtain: curtain.advertised)))
+                                                      showing: active.listed.showing, curtain: curtain.advertised,
+                                                      desktops: desktops.advertised)))
     }
 
     private func broadcastList() { server.broadcast(listMessage()) }

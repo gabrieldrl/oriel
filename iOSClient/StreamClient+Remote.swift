@@ -182,6 +182,7 @@ extension StreamClient {
         let name = savedMac(macID) != nil ? displayName(macID) : (macs.first { $0.macID == macID }?.name ?? "the Mac")
         if reconnect?.macID == macID { reconnect = nil }
         savedMacs.removeAll { $0.macID == macID }
+        DesktopPictures.shared.forget(macID)
         savedSightings.since[macID] = nil
         savedSightings.leftAt[macID] = nil
         persistSavedMacs()

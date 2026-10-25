@@ -364,7 +364,8 @@ let known: [(StreamMessageKind, UInt8)] = [
     (.windowCommand, 15), (.hostSettings, 16), (.changeSettings, 17), (.macInfo, 18), (.pairRequest, 19), (.pairResult, 20),
     (.pairingWanted, 21), (.goodbye, 22), (.hello, 23), (.macMenu, 24), (.pressMenuItem, 25), (.macPointer, 26),
     (.fetchMenu, 27), (.gesture, 28), (.clipboard, 32), (.sound, 47), (.soundControl, 48),
-    (.displays, 49), (.displayControl, 50), (.displayThumbnail, 51), (.curtain, 52), (.unknown, 255),
+    (.displays, 49), (.displayControl, 50), (.displayThumbnail, 51), (.curtain, 52),
+    (.desktops, 53), (.desktopControl, 54), (.desktopThumbnail, 55), (.unknown, 255),
 ]
 for (kind, raw) in known {
     check(kind.rawValue == raw && StreamMessageKind(rawValue: raw) == kind, "kind \(raw) is \(kind)")
@@ -374,7 +375,7 @@ for raw in UInt8.min...UInt8.max where !known.contains(where: { $0.1 == raw }) {
     let header = Data([raw]) + Data(count: 9) + Data([0, 0, 0, 3])
     if StreamMessageKind(rawValue: raw) != nil || StreamMessage.parseHeader(header)?.kind != .unknown { unknownRaw.append(raw) }
 }
-check(unknownRaw.isEmpty, "every other kind (29–31, 33…46, 53…254) is unknown to this build: \(unknownRaw)")
+check(unknownRaw.isEmpty, "every other kind (29–31, 33…46, 56…254) is unknown to this build: \(unknownRaw)")
 let message = StreamMessage(kind: .macPointer, timestamp: 1_790_000_000.25, isKeyframe: false, payload: Wire.encode(over)).serialized()
 let header = StreamMessage.parseHeader(message)
 check(message.first == 26 && header?.kind == .macPointer && header?.payloadLength == message.count - StreamMessage.headerLength

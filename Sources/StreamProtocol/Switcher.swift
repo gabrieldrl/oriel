@@ -80,14 +80,18 @@ public struct WindowList: Codable {
     /// 52, Curtain.swift): 1 is `CurtainControl.generation`. Nil from a host without it: a device sends
     /// it no kind 52.
     public var curtain: Int?
+    /// Whether this host lists its desktops and switches them (kinds 53 to 55, Desktops.swift): 1 is
+    /// `DesktopControl.generation`. Nil from a host without them: a device sends it no kind 54.
+    public var desktops: Int?
 
     public init(macName: String, windows: [WindowInfo], active: StreamSource, launchID: String? = nil,
                 hostVersion: String? = nil, protocol: Int? = nil, gestures: Int? = nil, clipboard: Int? = nil,
-                sound: Int? = nil, displays: Int? = nil, showing: UInt32? = nil, curtain: Int? = nil) {
+                sound: Int? = nil, displays: Int? = nil, showing: UInt32? = nil, curtain: Int? = nil,
+                desktops: Int? = nil) {
         self.macName = macName; self.windows = windows; self.active = active; self.launchID = launchID
         self.hostVersion = hostVersion; self.protocol = `protocol`; self.gestures = gestures
         self.clipboard = clipboard; self.sound = sound; self.displays = displays; self.showing = showing
-        self.curtain = curtain
+        self.curtain = curtain; self.desktops = desktops
     }
 
     /// What streams, as a device of this generation reads it: `display` for an extended display.

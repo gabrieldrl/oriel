@@ -28,9 +28,16 @@ struct DisplaysPill: View {
 /// display; Add Display (a dashed plus) makes one at the room this screen shows it in and streams it; a display's menu
 /// removes it for good, its windows going to the Mac's own display. Each is a display to macOS:
 /// arranged in System Settings › Displays, windows dragged onto it on the Mac.
+///
+/// With a Mac that lists its desktops (StreamClient+Desktops, docs/desktops-plan.md), Primary is the
+/// Mac's own display's desktops, one tile each in Mission Control's order ("Desktop 1"…, a full-screen
+/// app by its name), and an extended display streaming with more than one desktop shows its own in its
+/// place; a tap streams that display and switches the Mac to that desktop. Each tile shows the last
+/// picture of its desktop (DesktopPictures).
 struct DisplaysTray: View {
     @ObservedObject var client: StreamClient
     @ObservedObject private var desktops = MacDesktops.shared
+    @ObservedObject private var desktopPictures = DesktopPictures.shared
     @Binding var open: Bool
     /// The previews' corners: the Desktop's own on screen.
     let previewRadius: CGFloat
@@ -105,18 +112,27 @@ struct DisplaysTray: View {
         let count = max(2, Int((inner + Self.spacing) / (Self.minCell + Self.spacing)))
         return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Self.spacing, alignment: .top), count: count),
                          alignment: .leading, spacing: Self.spacing) {
-            DisplayPreview(image: client.displayPictures[0] ?? client.session?.macID.flatMap { desktops.pictures[$0] },
-                           name: "Primary", detail: client.macName.isEmpty ? "This Mac’s display" : client.macName,
-                           radius: previewRadius, isActive: client.active == .desktop) { pick(.desktop) }
+            if let set = client.desktops(on: DesktopControl.macDisplay), !set.desktops.isEmpty {
+                ForEach(set.desktops) { desktop in
+                    desktopPreview(desktop, of: set, name: desktop.name,
+                                   detail: client.macName.isEmpty ? "This Mac’s display" : client.macName)
+                }
+            } else {
+                DisplayPreview(image: client.displayPictures[0] ?? client.session?.macID.flatMap { desktops.pictures[$0] },
+                               name: "Primary", detail: client.macName.isEmpty ? "This Mac’s display" : client.macName,
+                               radius: previewRadius, isActive: client.active == .desktop) { pick(.desktop) }
+            }
             ForEach(client.extendedDisplays) { d in
-                DisplayPreview(image: client.displayPictures[d.id], name: d.name, detail: "\(d.width) × \(d.height)",
-                               radius: previewRadius, isActive: client.active == .display(d.id)) { pick(.display(d.id)) }
-                    .contextMenu {
-                        Button(role: .destructive) { client.removeDisplay(d.id) } label: {
-                            Label("Remove \(d.name)", systemImage: "minus.circle")
-                        }
+                if client.active == .display(d.id), let set = client.desktops(on: d.id), set.desktops.count > 1 {
+                    ForEach(set.desktops) { desktop in
+                        desktopPreview(desktop, of: set, name: "\(d.name) · \(desktop.name)", detail: "\(d.width) × \(d.height)")
+                            .modifier(RemoveDisplay(client: client, display: d))
                     }
-                    .accessibilityAction(named: "Remove \(d.name)") { client.removeDisplay(d.id) }
+                } else {
+                    DisplayPreview(image: client.displayPictures[d.id], name: d.name, detail: "\(d.width) × \(d.height)",
+                                   radius: previewRadius, isActive: client.active == .display(d.id)) { pick(.display(d.id)) }
+                        .modifier(RemoveDisplay(client: client, display: d))
+                }
             }
             if client.canAddDisplay {
                 AddDisplayTile(radius: previewRadius) {
@@ -130,6 +146,38 @@ struct DisplaysTray: View {
     private func pick(_ source: StreamSource) {
         if client.active != source { client.select(source) }
         open = false
+    }
+
+    /// One desktop of display `set.display`: its last picture (the display's own while it shows, until
+    /// one of the desktop comes), ringed while it streams and shows.
+    private func desktopPreview(_ desktop: MacDesktop, of set: DesktopSet, name: String, detail: String) -> some View {
+        let showing = set.current == desktop.id
+        let macID = client.session?.macID
+        let image = desktopPictures.picture(desktop.id, of: macID)
+            ?? (showing ? client.displayPictures[set.display] : nil)
+            ?? (showing && set.display == DesktopControl.macDisplay ? macID.flatMap { desktops.pictures[$0] } : nil)
+        return DisplayPreview(image: image, name: name, detail: desktop.app == nil ? detail : "Full screen",
+                              radius: previewRadius,
+                              isActive: showing && client.active == StreamClient.source(of: set.display)) {
+            client.switchDesktop(desktop.id, on: set.display)
+            open = false
+        }
+    }
+}
+
+/// An extended display's menu and accessibility action: Remove, for good.
+private struct RemoveDisplay: ViewModifier {
+    let client: StreamClient
+    let display: ExtendedDisplay
+
+    func body(content: Content) -> some View {
+        content
+            .contextMenu {
+                Button(role: .destructive) { client.removeDisplay(display.id) } label: {
+                    Label("Remove \(display.name)", systemImage: "minus.circle")
+                }
+            }
+            .accessibilityAction(named: "Remove \(display.name)") { client.removeDisplay(display.id) }
     }
 }
 

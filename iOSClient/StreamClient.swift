@@ -844,6 +844,13 @@ final class StreamClient: ObservableObject {
     @Published var curtainProblem: String?
     /// This connection has asked for it, as this device keeps it for this Mac.
     var curtainAsked = false
+    /// The Mac's desktops (kinds 53 to 55, StreamClient+Desktops, docs/desktops-plan.md): whether this
+    /// session's Mac lists them (`WindowList.desktops`), and its last list: the Mac's own display's
+    /// desktops and this device's displays'. Cleared with the session; their pictures are kept
+    /// (DesktopPictures).
+    @Published var hostDesktops: Int?
+    @Published var desktopList = DesktopList(displays: [])
+    var desktopsSubscribed = false
     /// Text copied on the Mac that waits for the new screen's clipboard pill (DesktopScreen's
     /// QuickControls) to put it on this device's clipboard; the classic screen writes it at once.
     @Published var macClipboardText: String?
@@ -2447,6 +2454,7 @@ final class StreamClient: ObservableObject {
         soundMoved()
         displaysMoved()
         curtainMoved()
+        desktopsMoved()
         if fenced {
             DispatchQueue.main.asyncAfter(deadline: .now() + Self.fenceTimeout) { [weak self] in
                 guard let self, let released = self.link.release(old) else { return }
@@ -3253,6 +3261,7 @@ final class StreamClient: ObservableObject {
         resetSound()
         resetDisplays()
         resetCurtain()
+        resetDesktops()
     }
 
     // MARK: - Client → host
@@ -3727,6 +3736,7 @@ final class StreamClient: ObservableObject {
                 // Its extended displays: the same, which brings this device's back.
                 self.hostDisplaysChanged(list.displays)
                 self.hostCurtainChanged(list.curtain)
+                self.hostDesktopsChanged(list.desktops)
                 if !self.sessionListed {
                     self.sessionListed = true
                     #if DEBUG
@@ -3911,6 +3921,21 @@ final class StreamClient: ObservableObject {
             DispatchQueue.main.async {
                 guard self.connection === from else { return }
                 self.displayPictures[id] = image
+            }
+        case .desktops:
+            // The Mac's desktops (StreamClient+Desktops).
+            guard let list = Wire.decode(DesktopList.self, from: data) else { return }
+            let from = connection
+            DispatchQueue.main.async {
+                guard self.connection === from else { return }
+                self.receiveDesktops(list)
+            }
+        case .desktopThumbnail:
+            guard let (id, jpeg) = ImageBlob.decodeDesktopThumbnail(data) else { return }
+            let from = connection
+            DispatchQueue.main.async {
+                guard self.connection === from else { return }
+                self.receiveDesktopPicture(id, jpeg: jpeg)
             }
         case .macMenu:
             // The Mac's menus: a top level, or the answer to one of this connection's kind 27s or 25s

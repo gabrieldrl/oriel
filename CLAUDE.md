@@ -94,6 +94,14 @@ Sideways: no name; ⓘ and Disconnect atop a column of the icons at the left, th
 screen. Settings (PhoneSheets): Resolution, Frame Rate, Quality and Touch/Trackpad laid out open
 (ChoiceTrack), the sound on its own row, then clipboard and screen off; Keys: the key row (KeyCaps).
 
+**The Mac's desktops in the Displays sheet (in progress on `dev`; `docs/desktops-plan.md`).** Primary
+is the Mac's own display's desktops (Mission Control's order, "Desktop N" and full-screen apps by
+name), an extended display streaming shows its own; a tap streams that display and the Mac steps to
+the desktop with its own Move left and right a space. Each tile keeps its desktop's last picture
+(DesktopPictures). Wire: `WindowList.desktops`, kinds 53–55. Mac: `Sources/SillHost/Desktops/`
+(DesktopPolicy pure, `Tests/checks/desktops`; MacSpaces reads SkyLight). Device:
+StreamClient+Desktops, DisplaysTray. Untested on a real Mac's desktops; the plan lists the tests.
+
 **To do, remind Gabriel: layouts per device.** Still to design (UX work, Gabriel's call): an iPad
 upright and the iPhone Duo's poses (the classic StreamScreen and PortraitStreamScreen have each today).
 
@@ -157,7 +165,8 @@ device keeps working with Macs from the first public build on, or each says why
   header; kinds 0–28 and 32 and their payloads (HEVC with ParameterSets; the JSON of Switcher,
   Input, Viewport, HostSettings, Remote, Compatibility, Pointer, MacMenu, Gesture and Clipboard;
   this fork's kinds 47 and 48, the Mac's sound (Sound.swift), go only to and from a host whose window
-  list says `sound` 1;
+  list says `sound` 1, and its kinds 53 to 55, the Mac's desktops (Desktops.swift), only to and from
+  one whose window list says `desktops` 1;
   29 to 31 stay free, 29 the audio plan's, 30 and 31 pull request #66's), inside `oriel/1` at
   both doors (19 and 20 on their own `oriel-pair/1` connection, the next bullet); the ping echo; a
   kind 16 within 2 s of the first window list, one per connection since Sill for Mac 0.5.1 (away

@@ -10,9 +10,9 @@ PATHS = {
     "DisplayPolicy.swift": "Sources/SillHost/Displays/DisplayPolicy.swift",
 }
 MUTANTS = [
-    ("the list at 50", "StreamMessage.swift", "case displays = 49", "case displays = 52"),
-    ("the control at 51", "StreamMessage.swift", "case displayControl = 50", "case displayControl = 53"),
-    ("the picture at 52", "StreamMessage.swift", "case displayThumbnail = 51", "case displayThumbnail = 54"),
+    ("the list at 60", "StreamMessage.swift", "case displays = 49", "case displays = 60"),
+    ("the control at 61", "StreamMessage.swift", "case displayControl = 50", "case displayControl = 61"),
+    ("the picture at 62", "StreamMessage.swift", "case displayThumbnail = 51", "case displayThumbnail = 62"),
     ("showing counted on a window", "Switcher.swift", "if active == .desktop, let showing { return .display(showing) }", "if let showing { return .display(showing) }"),
     ("showing ignored", "Switcher.swift", "if active == .desktop, let showing { return .display(showing) }", "if active == .none, let showing { return .display(showing) }"),
     ("the grace at 20 s", "Displays.swift", "public static let grace: Double = 30", "public static let grace: Double = 20"),
