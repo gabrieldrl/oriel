@@ -25,6 +25,9 @@ MUTANTS = [
     ("the other buttons pass", "CurtainPolicy.swift", "25, 26, 27,", "27,"),
     ("an empty mask", "CurtainPolicy.swift", "$0 | (CGEventMask(1) << CGEventMask($1))", "$0 | (CGEventMask(0) << CGEventMask($1))"),
     ("the mask off by one", "CurtainPolicy.swift", "$0 | (CGEventMask(1) << CGEventMask($1))", "$0 | (CGEventMask(1) << CGEventMask($1 + 1))"),
+    ("the built-in off", "CurtainPolicy.swift", "static let builtInBrightness: Float = 0.25", "static let builtInBrightness: Float = 0"),
+    ("a dark built-in made brighter", "CurtainPolicy.swift", "min(level ?? builtInBrightness, builtInBrightness)", "max(level ?? builtInBrightness, builtInBrightness)"),
+    ("an unread level off", "CurtainPolicy.swift", "min(level ?? builtInBrightness, builtInBrightness)", "min(level ?? 0, builtInBrightness)"),
 ]
 caught = 0
 for name, file, old, new in MUTANTS:

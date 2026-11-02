@@ -48,5 +48,13 @@ for t in own { mask |= CGEventMask(1) << CGEventMask(t) }
 check(CurtainPolicy.mask == mask, "the tap's mask is every stopped type: \(String(CurtainPolicy.mask, radix: 2))")
 check(CurtainPolicy.mask & (CGEventMask(1) << 34) != 0 && CurtainPolicy.mask & (CGEventMask(1) << 28) == 0, "the mask's high bits")
 
+// MARK: - The built-in display
+
+check(CurtainPolicy.builtInBrightness == 0.25, "the built-in is held at a quarter: \(CurtainPolicy.builtInBrightness)")
+check(CurtainPolicy.dimmed(from: 1) == 0.25 && CurtainPolicy.dimmed(from: 0.6) == 0.25, "a brighter display comes down to it")
+check(CurtainPolicy.dimmed(from: 0.25) == 0.25, "one at it stays")
+check(CurtainPolicy.dimmed(from: 0.1) == 0.1 && CurtainPolicy.dimmed(from: 0) == 0, "a darker one is never made brighter")
+check(CurtainPolicy.dimmed(from: nil) == 0.25, "a level it could not read: down to it, never off")
+
 print(failures == 0 ? "ALL PASS (\(checks) checks)" : "\(failures) of \(checks) FAILED")
 exit(failures == 0 ? 0 : 1)

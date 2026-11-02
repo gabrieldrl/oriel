@@ -1,7 +1,7 @@
 import Foundation
 
 /// The Mac's screen off while a device works it (kind 52; docs/curtain-plan.md): the Mac's own
-/// displays go dark (its built-in display's brightness to 0, and black over every display it has),
+/// displays go dark (its built-in display dimmed low, and black over every display it has),
 /// and its own keyboard, trackpad and mouse do nothing, while the device sees and works it as before.
 ///
 /// - A host whose window list says `curtain` 1 or more offers it. A device sends `{"on":true}` or

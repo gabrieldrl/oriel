@@ -75,8 +75,8 @@ Mac: `Sources/SillHost/Displays/` (DisplayPolicy pure, `Tests/checks/displays`).
 StreamClient+Displays, DisplaysTray. Untested with a real display; the plan lists the device tests.
 
 **The Mac's screen off (in progress on `dev`; `docs/curtain-plan.md`).** An eye pill between
-Clipboard and Disconnect, kept per Mac on the device: the Mac's displays black, the built-in at
-brightness 0, its own keyboard and trackpad stopped by an HID event tap (Sill's posted events carry
+Clipboard and Disconnect, kept per Mac on the device: the Mac's displays black with the mark, the
+built-in dimmed, its own keyboard and trackpad stopped by an HID event tap (Sill's posted events carry
 `CurtainPolicy.marker` and pass). Up while any connection wants it, down when none does. Wire:
 `WindowList.curtain`, kind 52. Mac: `Sources/SillHost/Curtain/` (CurtainPolicy pure,
 `Tests/checks/curtain`). Device: StreamClient+Curtain. Untested on a device.

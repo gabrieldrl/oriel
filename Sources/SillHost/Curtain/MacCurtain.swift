@@ -15,8 +15,9 @@ import StreamProtocol
 /// - A black window over each of the Mac's own displays (not Sill's virtual ones), above everything,
 ///   that clicks pass through, with Oriel's mark in glass in its middle (CurtainMark). Sill's own
 ///   windows are in no capture, so the devices see the Mac as before.
-/// - The built-in display's brightness at 0 (DisplayServices), set again every few seconds against
-///   automatic brightness, and put back as it was when it comes down.
+/// - The built-in display dimmed (`CurtainPolicy.dimmed`, DisplayServices), low but not off so its mark
+///   shows, set again every few seconds against automatic brightness, and put back as it was when it
+///   comes down.
 ///
 /// A synthetic host only keeps the state: nothing on this Mac changes. Main actor: AppKit's windows.
 @MainActor
@@ -147,7 +148,7 @@ final class MacCurtain {
         if !windows.isEmpty { onCovered?() }
     }
 
-    /// Each built-in display at brightness 0, its own level kept the first time.
+    /// Each built-in display dimmed, its own level kept the first time.
     private func dim() {
         guard isUp, let get = Brightness.get, let set = Brightness.set else { return }
         var count: UInt32 = 0
@@ -158,7 +159,7 @@ final class MacCurtain {
                 var level: Float = 0
                 if get(id, &level) == 0 { brightness[id] = level }
             }
-            _ = set(id, 0)
+            _ = set(id, CurtainPolicy.dimmed(from: brightness[id]))
         }
     }
 }

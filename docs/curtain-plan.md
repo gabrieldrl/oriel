@@ -13,7 +13,8 @@ default and kept per Mac on the device.
   - every one of its own displays is black (not Sill's virtual displays), with Oriel's bay window
     large in the middle in Liquid Glass over a dim glow of the icon's blue, and no text
     (CurtainMark; Gabriel, 2026-10-23);
-  - the built-in display's brightness is 0;
+  - the built-in display is dimmed to a quarter, or kept at its own level when that is lower: at 0
+    its backlight is off and its mark can't be seen (Gabriel, 2026-11-02);
   - its own keyboard, trackpad, mouse and system keys (brightness, volume, media) do nothing.
   - The device's picture is the Mac as before. What the device types, clicks and scrolls still
     reaches the Mac.
@@ -37,8 +38,8 @@ default and kept per Mac on the device.
    up a stream of the Mac's own display starts again (`onCovered`, StreamCoordinator's
    `curtainCovered`). Gabriel, on the iPad: without that restart the iPad showed black until he
    switched display and back.
-5. Brightness: DisplayServices (private, loaded with dlopen) on built-in displays. It is set to 0
-   and set again every 3 s against automatic brightness. The first level read is restored when the
+5. Brightness: DisplayServices (private, loaded with dlopen) on built-in displays. It is set to
+   `CurtainPolicy.dimmed` (0.25, or the level it had when lower; 0 hid the mark) and set again every 3 s against automatic brightness. The first level read is restored when the
    curtain comes down. An external display only gets the black window.
 6. The tap needs Accessibility (`AXIsProcessTrusted`). Without it nothing goes up, and the device
    gets `on: false, problem: "accessibility"`.
@@ -84,10 +85,11 @@ default and kept per Mac on the device.
 
 ## Untested on a device (for Gabriel)
 
-- The mark on the built-in display at brightness 0 (likely barely visible) and on an external one.
+- The mark on the built-in display at a quarter brightness, as on an external one. (At 0, Gabriel saw
+  it only on the external monitors, 2026-11-02.)
 
 - The pill on the iPad:
-  - the Mac goes black at brightness 0;
+  - the Mac goes black, its built-in display dimmed with the mark;
   - its keyboard, trackpad and brightness keys do nothing;
   - the iPad still types, clicks and scrolls on the Mac and sees it.
 - Off: the brightness comes back as it was. Disconnect, and a dropped connection, lift it.
