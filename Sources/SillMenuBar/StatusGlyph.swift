@@ -4,7 +4,8 @@ import AppKit
 /// template. A centre pane between two side panes turned away in perspective, and the state shows
 /// in how many are filled: outlines (idle), the centre filled (a device is connected), all three
 /// filled (streaming), or outlines with a badge at the lower right (Oriel needs attention). While
-/// Extended Use is on (HostKeepAwake), a small cup (cup.and.heat.waves.fill) follows the panes.
+/// Extended Use holds the Mac awake (HostKeepAwake), a small cup (cup.and.heat.waves.fill) follows
+/// the panes.
 ///
 /// Drawn in code, so there is no asset to keep in sync, and marked as a template so the menu bar
 /// tints it for light and dark bars and highlights it when the menu is open. `symbolFallback` (SF

@@ -333,8 +333,9 @@ final class AppModel {
                                    permissions: PermissionState(screenRecording: permissions.screenRecording,
                                                                 accessibility: permissions.accessibility),
                                    startupError: startupError, hasCoordinator: coordinator != nil, now: Date())
-        // Extended Use on: the glyph's cup, and the tooltip says which.
-        if let keepAwake = coordinator?.keepAwake, keepAwake.available, keepAwake.mode != .off {
+        // Extended Use holding the Mac awake now: the glyph's cup, and the tooltip says which. Not
+        // while it can't (When Plugged In on battery, the helper waiting for its approval).
+        if let keepAwake = coordinator?.keepAwake, keepAwake.available, keepAwake.awake {
             let word = HostKeepAwake.word(keepAwake.mode)
             p.extendedUse = word
             p.tooltip += " · Extended Use: \(word)"
