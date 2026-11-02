@@ -33,6 +33,7 @@
 		A1000001000000000000AE0B /* DisplayRipple.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE0B /* DisplayRipple.swift */; };
 		A1000001000000000000AE0E /* KeyRowSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE0E /* KeyRowSheet.swift */; };
 		A1000001000000000000AE0F /* InfoPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE0F /* InfoPanel.swift */; };
+		A1000001000000000000AE1C /* MacSettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE1C /* MacSettingsScreen.swift */; };
 		A1000001000000000000AE11 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE11 /* HomeScreen.swift */; };
 		A1000001000000000000AE10 /* MacDesktops.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE10 /* MacDesktops.swift */; };
 		A1000001000000000000AE0D /* RisingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE0D /* RisingSheet.swift */; };
@@ -65,6 +66,7 @@
 		A1000001000000000000AE14 /* StreamClient+Displays.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE14 /* StreamClient+Displays.swift */; };
 		A1000001000000000000AE15 /* DisplaySettingsMemory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE15 /* DisplaySettingsMemory.swift */; };
 		A1000001000000000000AE16 /* StreamClient+Curtain.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE16 /* StreamClient+Curtain.swift */; };
+		A1000001000000000000AE1B /* StreamClient+KeepAwake.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE1B /* StreamClient+KeepAwake.swift */; };
 		A1000001000000000000AE17 /* PhoneControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE17 /* PhoneControls.swift */; };
 		A1000001000000000000AE19 /* StreamClient+Desktops.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE19 /* StreamClient+Desktops.swift */; };
 		A1000001000000000000AE1A /* DesktopPictures.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000FE1A /* DesktopPictures.swift */; };
@@ -114,6 +116,7 @@
 		A1000001000000000000FE0B /* DisplayRipple.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayRipple.swift; sourceTree = "<group>"; };
 		A1000001000000000000FE0E /* KeyRowSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyRowSheet.swift; sourceTree = "<group>"; };
 		A1000001000000000000FE0F /* InfoPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoPanel.swift; sourceTree = "<group>"; };
+		A1000001000000000000FE1C /* MacSettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacSettingsScreen.swift; sourceTree = "<group>"; };
 		A1000001000000000000FE11 /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
 		A1000001000000000000FE10 /* MacDesktops.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacDesktops.swift; sourceTree = "<group>"; };
 		A1000001000000000000FE0D /* RisingSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RisingSheet.swift; sourceTree = "<group>"; };
@@ -146,6 +149,7 @@
 		A1000001000000000000FE14 /* StreamClient+Displays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StreamClient+Displays.swift"; sourceTree = "<group>"; };
 		A1000001000000000000FE15 /* DisplaySettingsMemory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplaySettingsMemory.swift; sourceTree = "<group>"; };
 		A1000001000000000000FE16 /* StreamClient+Curtain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StreamClient+Curtain.swift"; sourceTree = "<group>"; };
+		A1000001000000000000FE1B /* StreamClient+KeepAwake.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StreamClient+KeepAwake.swift"; sourceTree = "<group>"; };
 		A1000001000000000000FE17 /* PhoneControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneControls.swift; sourceTree = "<group>"; };
 		A1000001000000000000FE19 /* StreamClient+Desktops.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StreamClient+Desktops.swift"; sourceTree = "<group>"; };
 		A1000001000000000000FE1A /* DesktopPictures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPictures.swift; sourceTree = "<group>"; };
@@ -223,6 +227,7 @@
 				A1000001000000000000FE14 /* StreamClient+Displays.swift */,
 				A1000001000000000000FE15 /* DisplaySettingsMemory.swift */,
 				A1000001000000000000FE16 /* StreamClient+Curtain.swift */,
+				A1000001000000000000FE1B /* StreamClient+KeepAwake.swift */,
 				A1000001000000000000FE19 /* StreamClient+Desktops.swift */,
 				A1000001000000000000F017 /* RemoteDialPolicy.swift */,
 				A1000001000000000000F01E /* GoodbyePolicy.swift */,
@@ -266,6 +271,7 @@
 				A1000001000000000000FE0B /* DisplayRipple.swift */,
 				A1000001000000000000FE0E /* KeyRowSheet.swift */,
 				A1000001000000000000FE0F /* InfoPanel.swift */,
+				A1000001000000000000FE1C /* MacSettingsScreen.swift */,
 				A1000001000000000000FE11 /* HomeScreen.swift */,
 				A1000001000000000000FE13 /* DisplaysTray.swift */,
 				A1000001000000000000FE17 /* PhoneControls.swift */,
@@ -396,6 +402,7 @@
 				A1000001000000000000AE0B /* DisplayRipple.swift in Sources */,
 				A1000001000000000000AE0E /* KeyRowSheet.swift in Sources */,
 				A1000001000000000000AE0F /* InfoPanel.swift in Sources */,
+				A1000001000000000000AE1C /* MacSettingsScreen.swift in Sources */,
 				A1000001000000000000AE11 /* HomeScreen.swift in Sources */,
 				A1000001000000000000AE10 /* MacDesktops.swift in Sources */,
 				A1000001000000000000AE0D /* RisingSheet.swift in Sources */,
@@ -442,6 +449,7 @@
 				A1000001000000000000AE14 /* StreamClient+Displays.swift in Sources */,
 				A1000001000000000000AE15 /* DisplaySettingsMemory.swift in Sources */,
 				A1000001000000000000AE16 /* StreamClient+Curtain.swift in Sources */,
+				A1000001000000000000AE1B /* StreamClient+KeepAwake.swift in Sources */,
 				A1000001000000000000A017 /* RemoteDialPolicy.swift in Sources */,
 				A1000001000000000000A01E /* GoodbyePolicy.swift in Sources */,
 				A1000001000000000000A016 /* SavedMacs.swift in Sources */,

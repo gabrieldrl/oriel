@@ -183,6 +183,7 @@ extension StreamClient {
         if reconnect?.macID == macID { reconnect = nil }
         savedMacs.removeAll { $0.macID == macID }
         DesktopPictures.shared.forget(macID)
+        Self.forgetKeepAwake(macID)
         savedSightings.since[macID] = nil
         savedSightings.leftAt[macID] = nil
         persistSavedMacs()

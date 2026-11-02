@@ -278,6 +278,9 @@ package final class StreamCoordinator {
     /// The Mac's desktops for the devices' Displays sheets, and switching them (kinds 53 to 55,
     /// HostDesktops; docs/desktops-plan.md).
     let desktops: HostDesktops
+    /// Extended Use: the Mac kept awake, its lid closed too (kind 56, HostKeepAwake;
+    /// docs/extended-use-plan.md). The pane sets it through here as the devices do.
+    package let keepAwake: HostKeepAwake
     /// TEST ONLY. `SILL_TEST_MENU_PID=<pid>` on a --synthetic host: the test pattern's menus are that
     /// process's (the gates' fixture, Scripts/menufixture.swift), read and pressed through the same
     /// code, never activated (the Desktop's rule). Nil otherwise; `testMenuLine` is what `start`
@@ -348,6 +351,8 @@ package final class StreamCoordinator {
         curtain = MacCurtain(server: server, synthetic: synthetic, available: synthetic || appKitLoop)
         // A synthetic host reads and posts nothing on this Mac: desktops of its own.
         desktops = HostDesktops(server: server, synthetic: synthetic, displays: displays)
+        // Its daemon is in Oriel.app's bundle alone; a synthetic host keeps only the state.
+        keepAwake = HostKeepAwake(server: server, synthetic: synthetic, available: synthetic || (appKitLoop && HostKeepAwake.bundled))
         let hook = Self.testMenuHook(synthetic: synthetic)
         testMenuPID = hook.pid
         testMenuLine = hook.line
@@ -1089,6 +1094,9 @@ package final class StreamCoordinator {
         case .curtain:
             // The Mac's screen off and its own input away (MacCurtain): on or off. No `await`.
             curtain.received(message.payload, from: connection, who: deviceName(connection))
+        case .keepAwake:
+            // Extended Use (HostKeepAwake): the Mac's one mode, set from this device. No `await`.
+            keepAwake.received(message.payload, from: connection, who: deviceName(connection))
         case .desktopControl:
             // The Mac's desktops (HostDesktops): a subscription, or a switch. Its owner as its displays'.
             let who = deviceName(connection)
@@ -2037,6 +2045,7 @@ package final class StreamCoordinator {
         displays.shutdown()
         desktops.shutdown()
         curtain.shutdown()
+        keepAwake.shutdown()
         restoreFits(keeping: nil)
         stage.release()
     }
@@ -2485,7 +2494,7 @@ package final class StreamCoordinator {
                                                       gestures: TrackpadGesture.generation, clipboard: clipboard.advertised,
                                                       sound: sound.advertised, displays: displays.advertised,
                                                       showing: active.listed.showing, curtain: curtain.advertised,
-                                                      desktops: desktops.advertised)))
+                                                      desktops: desktops.advertised, keepAwake: keepAwake.advertised)))
     }
 
     private func broadcastList() { server.broadcast(listMessage()) }
@@ -2503,6 +2512,8 @@ package final class StreamCoordinator {
         server.send(settingsMessage(state), to: connection)
         lastPublished[id] = state
         connections[id] = connection
+        // Extended Use's state (kind 56), which an older device skips.
+        keepAwake.sendState(to: connection)
         // Who this Mac is and how to reach it from afar (kind 18, signed), on both doors, only from
         // a host with an identity. An older device skips it too.
         if let info = remote?.macInfoMessage() { server.send(info, to: connection) }

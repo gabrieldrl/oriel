@@ -329,10 +329,18 @@ final class AppModel {
     }
 
     private func currentPresentation() -> StatusPresentation {
-        StatusText.present(snapshot: coordinator?.status.snapshot ?? HostStatusSnapshot(),
-                           permissions: PermissionState(screenRecording: permissions.screenRecording,
-                                                        accessibility: permissions.accessibility),
-                           startupError: startupError, hasCoordinator: coordinator != nil, now: Date())
+        var p = StatusText.present(snapshot: coordinator?.status.snapshot ?? HostStatusSnapshot(),
+                                   permissions: PermissionState(screenRecording: permissions.screenRecording,
+                                                                accessibility: permissions.accessibility),
+                                   startupError: startupError, hasCoordinator: coordinator != nil, now: Date())
+        // Extended Use on: the glyph's cup, and the tooltip says which.
+        if let keepAwake = coordinator?.keepAwake, keepAwake.available, keepAwake.mode != .off {
+            let word = HostKeepAwake.word(keepAwake.mode)
+            p.extendedUse = word
+            p.tooltip += " · Extended Use: \(word)"
+            p.accessibilityLabel += ", Extended Use \(word)"
+        }
+        return p
     }
 
     /// The older-device item ends 10 minutes after the connection it tells of, when nothing else

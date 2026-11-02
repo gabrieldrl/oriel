@@ -11,6 +11,9 @@ let package = Package(
         .executable(name: "SillHost", targets: ["SillHostCLI"]),
         // Sill.app's executable. Scripts/make-app.sh wraps it into the bundle and signs it.
         .executable(name: "SillMenuBar", targets: ["SillMenuBar"]),
+        // Oriel.app's launch daemon for Extended Use (docs/extended-use-plan.md): make-app.sh puts it
+        // in the bundle beside its plist.
+        .executable(name: "SillAwake", targets: ["SillAwake"]),
         // No product for SillHostCore: the iOS project links this package and must never see it.
     ],
     targets: [
@@ -19,7 +22,11 @@ let package = Package(
         // and the menu bar app; they reach it through `package` access. The folder keeps its old
         // name (Sources/SillHost) so the paths in the docs and the VirtualDisplayProbe symlink to
         // ../SillHost/VirtualDisplay.swift stay valid.
-        .target(name: "SillHostCore", dependencies: ["StreamProtocol"], path: "Sources/SillHost"),
+        .target(name: "SillHostCore", dependencies: ["StreamProtocol", "SillAwakeXPC"], path: "Sources/SillHost"),
+        // What the app and SillAwake say to each other over XPC, and who may talk to whom.
+        .target(name: "SillAwakeXPC"),
+        // The launch daemon itself: root, so it can stop the lid's sleep (pmset disablesleep).
+        .executableTarget(name: "SillAwake", dependencies: ["SillAwakeXPC"]),
         // The command-line host: flags, the run loop, the Terminal permission hint.
         .executableTarget(name: "SillHostCLI", dependencies: ["SillHostCore", "StreamProtocol"]),
         // The menu bar app: status item, Settings and Log windows (AppKit lifecycle, SwiftUI panes).

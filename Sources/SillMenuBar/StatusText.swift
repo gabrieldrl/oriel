@@ -56,6 +56,9 @@ struct StatusPresentation: Equatable {
     var versionNotes: [String?] = []
     /// A connected device runs a newer Oriel than this Mac: the menu offers the update.
     var updateThisMac = false
+    /// Extended Use is on (HostKeepAwake): its mode's word, which the glyph's cup and the tooltip
+    /// show; nil while Off. Set by AppModel, which observes it.
+    var extendedUse: String?
 }
 
 /// Whether Sill holds its two permissions, as last read.

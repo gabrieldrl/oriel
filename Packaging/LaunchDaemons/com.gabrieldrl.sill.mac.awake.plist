@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- SillAwake, Oriel.app's launch daemon for Extended Use (docs/extended-use-plan.md). Scripts/make-app.sh
+     puts it in Contents/Library/LaunchDaemons; HostKeepAwake registers it with SMAppService.daemon.
+     RunAtLoad: at every boot it puts back a sleep setting a daemon that died holding left behind. -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.gabrieldrl.sill.mac.awake</string>
+    <key>BundleProgram</key>
+    <string>Contents/MacOS/SillAwake</string>
+    <key>MachServices</key>
+    <dict>
+        <key>com.gabrieldrl.sill.mac.awake</key>
+        <true/>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>AssociatedBundleIdentifiers</key>
+    <array>
+        <string>com.gabrieldrl.sill.mac</string>
+    </array>
+</dict>
+</plist>

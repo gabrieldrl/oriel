@@ -35,6 +35,8 @@ struct InfoButton: View {
 struct InfoPanel: View {
     @ObservedObject var client: StreamClient
     @Binding var open: Bool
+    /// Mac Settings, at the panel's foot: the Mac's own settings (MacSettingsScreen).
+    var settings: (() -> Void)?
 
     @Environment(\.quickPillFocus) private var focus
     @State private var frame: CGRect = .zero
@@ -69,6 +71,19 @@ struct InfoPanel: View {
                         AddressRow(address: address)
                     }
                 }
+            }
+            if let settings {
+                Rectangle().fill(.white.opacity(0.15)).frame(height: 1)
+                Button(action: settings) {
+                    HStack {
+                        Text("Mac Settings")
+                        Spacer()
+                        Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(.white.opacity(0.65))
+                    }
+                    .font(.system(size: 13, weight: .semibold))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
         }
         .foregroundStyle(.white)

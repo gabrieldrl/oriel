@@ -110,7 +110,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let menu = NSMenu()
     private let model: AppModel
     private let card: NSHostingView<LiveStatusCard>
-    private var glyph: StatusGlyph.State?
+    private var glyph: (state: StatusGlyph.State, awake: Bool)?
     private var menuOpen = false
 
     private static let attentionImage: NSImage? = {
@@ -136,9 +136,12 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     /// The glyph, tooltip and accessibility label for a new presentation.
     func show(_ p: StatusPresentation) {
         guard let button = item.button else { return }
-        if glyph != p.glyph {
-            glyph = p.glyph
-            button.image = StatusGlyph.image(p.glyph)
+        let awake = p.extendedUse != nil
+        if glyph?.state != p.glyph || glyph?.awake != awake {
+            glyph = (p.glyph, awake)
+            button.image = StatusGlyph.image(p.glyph, awake: awake)
+            // The cup makes the item wider than a square.
+            item.length = awake ? NSStatusItem.variableLength : NSStatusItem.squareLength
         }
         button.toolTip = p.tooltip
         button.setAccessibilityLabel(p.accessibilityLabel)

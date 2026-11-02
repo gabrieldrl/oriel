@@ -8,7 +8,7 @@ import StreamProtocol
 /// MacProbe, docs/reachable-plan.md); and Connect, which connects by the best way (nearby when it
 /// is listed there, else remotely at its saved addresses, as a tap on the picture does), its
 /// chevron a menu of every route: the nearby row and each saved address, with whether it answered
-/// the last check. The card's own menu has Forget. Above them the status line (not the idle
+/// the last check, and the Mac's Settings (MacSettingsScreen). The card's own menu has those and Forget. Above them the status line (not the idle
 /// "Looking for Macs…"); at the bottom, Add a Mac, a quick-control pill, whose sheet is the old connect
 /// screen (ConnectScreen) on its pairing card, with the nearby Macs not yet paired under it. The
 /// same sheet comes up by itself when a tap's ask makes a Mac show its code, and for an outside
@@ -18,12 +18,14 @@ struct HomeScreen: View {
     @ObservedObject private var desktops = MacDesktops.shared
     @Environment(\.scenePhase) private var scenePhase
 
-    private enum Sheet: Identifiable {
+    private enum Sheet: Identifiable, Hashable {
         /// Add a Mac: the pairing card.
         case add
         /// The home card for a tap's ask, or an outside link's confirmation: what ConnectScreen
         /// shows by itself.
         case pairing
+        /// The Mac's Settings (MacSettingsScreen).
+        case settings(String)
         var id: Self { self }
     }
     @State private var sheet: Sheet?
@@ -68,15 +70,19 @@ struct HomeScreen: View {
         }
         .background(Color.black.ignoresSafeArea())
         .sheet(item: $sheet) { which in
-            ConnectScreen(client: client, adding: which == .add)
-                .overlay(alignment: .topTrailing) {
-                    Button("Done") { sheet = nil }
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Palette.accent)
-                        .padding(20)
-                }
-                .background(Color.black.ignoresSafeArea())
-                .preferredColorScheme(.dark)
+            if case .settings(let macID) = which {
+                MacSettingsScreen(client: client, macID: macID) { sheet = nil }
+            } else {
+                ConnectScreen(client: client, adding: which == .add)
+                    .overlay(alignment: .topTrailing) {
+                        Button("Done") { sheet = nil }
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(Palette.accent)
+                            .padding(20)
+                    }
+                    .background(Color.black.ignoresSafeArea())
+                    .preferredColorScheme(.dark)
+            }
         }
         // A tap's ask makes the Mac show its code, or a pairing link came in: the card for it.
         .onChange(of: client.homeAsk) { _, ask in if ask?.phase == .shown, sheet == nil { sheet = .pairing } }
@@ -180,7 +186,7 @@ struct HomeScreen: View {
             .onTapGesture { connect(mac) }
             .overlay(alignment: .bottom) {
                 HStack(alignment: .bottom, spacing: 10) {
-                    label(name, state: state)
+                    label(name, state: state, awake: extendedUse(mac.macID))
                     Spacer(minLength: 0)
                     connectButton(mac, row: row)
                 }
@@ -193,18 +199,34 @@ struct HomeScreen: View {
             )
             .contextMenu { menu(mac) }
             .accessibilityElement(children: .contain)
-            .accessibilityLabel("\(name), \(state.text)")
+            .accessibilityLabel("\(name), \(state.text)" + (extendedUse(mac.macID) ? ", Extended Use on" : ""))
     }
 
     /// Big enough to read as rounded at a small card's size, never a pill.
     private static func cornerRadius(_ width: CGFloat) -> CGFloat { max(14, width * 0.04) }
 
-    /// The Mac's name and its state, on glass over the picture's bottom-left corner.
-    private func label(_ name: String, state: CardState) -> some View {
+    /// Extended Use is on for this Mac, as it last said or as this device's change waits to say
+    /// (StreamClient+KeepAwake): the label's cup.
+    private func extendedUse(_ macID: String) -> Bool {
+        _ = client.keepAwakeRevision
+        return client.keepAwakeState(macID).flatMap { KeepAwakeMode(rawValue: $0.mode) }.map { $0 != .off } ?? false
+    }
+
+    /// The Mac's name and its state, on glass over the picture's bottom-left corner; a cup after the
+    /// name while Extended Use keeps it awake.
+    private func label(_ name: String, state: CardState, awake: Bool) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(name)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(.white)
+            HStack(spacing: 5) {
+                Text(name)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                if awake {
+                    Image(systemName: "cup.and.heat.waves.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .accessibilityLabel("Extended Use on")
+                }
+            }
             HStack(spacing: 6) {
                 Circle()
                     .fill(state.dot)
@@ -279,6 +301,7 @@ struct HomeScreen: View {
                 }
             }
         }
+        Button { sheet = .settings(mac.macID) } label: { Label("Settings", systemImage: "gearshape") }
     }
 
     private static func answer(_ reachable: Bool?) -> String {
@@ -361,6 +384,7 @@ struct HomeScreen: View {
 
     @ViewBuilder private func menu(_ mac: SavedMac) -> some View {
         Button { connect(mac) } label: { Label("Connect", systemImage: "play.display") }
+        Button { sheet = .settings(mac.macID) } label: { Label("Settings", systemImage: "gearshape") }
         Button(role: .destructive) {
             MacDesktops.shared.forget(mac.macID)
             client.forget(mac.macID)

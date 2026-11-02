@@ -81,6 +81,14 @@ built-in dimmed, its own keyboard and trackpad stopped by an HID event tap (Sill
 `WindowList.curtain`, kind 52. Mac: `Sources/SillHost/Curtain/` (CurtainPolicy pure,
 `Tests/checks/curtain`). Device: StreamClient+Curtain. Untested on a device.
 
+**Extended Use (2026-11-02; `docs/extended-use-plan.md`).** The Mac kept awake, lid closed too: Off
+(default), Always ("Increases heat and battery use.") or When Plugged In, set in Settings › General or
+on the device's per-Mac Settings page (MacSettingsScreen: a home card's menus, the info panel's Mac
+Settings). SillAwake, a launch daemon in the bundle (SMAppService, allowed once in Login Items), runs
+`pmset -a disablesleep` while Oriel holds. Wire: `WindowList.keepAwake`, kind 56. Mac:
+`Sources/SillHost/KeepAwake/` (KeepAwakePolicy pure, `Tests/checks/keep-awake`), `Sources/SillAwake`.
+Device: StreamClient+KeepAwake. The lid closed and unplugging are untested.
+
 **A simple Settings window and automatic encoding speed (2026-10-23, `dev`).** The Mac's Settings
 is General, Devices and Permissions (`docs/settings-simple-plan.md`). Require pairing and Remote
 Access are always on in Oriel.app. Each stream's EncoderSpeedJudge switches its session to encoding

@@ -569,7 +569,7 @@ final class StreamClient: ObservableObject {
     /// This connection has delivered a window list, and the host's launch ID it carried
     /// (`WindowList.launchID`; nil from an older host): a move hands the session only to a
     /// connection whose first list names the same host (`moveProbed`), so none starts before.
-    private var sessionListed = false
+    private(set) var sessionListed = false
     private var sessionHost: String?
     /// The network listing (its `sightings.since`) a move found to be another Mac: not tried again
     /// while it lasts (DiscoveryPolicy.moveToNetwork).
@@ -844,6 +844,14 @@ final class StreamClient: ObservableObject {
     @Published var curtainProblem: String?
     /// This connection has asked for it, as this device keeps it for this Mac.
     var curtainAsked = false
+    /// Extended Use (kind 56, StreamClient+KeepAwake): whether this session's Mac offers it
+    /// (`WindowList.keepAwake`) and its last state; a change made away from the Mac bumps the revision,
+    /// so the Mac's Settings page shows it.
+    @Published var hostKeepAwake: Int?
+    @Published var keepAwake: KeepAwake?
+    @Published var keepAwakeRevision = 0
+    /// This connection has sent the change that waited, if any.
+    var keepAwakeAsked = false
     /// The Mac's desktops (kinds 53 to 55, StreamClient+Desktops, docs/desktops-plan.md): whether this
     /// session's Mac lists them (`WindowList.desktops`), and its last list: the Mac's own display's
     /// desktops and this device's displays'. Cleared with the session; their pictures are kept
@@ -3262,6 +3270,7 @@ final class StreamClient: ObservableObject {
         resetDisplays()
         resetCurtain()
         resetDesktops()
+        resetKeepAwake()
     }
 
     // MARK: - Client → host
@@ -3737,6 +3746,7 @@ final class StreamClient: ObservableObject {
                 self.hostDisplaysChanged(list.displays)
                 self.hostCurtainChanged(list.curtain)
                 self.hostDesktopsChanged(list.desktops)
+                self.hostKeepAwakeChanged(list.keepAwake)
                 if !self.sessionListed {
                     self.sessionListed = true
                     #if DEBUG
@@ -3897,6 +3907,14 @@ final class StreamClient: ObservableObject {
             DispatchQueue.main.async {
                 guard self.connection === from else { return }
                 self.receiveSoundControl(data)
+            }
+        case .keepAwake:
+            // Extended Use: the Mac's state (StreamClient+KeepAwake).
+            guard let state = Wire.decode(KeepAwake.self, from: data) else { return }
+            let from = connection
+            DispatchQueue.main.async {
+                guard self.connection === from else { return }
+                self.receiveKeepAwake(state)
             }
         case .curtain:
             // The Mac's screen off: its answer (StreamClient+Curtain).

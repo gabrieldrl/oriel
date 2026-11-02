@@ -3,7 +3,8 @@ import AppKit
 /// The status item's image: Oriel's bay window (Packaging/AppIcon.icon) reduced to a menu bar
 /// template. A centre pane between two side panes turned away in perspective, and the state shows
 /// in how many are filled: outlines (idle), the centre filled (a device is connected), all three
-/// filled (streaming), or outlines with a badge at the lower right (Oriel needs attention).
+/// filled (streaming), or outlines with a badge at the lower right (Oriel needs attention). While
+/// Extended Use is on (HostKeepAwake), a small cup (cup.and.heat.waves.fill) follows the panes.
 ///
 /// Drawn in code, so there is no asset to keep in sync, and marked as a template so the menu bar
 /// tints it for light and dark bars and highlights it when the menu is open. `symbolFallback` (SF
@@ -21,10 +22,22 @@ enum StatusGlyph {
         return image
     }()
 
-    static func image(_ state: State) -> NSImage {
-        let image = NSImage(size: size, flipped: true) { _ in
+    /// Extended Use's cup: its size, and its gap after the panes.
+    private static let cup: NSImage? = NSImage(systemSymbolName: "cup.and.heat.waves.fill", accessibilityDescription: nil)?
+        .withSymbolConfiguration(.init(pointSize: 11, weight: .semibold))
+    private static let cupGap: CGFloat = 3
+
+    static func image(_ state: State, awake: Bool = false) -> NSImage {
+        let cup = awake ? Self.cup : nil
+        let width = size.width + (cup.map { cupGap + $0.size.width } ?? 0)
+        let image = NSImage(size: NSSize(width: width, height: size.height), flipped: true) { _ in
             guard let ctx = NSGraphicsContext.current?.cgContext else { return false }
             draw(state, in: ctx)
+            if let cup {
+                let s = cup.size
+                cup.draw(in: NSRect(x: size.width + cupGap, y: ((size.height - s.height) / 2).rounded(), width: s.width, height: s.height),
+                         from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+            }
             return true
         }
         image.isTemplate = true

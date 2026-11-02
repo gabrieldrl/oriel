@@ -35,6 +35,7 @@ struct SettingsPane: View {
             while !Task.isCancelled {
                 model.permissions.refresh()
                 model.loginItem.refresh()
+                if tab == .general { model.coordinator?.keepAwake.refresh() }
                 try? await Task.sleep(for: .seconds(1))
             }
         }
@@ -77,7 +78,7 @@ func withoutFullStop(_ text: String) -> String {
 // MARK: General
 
 /// Launch at login, the Mac's name, the clipboard, the update check, Remote Access (always on: what
-/// it needs, and the VPNs it sees), sleep, Contact and Quit. Nothing about how a stream looks: each device
+/// it needs, and the VPNs it sees), Extended Use (sleep, in a build without it), Contact and Quit. Nothing about how a stream looks: each device
 /// sets that for itself.
 private struct GeneralPane: View {
     let model: AppModel
@@ -125,12 +126,16 @@ private struct GeneralPane: View {
             RemoteAccessSection(status: model.coordinator?.status.snapshot.remote ?? RemoteStatus(),
                                 port: settings.config.remotePort,
                                 setPort: { settings.config.remotePort = $0 })
-            Section {
-                LabeledContent {
-                    Button("Open Energy Settings…") { RemoteAccessSection.openEnergySettings() }
-                } label: {
-                    Text("Sleep")
-                    Text("Your devices can’t reach this Mac while it’s asleep.")
+            if let keepAwake = model.coordinator?.keepAwake, keepAwake.available {
+                ExtendedUseSection(keepAwake: keepAwake)
+            } else {
+                Section {
+                    LabeledContent {
+                        Button("Open Energy Settings…") { RemoteAccessSection.openEnergySettings() }
+                    } label: {
+                        Text("Sleep")
+                        Text("Your devices can’t reach this Mac while it’s asleep.")
+                    }
                 }
             }
             Section {
@@ -163,6 +168,47 @@ private struct GeneralPane: View {
         case .failed: return "Not visible"
         case .waiting: return "Waiting for the network"
         case .starting, .registering: return "Registering…"
+        }
+    }
+}
+
+// MARK: Extended Use
+
+/// Extended Use (HostKeepAwake, docs/extended-use-plan.md): Off, Always, or When Plugged In on a Mac
+/// with a battery; Always's one line; and while it can't hold, why: macOS waiting for the helper's
+/// approval in Login Items, a build that can't, or a laptop off its adapter. A device's change shows
+/// here at once.
+struct ExtendedUseSection: View {
+    let keepAwake: HostKeepAwake
+
+    var body: some View {
+        Section {
+            Picker("Extended Use", selection: Binding(get: { keepAwake.mode }, set: { keepAwake.set($0, who: nil) })) {
+                ForEach(keepAwake.offered, id: \.self) { mode in
+                    Text(HostKeepAwake.word(mode)).tag(mode)
+                }
+            }
+            if keepAwake.warns {
+                Text("Increases heat and battery use.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            switch keepAwake.problem {
+            case KeepAwake.approval?:
+                LabeledContent("Waiting for your approval") {
+                    Button("Approve in System Settings…") { keepAwake.openLoginItems() }
+                }
+            case KeepAwake.unavailable?:
+                Warning("This copy of Oriel can’t keep the Mac awake.")
+            default:
+                if keepAwake.mode == .plugged, !keepAwake.onPower {
+                    Text("On battery, this Mac sleeps as it would.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } footer: {
+            Footnote("Keeps this Mac awake, even with its lid closed, so your devices can always connect.")
         }
     }
 }

@@ -72,10 +72,15 @@ if [ "${SILL_UNIVERSAL:-}" = 1 ]; then
     for arch in arm64 x86_64; do
         swift build -c release --product SillMenuBar --triple "$arch-apple-macosx" --scratch-path "$bin/$arch"
         cp "$(swift build -c release --product SillMenuBar --triple "$arch-apple-macosx" --scratch-path "$bin/$arch" --show-bin-path)/SillMenuBar" "$bin/SillMenuBar-$arch"
+        swift build -c release --product SillAwake --triple "$arch-apple-macosx" --scratch-path "$bin/$arch"
+        cp "$(swift build -c release --product SillAwake --triple "$arch-apple-macosx" --scratch-path "$bin/$arch" --show-bin-path)/SillAwake" "$bin/SillAwake-$arch"
     done
     lipo -create "$bin/SillMenuBar-arm64" "$bin/SillMenuBar-x86_64" -output "$bin/SillMenuBar"
+    lipo -create "$bin/SillAwake-arm64" "$bin/SillAwake-x86_64" -output "$bin/SillAwake"
 else
     swift build -c release --product SillMenuBar
+    # Extended Use's launch daemon (docs/extended-use-plan.md), which goes in the bundle below.
+    swift build -c release --product SillAwake
     bin="$(swift build -c release --product SillMenuBar --show-bin-path)"
 fi
 app=.build/Oriel.app
@@ -90,6 +95,12 @@ mkdir -p "$stage/Contents/MacOS" "$stage/Contents/Resources"
 minos="$(xcrun vtool -show-build "$bin/SillMenuBar" | awk '$1 == "minos" && !found { print $2; found = 1 }')"
 xcrun vtool -set-build-version macos "${minos:?vtool reported no deployment target for $bin/SillMenuBar}" \
     "$(xcrun --sdk macosx --show-sdk-version)" -output "$stage/Contents/MacOS/Oriel" "$bin/SillMenuBar"
+# Extended Use's launch daemon (docs/extended-use-plan.md) and its plist, where SMAppService.daemon
+# looks for them: the plist's BundleProgram names Contents/MacOS/SillAwake. Signed below, before the
+# bundle, with the same identity and its own identifier, which the app's XPC requirement names.
+cp "$bin/SillAwake" "$stage/Contents/MacOS/SillAwake"
+mkdir -p "$stage/Contents/Library/LaunchDaemons"
+cp Packaging/LaunchDaemons/*.plist "$stage/Contents/Library/LaunchDaemons/"
 cp Packaging/Info.plist "$stage/Contents/Info.plist"
 build_number="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $build_number" "$stage/Contents/Info.plist"
@@ -144,6 +155,9 @@ if [ -z "$identity" ]; then
     echo "warning: no Apple Development identity in the keychain; signing ad hoc. Screen Recording and" >&2
     echo "         Accessibility will have to be granted again after every rebuild." >&2
 fi
+# The daemon first: the bundle's signature seals the code inside it as it is then.
+if [ "$release" = 1 ]; then helper_time=--timestamp; else helper_time=--timestamp=none; fi
+codesign --force --options runtime "$helper_time" --identifier "$bundle_id.awake" --sign "$identity" "$stage/Contents/MacOS/SillAwake"
 if [ "$release" = 1 ]; then
     # Developer ID: hardened runtime and a secure timestamp (notarization needs both), no get-task-allow.
     #

@@ -99,6 +99,9 @@ public enum StreamMessageKind: UInt8 {
     case desktopControl = 54 // device → host: JSON DesktopControl — `{}` subscribes; `display` and `id` switch.
                              // Only to a host whose window list says `desktops` 1 or more
     case desktopThumbnail = 55 // host → device: spaceID(8, BE) + JPEG, a desktop's picture taken while it showed
+    case keepAwake = 56      // both ways: JSON KeepAwake (KeepAwake.swift; docs/extended-use-plan.md) — a device's
+                             // mode, the host's state after each window list and every change; only with a host
+                             // whose window list says `keepAwake`
     case unknown = 255       // never sent: what parseHeader yields for a kind this build does not know
 }
 

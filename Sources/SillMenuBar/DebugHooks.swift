@@ -471,13 +471,13 @@ enum DebugHooks {
         try? rep.representation(using: .png, properties: [:])?.write(to: url)
     }
 
-    /// Every glyph state on a light and a dark menu bar at real size, then 6× for review, and the
-    /// SF Symbol fallback for comparison.
+    /// Every glyph state on a light and a dark menu bar at real size, then 6× for review, with
+    /// Extended Use's cup (idle and streaming) and the SF Symbol fallback for comparison.
     private static func renderGlyphSheet(to url: URL) {
         let states = StatusGlyph.State.allCases
         let zoom: CGFloat = 6
         let zoomed = CGFloat(states.count) * (StatusGlyph.size.width * zoom + 10) + 10
-        let size = NSSize(width: max(60 * CGFloat(states.count + 1) + 20, zoomed), height: 100 + StatusGlyph.size.height * zoom + 20)
+        let size = NSSize(width: max(60 * CGFloat(states.count + 3) + 20, zoomed), height: 100 + StatusGlyph.size.height * zoom + 20)
         let scale: CGFloat = 2
         guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(size.width * scale), pixelsHigh: Int(size.height * scale),
                                          bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
@@ -500,7 +500,8 @@ enum DebugHooks {
             (dark ? NSColor(white: 0.14, alpha: 1) : NSColor(white: 0.92, alpha: 1)).setFill()
             bar.fill()
             let ink: NSColor = dark ? .white : .black
-            let images = states.map { StatusGlyph.image($0) } + [StatusGlyph.symbolFallback].compactMap { $0 }
+            let images = states.map { StatusGlyph.image($0) } + [StatusGlyph.image(.idle, awake: true), StatusGlyph.image(.streaming, awake: true)]
+                + [StatusGlyph.symbolFallback].compactMap { $0 }
             for (i, image) in images.enumerated() {
                 let s = image.size.height > 0 ? image.size : StatusGlyph.size
                 tinted(image, ink).draw(in: NSRect(x: 20 + CGFloat(i) * 60, y: bar.minY + (30 - s.height) / 2, width: s.width, height: s.height))

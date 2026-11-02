@@ -26,6 +26,8 @@ struct DesktopScreen: View {
     @State private var screenSize: CGSize = .zero
     /// The info panel is up at the picture's top-right corner (InfoPanel). `-SillInfoOpen 1` starts with it up.
     @State private var infoOpen = UserDefaults.standard.bool(forKey: "SillInfoOpen")
+    /// The Mac's Settings, from the info panel (MacSettingsScreen): the session's Mac.
+    @State private var macSettings: String?
     /// Trackpad input: the whole screen is a relative trackpad that moves a cursor drawn on the
     /// picture, and the iPad's own pointer is the Mac's, instead of a touch landing where it touches.
     /// It follows a pointer device (PointerDeviceMonitor) as one connects or the last goes; the toggle
@@ -81,6 +83,9 @@ struct DesktopScreen: View {
             .overlay { pillFocus.catcher }
         }
         .background(Color.black.ignoresSafeArea())
+            .sheet(item: Binding(get: { macSettings.map(MacSettingsID.init) }, set: { macSettings = $0?.id })) { which in
+                MacSettingsScreen(client: client, macID: which.id) { macSettings = nil }
+            }
             // A hardware keyboard types on the Mac whenever one is attached: nothing here takes it.
             .onReceive(HardwareKeyboardMonitor.shared.$attached) { overlay.update(attached: $0) }
             // A pointer device connecting or the last one going sets the mode; one already attached
@@ -203,7 +208,9 @@ struct DesktopScreen: View {
     /// its info button in the column).
     @ViewBuilder private func infoPanel(_ corner: UnitPoint = .topTrailing) -> some View {
         if infoOpen {
-            InfoPanel(client: client, open: $infoOpen)
+            InfoPanel(client: client, open: $infoOpen, settings: client.session?.macID.map { macID in
+                { infoOpen = false; macSettings = macID }
+            })
                 .padding(12)
                 .transition(.scale(scale: 0.85, anchor: corner).combined(with: .opacity))
         }
